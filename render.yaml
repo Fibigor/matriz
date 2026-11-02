@@ -6,19 +6,15 @@ services:
     region: frankfurt
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    healthCheckPath: /api/auth/csrf
+    healthCheckPath: /
     autoDeployTrigger: checksPass
     envVars:
       - key: SERVER_ADDRESS
         value: 0.0.0.0
-      - key: SERVER_FORWARD_HEADERS_STRATEGY
-        value: framework
       - key: COOKIE_SECURE
         value: "true"
-      - key: SESSION_COOKIE_SAME_SITE
-        value: lax
       - key: DEMO_ENABLED
-        value: "false"
+        value: "true"
       - key: DATABASE_HOST
         fromDatabase:
           name: matriz-demo-db
@@ -39,15 +35,6 @@ services:
         fromDatabase:
           name: matriz-demo-db
           property: password
-      - key: KEYCLOAK_ISSUER_URI
-        sync: false
-      - key: KEYCLOAK_PUBLIC_REALM_URI
-        sync: false
-      - key: KEYCLOAK_CLIENT_ID
-        sync: false
-      - key: KEYCLOAK_CLIENT_SECRET
-        sync: false
-
 databases:
   - name: matriz-demo-db
     databaseName: matriz

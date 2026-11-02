@@ -38,7 +38,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
         }
       }
     }
-    if (response.status === 401 && path !== '/auth/me') {
+    if (response.status === 401 && path !== '/auth/me' && path !== '/auth/login') {
       window.dispatchEvent(new Event('session-expired'));
     }
     throw new ApiError(detail, response.status, fields);

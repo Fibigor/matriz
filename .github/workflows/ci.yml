@@ -69,13 +69,11 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Start application stack
         run: docker compose --project-name matriz-ci --env-file .env.example up --build --detach
-      - name: Wait for application and Keycloak
+      - name: Wait for application
         shell: bash
         run: |
           set -euo pipefail
-          for endpoint in \
-            http://localhost:8180/realms/matriz/.well-known/openid-configuration \
-            http://localhost:8080/api/auth/csrf; do
+          for endpoint in http://localhost:8080/api/auth/csrf; do
             for attempt in $(seq 1 60); do
               if curl --fail --silent "$endpoint" >/dev/null; then
                 break

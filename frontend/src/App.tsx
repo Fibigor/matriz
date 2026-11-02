@@ -1,4 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
+import type { FormEvent } from 'react';
 import { api, ApiError } from './api';
 import type { User } from './types';
 import { Projects } from './Projects';
@@ -12,8 +13,37 @@ function subscribe(callback: () => void) {
 }
 const hash = () => window.location.hash;
 
-function Login({ notice }: { notice: string }) {
-  const authError = new URLSearchParams(window.location.search).has('authError');
+const demoAccounts = [
+  { name: 'Ana', email: 'ana@example.invalid' },
+  { name: 'Bruno', email: 'bruno@example.invalid' },
+  { name: 'Carla', email: 'carla@example.invalid' },
+];
+const demoPassword = 'Matriz-Demo-2026!';
+
+function Login({ notice, onLogin }: { notice: string; onLogin: (user: User) => void }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError('');
+    setBusy(true);
+    try {
+      onLogin(await api<User>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      }));
+    } catch (reason) {
+      setError(reason instanceof ApiError && reason.status === 401
+        ? 'Email ou palavra-passe incorretos.'
+        : reason instanceof Error ? reason.message : 'Não foi possível iniciar sessão.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return <main className="login-page">
     <section className="login-intro">
       <div className="login-brand"><span className="brand-mark" aria-hidden="true">M</span> MATRIZ</div>
@@ -24,11 +54,24 @@ function Login({ notice }: { notice: string }) {
     </section>
     <section className="card login-card"><p className="eyebrow">Bem-vindo de volta</p>
     <h1>Entrar na Matriz</h1><p className="muted">O próximo passo começa aqui.</p>
-    <Feedback error={notice || (authError ? 'Não foi possível concluir a autenticação. Tente novamente.' : '')} />
-    <form method="get" action="/api/auth/login">
-      <button type="submit">Entrar com Keycloak</button>
+    <Feedback error={error || notice} />
+    <form onSubmit={event => void submit(event)}>
+      <label htmlFor="login-email">Email</label>
+      <input id="login-email" type="email" autoComplete="username" autoCapitalize="none" required
+        maxLength={254} value={email} onChange={event => setEmail(event.target.value)} />
+      <label htmlFor="login-password">Palavra-passe</label>
+      <input id="login-password" type="password" autoComplete="current-password" required
+        maxLength={200} value={password} onChange={event => setPassword(event.target.value)} />
+      <button type="submit" disabled={busy}>{busy ? 'A entrar…' : 'Entrar'}</button>
     </form>
-    <p className="login-note">A autenticação é gerida pelo serviço de identidade.</p>
+    <div className="demo-accounts">
+      <p className="login-note">Contas de demonstração</p>
+      <div>{demoAccounts.map(account => <button key={account.email} type="button" className="button-quiet"
+        onClick={() => { setEmail(account.email); setPassword(demoPassword); setError(''); }}>
+        {account.name}
+      </button>)}</div>
+      <p className="login-note">Palavra-passe: <code>{demoPassword}</code></p>
+    </div>
     </section>
   </main>;
 }
@@ -49,7 +92,7 @@ export default function App() {
     return () => window.removeEventListener('session-expired', expired);
   }, []);
   if (starting) return <main className="session-loading"><p role="status">A verificar sessão…</p></main>;
-  if (!user) return <Login notice={notice} />;
+  if (!user) return <Login notice={notice} onLogin={setUser} />;
   let content = <Projects dashboard />;
   if (route[0] === 'projects') {
     if (route[1] && route[2] === 'tasks' && route[3]) content = <TaskDetail key={route[3]} projectId={route[1]} id={route[3]} />;

@@ -2,18 +2,18 @@
 
 ## Modelo implementado — ficha 03
 
-PostgreSQL 17, migration Flyway `backend/src/main/resources/db/migration/V1__initial_schema.sql`. A implementação usa os nomes físicos abaixo. Este modelo substitui o responsável único e a ausência de credenciais/comentários/prioridade do desenho inicial.
+PostgreSQL 17, migrations Flyway `backend/src/main/resources/db/migration/V1__initial_schema.sql` a `V3__local_email_password_auth.sql`. A implementação usa os nomes físicos abaixo. Este modelo substitui o responsável único e a ausência de credenciais/comentários/prioridade do desenho inicial.
 
 | Tabela | Atributos e regras principais |
 |---|---|
-| `app_user` | id opaco, username único usado como referência de demonstração, display_name, password_hash anulável para compatibilidade com hashes locais antigos e active; perfis locais são ligados ao claim Keycloak `app_user_id`. |
+| `app_user` | id opaco, username único usado como referência de demonstração, display_name, email com índice único case-insensitive, password_hash scrypt anulável para compatibilidade com perfis antigos e active. |
 | `project` | id, name 1–120, description até 2 000, owner_user_id, version positiva, created_at UTC. Proprietário é gestor por projeto. |
 | `participation` | PK composta (project_id,user_id), joined_at; inclui gestor. FK composta diferível do projeto obriga o gestor a participar. |
 | `task` | id, project_id fixo, title 1–200, description até 2 000, status, priority, version, created_at e updated_at. Inicial TODO/MEDIUM, versão 1. |
 | `task_assignment` | PK (task_id,user_id), project_id e assigned_at; FK composta para tarefa/projeto e participação/projeto. Zero ou vários responsáveis. |
 | `task_comment` | id, task_id, author_id, content 1–2 000, created_at; autor e data do servidor. |
 
-V1 definiu `password_hash` como obrigatório para a autenticação local inicial. V2 permite NULL para novos perfis OIDC; não apaga hashes existentes. O seed cria perfis sem credenciais locais. O claim externo não é guardado na base de dados: a identidade é resolvida no login e o perfil/estado ativo é consultado em cada operação. Não existe processo automático de purga; retenção de um ano é apenas um pressuposto provisório, sem âmbito nem evento inicial definidos.
+V1 definiu `password_hash`; V2 permitiu NULL durante a integração OIDC anterior, sem apagar hashes. V3 adiciona email e índice único case-insensitive para o login local atual. Apenas contas ativas com email e hash válidos podem autenticar. O seed cria contas fictícias e hashes scrypt se ainda não existirem, sem substituir credenciais existentes nem reinicializar os dados. Não existe processo automático de purga; retenção de um ano é apenas um pressuposto provisório, sem âmbito nem evento inicial definidos.
 
 ```mermaid
 erDiagram
@@ -29,6 +29,7 @@ erDiagram
         string id PK
         string username UK
         string display_name
+        string email UK
         string password_hash
         boolean active
     }
@@ -101,7 +102,7 @@ As cardinalidades seguem os pressupostos P-01 a P-10 de [constraints.md](constra
 
 `display_name` não é um identificador único. Não se impõem nomes únicos a projetos ou tarefas. Os valores iniciais de TASK são `TODO`, responsável ausente e versão 1; os restantes metadados são gerados pela aplicação.
 
-Não se modelam email, palavra-passe, token, anexos, comentários, prioridade, datas-limite ou sprints. A ligação entre USER e o mecanismo de identidade/estado ativo ainda deve ser definida em Q-03; esta projeção de utilizador não implementa autenticação.
+Não se modelam tokens de sessão, anexos, datas-limite ou sprints. O hash nunca é exposto pela API; sessões são mantidas pelo Spring Security no servidor.
 
 O papel no projeto é derivado: se `PROJECT.owner_user_id` corresponde à pessoa, é gestor; os restantes participantes são membros. Não se guarda uma coluna de papel que possa contradizer o proprietário.
 

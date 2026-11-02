@@ -4,11 +4,11 @@
 
 Em 29-10-2026 o autor aprovou implementar integralmente o âmbito da ficha 03 e as regras abaixo. Esta secção substitui as exclusões e a responsabilidade única da ficha 01; o levantamento original é conservado no histórico no final, não é uma segunda especificação em vigor. Não se presume validação com o cliente ou autorização de produção.
 
-Stack escolhida: Java 21/Spring Boot, React/TypeScript e PostgreSQL, monólito modular. A autenticação da demonstração usa Keycloak OIDC Authorization Code e sessão Spring no servidor, protegida por CSRF. A identidade OIDC só dá acesso quando o claim assinado `app_user_id` corresponde a uma conta local ativa; não há aprovisionamento automático, registo público ou recuperação de palavra-passe na Matriz.
+Stack escolhida: Java 21/Spring Boot, React/TypeScript e PostgreSQL, monólito modular. A autenticação da demonstração usa email e palavra-passe de contas locais ativas, hash scrypt, sessão Spring no servidor e CSRF. Não há registo público nem recuperação de palavra-passe na Matriz.
 
 | ID atual | Requisito | Prioridade |
 |---|---|---|
-| RF-01 | Autenticar através do fornecedor OIDC aprovado, consultar perfil e terminar sessão Matriz; recusar identidade sem conta local ativa associada. | Must |
+| RF-01 | Autenticar por email e palavra-passe de conta local ativa, consultar perfil e terminar sessão Matriz. | Must |
 | RF-02 | Criar projetos com proprietário inferido da sessão. | Must |
 | RF-03 | Listar, pesquisar pelo nome e consultar apenas projetos acessíveis, com paginação. | Must |
 | RF-04 | Gestor adiciona/remove membros existentes por identificador exato; participantes consultam os membros. | Must |
@@ -33,6 +33,7 @@ Stack escolhida: Java 21/Spring Boot, React/TypeScript e PostgreSQL, monólito m
 - **RN-09:** operações transacionais; nenhuma falha é anunciada como sucesso. Edições de projeto/tarefa e alterações de atribuição exigem versão atual, caso contrário 409. Atribuição repetida é idempotente quando a versão é atual. Falha de transporte pode deixar resultado incerto; não repetir escritas automaticamente.
 - **RN-10:** eliminar tarefa remove comentários/atribuições; eliminar projeto remove também tarefas/participações. Só remover após confirmação humana na interface. Não eliminar contas por esta API.
 - **RN-11:** comentários têm 1–2 000 pontos de código após remoção de espaços nas extremidades, autor/data definidos no servidor; conteúdo tratado como texto. Não há edição/eliminação de comentário isolado no MVP.
+- **RN-12:** autenticação local usa hash scrypt e sessão no servidor com timeout inativo de 30 minutos; CSRF protege login e escritas, erros de credenciais são genéricos e cinco falhas por email/endereço em 15 minutos bloqueiam novas tentativas durante 15 minutos. O limite é mantido em memória por instância e reiniciar o serviço limpa o estado; produção está diferida. Não há registo público nem recuperação de palavra-passe.
 
 ### Qualidade e exclusões
 

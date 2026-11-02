@@ -214,9 +214,13 @@ footer { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wr
 .login-decoration span:last-child { height: 100%; background: #3358f433; border-color: #789ce1; }
 .login-card { padding: 38px; margin: 0; border-top: 2px solid #467bf4; box-shadow: 0 20px 60px #0b0c1a55; }
 .login-card h1 { font-size: 1.6rem; }
-.login-card form { margin-top: 26px; }
+.login-card form { display: grid; gap: 12px; margin-top: 26px; }
 .login-card form button { width: 100%; margin-top: 8px; }
 .login-note { color: var(--muted); font-size: .68rem; text-align: center; margin: 24px 0 0; }
+.demo-accounts { margin-top: 24px; text-align: center; }
+.demo-accounts > div { display: flex; justify-content: center; gap: 8px; margin-top: 8px; }
+.demo-accounts .login-note { margin: 8px 0 0; }
+.demo-accounts button { padding: 6px 12px; }
 @media (min-width: 1600px) {
   .app-workspace { padding-left: 36px; padding-right: 40px; }
   .projects-layout, .project-detail-layout { grid-template-columns: minmax(0, 1fr) 340px; }

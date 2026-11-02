@@ -8,23 +8,38 @@ Entrega original da ficha 03 em `e73250d` (`feat: full stack implementation-plan
 
 O âmbito alargado e as regras de acesso foram aprovados antes de implementar. Limites 1–120/1–200/2 000 mantidos por decisão do autor, em vez de copiar os limites meramente exemplificativos da ficha. Não se presume aceitação pelo cliente ou preparação para produção.
 
+## Migração de autenticação — login local
+
+A decisão mais recente substituiu Keycloak OIDC por login local com email/palavra-passe. O backend usa hash scrypt, sessão Spring no servidor, CSRF no login e escritas, erros genéricos e bloqueio após cinco falhas por email/endereço em 15 minutos. O seed cria apenas contas fictícias quando ativado; o Render está configurado com seed ativo e os visitantes podem alterar os mesmos dados demo. Não há registo público ou recuperação de palavra-passe.
+
+Verificações locais em 02-11-2026:
+
+| Verificação | Resultado observado |
+|---|---|
+| `mvn -f backend\pom.xml test '-Dapi.version=1.44'` | 8 testes passaram com PostgreSQL 17/Testcontainers; Flyway aplicou V1–V3. Cobertura inclui login, email case-insensitive, credenciais inválidas/inativas, CSRF, logout e bloqueio de tentativas. |
+| Em `frontend`: `npm test` e `npm run build` | 13 testes passaram; TypeScript e Vite concluíram o build. |
+| Compose isolado `matriz-auth-check` | Build concluído; aplicação saudável em porta alternativa 18080 e PostgreSQL em 55433; seed demo ativo. |
+| E2E contra Compose | 4/4 passaram: fluxos integrados, login inválido, navegação móvel/teclado e auditorias axe-core. |
+| YAML e configuração Compose | `render.yaml` e `openapi.yaml` analisados por PyYAML; `docker compose ... config --quiet` e `git diff --check` passaram. |
+| Fecho do ensaio | Serviços `matriz-auth-check` parados; volume `matriz-auth-check_matriz_data` preservado. Não foi feito deploy, commit ou push. |
+
 ## Preparação Render — demonstração temporária
 
-Foi autorizado preparar `render.yaml` para um serviço Docker e PostgreSQL 17 gratuitos em Frankfurt, sem provisionar recursos ou efetuar deploy. A aplicação usa `PORT` quando fornecido pelo Render, preservando a porta local 8080; a ligação PostgreSQL Render é montada a partir de host/porta/base/utilizador/segredo referenciados no Blueprint, enquanto Compose continua a fornecer `DATABASE_URL`. O Blueprint configura `SERVER_FORWARD_HEADERS_STRATEGY=framework` para o callback OIDC refletir o HTTPS público, `COOKIE_SECURE=true`, `SameSite=Lax` apenas no Render (mantendo `Strict` por omissão/localmente), seed desativado, health check em `/api/auth/csrf` e deploy automático apenas após checks GitHub passarem.
+Foi autorizado preparar `render.yaml` para um serviço Docker e PostgreSQL 17 gratuitos em Frankfurt, sem provisionar recursos ou efetuar deploy. A aplicação usa `PORT` quando fornecido pelo Render, preservando a porta local 8080; a ligação PostgreSQL Render é montada a partir de host/porta/base/utilizador/segredo referenciados no Blueprint, enquanto Compose continua a fornecer `DATABASE_URL`. O Blueprint define `COOKIE_SECURE=true`, mantém `SameSite=Strict`, ativa o seed das contas demo, usa a página estática `/` como health check para não criar sessões de verificação e só inicia deploys automáticos quando os checks GitHub passam.
 
-O Blueprint não inclui nem configura um IdP: é necessário um fornecedor OIDC HTTPS, cliente/callback para `/login/oauth2/code/keycloak`, segredo guardado no Render e perfis locais ativos com claim `app_user_id` correspondente. Sem esses pré-requisitos, o deploy pode servir a interface, mas o login não fica operacional. A demonstração aceita a expiração da base PostgreSQL gratuita após 30 dias, a janela de 14 dias para upgrade antes da eliminação e o sleep do serviço após 15 minutos sem tráfego; não é adequada a produção. Não foram criados recursos nem efetuado deploy.
+O login local elimina a necessidade de IdP externo. As contas e a palavra-passe de demonstração ficam públicas; os visitantes do Render podem alterar os mesmos dados, que são descartáveis. A demonstração aceita a expiração da base PostgreSQL gratuita após 30 dias, a janela de 14 dias para upgrade antes da eliminação e o sleep do serviço após 15 minutos sem tráfego; não é adequada a produção. Não foram criados recursos nem efetuado deploy.
 
 ## Pipeline automatizada
 
-`.github/workflows/ci.yml` executa em pushes, pull requests para `main` e por acionamento manual. Os jobs cobrem testes Java com PostgreSQL via Testcontainers, testes de componentes e build TypeScript/Vite, e os percursos E2E contra a aplicação Compose com Keycloak real, incluindo uma auditoria axe-core em dez combinações de vista/viewport (WCAG 2.0, 2.1 e 2.2, níveis A/AA, incluindo contraste). O job E2E usa exclusivamente dados/credenciais fictícios de `.env.example` e, em caso de falha, conserva relatórios Playwright como artefactos durante sete dias.
+`.github/workflows/ci.yml` executa em pushes, pull requests para `main` e por acionamento manual. Os jobs cobrem testes Java com PostgreSQL via Testcontainers, testes de componentes e build TypeScript/Vite, e os percursos E2E contra a aplicação Compose, incluindo auditoria axe-core. O job E2E usa exclusivamente dados/credenciais fictícios de `.env.example` e, em caso de falha, conserva relatórios Playwright como artefactos durante sete dias.
 
 A definição do workflow foi validada no checkout, mas ainda não há uma execução GitHub Actions registada nesta atualização. Os resultados locais abaixo são evidência separada e não são apresentados como resultado da pipeline.
 
-Após adicionar a auditoria axe-core, a suite E2E correu contra um Compose isolado com PostgreSQL 17 e Keycloak 26.3.5: 4/4 testes passaram; as dez combinações auditadas não reportaram violações WCAG nos critérios selecionados. Os serviços foram parados e o volume isolado foi preservado. A instalação de `@axe-core/playwright` reportou zero vulnerabilidades conhecidas pelo `npm audit` nessa execução.
+Registo histórico, antes da migração de autenticação: após adicionar a auditoria axe-core, a suite E2E correu contra um Compose isolado com PostgreSQL 17 e Keycloak 26.3.5: 4/4 testes passaram; as dez combinações auditadas não reportaram violações WCAG nos critérios selecionados. Os serviços foram parados e o volume isolado foi preservado. A instalação de `@axe-core/playwright` reportou zero vulnerabilidades conhecidas pelo `npm audit` nessa execução.
 
-## Atualização aprovada — OIDC, retenção, p95 e produção
+## Verificação histórica — OIDC (substituído), retenção, p95 e produção
 
-O autor aprovou Keycloak OIDC Authorization Code para a demonstração, sessão Spring no servidor, CSRF e ligação do claim assinado `app_user_id` a perfil local ativo já existente. Não há aprovisionamento automático. Retenção de um ano é pressuposto provisório, sem âmbito/evento inicial definidos e sem purga automática. p95 é métrica sem alvo/carga definidos. Produção está diferida.
+O registo seguinte documenta a implementação OIDC que precedeu a decisão do utilizador de a substituir por login local. Não descreve o comportamento atual. Retenção de um ano continua a ser pressuposto provisório, sem âmbito/evento inicial definidos e sem purga automática. p95 é métrica sem alvo/carga definidos. Produção está diferida.
 
 Verificações locais desta atualização:
 
@@ -67,7 +82,7 @@ As instruções desta secção descrevem como efetuar e registar uma verificaç�
 
 ### Reprodução a partir de uma cópia limpa
 
-Este procedimento e o commit fixo verificam a versão anterior à autenticação OIDC; não os usar como evidência da atualização atual. Para a atualizar, repetir numa cópia limpa do commit que a contém, confirmar portas 8080, 8180 e 55432 livres e manter o projeto Compose `matriz-verificacao` separado. Se outra instância Matriz as ocupar, não a parar sem autorização; escolher um projeto/portas isolados e preservar todos os volumes existentes.
+O commit fixo neste procedimento é histórico e não valida a versão atual com login local. Para a validar, repetir numa cópia limpa do commit que contém a migração de autenticação, confirmar portas 8080 e 55432 livres e manter o projeto Compose `matriz-verificacao` separado. Se outra instância Matriz as ocupar, não a parar sem autorização; escolher um projeto/portas isolados e preservar todos os volumes existentes.
 
 Com Git, Docker/Compose e os pré-requisitos de desenvolvimento do README disponíveis, executar em PowerShell:
 
@@ -81,7 +96,7 @@ docker compose -p matriz-verificacao --env-file .env config --quiet
 docker compose -p matriz-verificacao --env-file .env up --build -d
 ```
 
-O commit fixo do bloco reproduz a versão anterior e usa o login local descrito no README dessa versão; essa reprodução não valida Keycloak. Para a atualização OIDC, usar o commit que a contém, abrir `http://localhost:8080`, seguir **Entrar com Keycloak** e autenticar uma conta fictícia do README atual. Usar `localhost` consistentemente para manter o fluxo de callback no mesmo site e permitir o cookie SameSite Strict. O percurso deve regressar à Matriz com sessão no servidor.
+Abrir `http://localhost:8080`, usar uma das contas de demonstração documentadas no README e confirmar que o perfil é apresentado após o login local. O contrato atual exige CSRF no `POST /api/auth/login`.
 
 Na raiz dessa cópia, executar:
 
@@ -107,7 +122,7 @@ Usar Tab, Shift+Tab, Enter, Espaço, Escape e as teclas nativas dos selects, sem
 
 | Fluxo | Ações a realizar e resultado a registar |
 |---|---|
-| Sessão e navegação | Seguir **Entrar com Keycloak**, testar credenciais fictícias inválidas e válidas no IdP, usar o atalho para o conteúdo, navegar entre vistas e terminar sessão Matriz; verificar rótulos, foco e mensagens. |
+| Sessão e navegação | Testar credenciais fictícias inválidas e válidas, usar o atalho para o conteúdo, navegar entre vistas e terminar sessão Matriz; verificar rótulos, foco e mensagens. |
 | Menu móvel | Abrir, percorrer os links, fechar por Escape e confirmar retorno do foco; reabrir e navegar, confirmando fecho do diálogo. |
 | Projetos | Criar, pesquisar, percorrer a paginação e abrir um projeto; editar como gestor e testar cancelamento/confirmação da eliminação num projeto criado para o ensaio. |
 | Tarefas e filtros | Criar e abrir uma tarefa, editar título/descrição/estado/prioridade, aplicar filtros, navegar nas páginas e cancelar/confirmar eliminação; conferir atualização da lista e do progresso. |
@@ -118,7 +133,7 @@ Registar por fluxo os passos, o controlo focado e o resultado. Associar qualquer
 
 ### Contrato e diagramas
 
-Validar `openapi.yaml` com um validador local compatível com OpenAPI 3.1/JSON Schema, registando ferramenta, versão, comando e resultado. Rever a ferramenta e aprovar a instalação antes de acrescentar componentes ao ambiente. Conferir referências, parâmetros, schemas e operações; verificar que `GET /auth/login` redireciona para o fluxo Keycloak, que a sessão/CSRF permanecem documentadas e que não há contrato de palavra-passe local.
+Validar `openapi.yaml` com um validador local compatível com OpenAPI 3.1/JSON Schema, registando ferramenta, versão, comando e resultado. Rever a ferramenta e aprovar a instalação antes de acrescentar componentes ao ambiente. Conferir referências, parâmetros, schemas e operações; verificar que `POST /auth/login` documenta email/palavra-passe, CSRF, respostas genéricas e limite de tentativas.
 
 Abrir `docs/database.md` e `docs/architecture.md` no renderizador Mermaid do GitHub, usando os ficheiros já versionados. Confirmar renderização, entidades, chaves e cardinalidades face à migration Flyway e às regras atuais. Distinguir os diagramas da implementação dos blocos históricos; registar o commit e o resultado da inspeção.
 

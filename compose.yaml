@@ -1,16 +1,4 @@
 services:
-  keycloak:
-    image: quay.io/keycloak/keycloak:26.3.5
-    command: ["start-dev", "--import-realm"]
-    environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
-      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}
-      KC_HTTP_ENABLED: "true"
-      KC_HOSTNAME: ${KEYCLOAK_BASE_URL:-http://localhost:8180}
-    ports:
-      - "127.0.0.1:${KEYCLOAK_HOST_PORT:-8180}:8080"
-    volumes:
-      - ./infra/keycloak/realm-matriz.json:/opt/keycloak/data/import/realm-matriz.json:ro
   db:
     image: postgres:17-alpine
     environment:
@@ -36,17 +24,10 @@ services:
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       DEMO_ENABLED: ${DEMO_ENABLED:-false}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
-      KEYCLOAK_ISSUER_URI: ${KEYCLOAK_BASE_URL:-http://localhost:8180}/realms/matriz
-      KEYCLOAK_PUBLIC_REALM_URI: ${KEYCLOAK_BASE_URL:-http://localhost:8180}/realms/matriz
-      KEYCLOAK_BACKCHANNEL_REALM_URI: http://keycloak:8080/realms/matriz
-      KEYCLOAK_CLIENT_ID: matriz-web
-      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?Set KEYCLOAK_CLIENT_SECRET in .env}
     ports:
       - "127.0.0.1:${APP_HOST_PORT:-8080}:8080"
     depends_on:
       db:
         condition: service_healthy
-      keycloak:
-        condition: service_started
 volumes:
   matriz_data:

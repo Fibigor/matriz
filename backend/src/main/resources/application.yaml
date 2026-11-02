@@ -19,7 +19,7 @@ server:
       timeout: 30m
       cookie:
         http-only: true
-        same-site: ${SESSION_COOKIE_SAME_SITE:strict}
+        same-site: strict
         secure: ${COOKIE_SECURE:false}
   error:
     include-message: never
@@ -27,9 +27,3 @@ server:
 matriz:
   demo:
     enabled: ${DEMO_ENABLED:false}
-  keycloak:
-    issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/matriz}
-    public-realm-uri: ${KEYCLOAK_PUBLIC_REALM_URI:http://localhost:8180/realms/matriz}
-    backchannel-realm-uri: ${KEYCLOAK_BACKCHANNEL_REALM_URI:${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/matriz}}
-    client-id: ${KEYCLOAK_CLIENT_ID:matriz-web}
-    client-secret: ${KEYCLOAK_CLIENT_SECRET:matriz-local-client-secret}

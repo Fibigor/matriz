@@ -2,20 +2,12 @@ package pt.matriz;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.Instant;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.security.oauth2.core.oidc.OidcIdToken;
-import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -48,19 +40,12 @@ class ApiIntegrationTest {
     @Autowired ObjectMapper json;
     @Autowired JdbcTemplate db;
 
-    MockHttpSession login(String name) {
-        var authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
-        Instant now = Instant.now();
-        OidcIdToken token = OidcIdToken.withTokenValue("test-token")
-                .issuedAt(now).expiresAt(now.plusSeconds(300))
-                .claim("sub", "keycloak-" + name).claim("app_user_id", "user-" + name).build();
-        DefaultOidcUser user = new DefaultOidcUser(authorities, token);
-        OAuth2AuthenticationToken authentication = new OAuth2AuthenticationToken(user, authorities, "keycloak");
-        var context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(authentication);
-        MockHttpSession session = new MockHttpSession();
-        session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
-        return session;
+    MockHttpSession login(String name) throws Exception {
+        MvcResult result = api.perform(post("/api/auth/login").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(java.util.Map.of(
+                                "email", name + "@example.invalid", "password", "Matriz-Demo-2026!"))))
+                .andExpect(status().isOk()).andReturn();
+        return (MockHttpSession) result.getRequest().getSession(false);
     }
 
     JsonNode body(MvcResult result) throws Exception { return json.readTree(result.getResponse().getContentAsString()); }
@@ -74,15 +59,37 @@ class ApiIntegrationTest {
     @Test
     void authenticationCsrfAndLogoutAreEnforced() throws Exception {
         api.perform(get("/api/projects")).andExpect(status().isUnauthorized());
-        api.perform(get("/api/auth/login")).andExpect(status().isFound())
-                .andExpect(header().string("Location", "/oauth2/authorization/keycloak"));
+        api.perform(get("/api/auth/login")).andExpect(status().isMethodNotAllowed());
         MockHttpSession session = login("ana");
         api.perform(get("/api/auth/me").session(session)).andExpect(jsonPath("$.id").value("user-ana"));
-        assertThat(db.queryForObject("SELECT password_hash IS NULL FROM app_user WHERE id='user-ana'", Boolean.class)).isTrue();
-        api.perform(get("/api/auth/me").session(login("unknown"))).andExpect(status().isUnauthorized());
+        assertThat(db.queryForObject("SELECT email FROM app_user WHERE id='user-ana'", String.class))
+                .isEqualTo("ana@example.invalid");
+        assertThat(db.queryForObject("SELECT password_hash IS NOT NULL FROM app_user WHERE id='user-ana'", Boolean.class)).isTrue();
+        api.perform(post("/api/auth/login").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"ana@example.invalid\",\"password\":\"wrong\"}"))
+                .andExpect(status().isUnauthorized()).andExpect(jsonPath("$.detail").value("Email ou palavra-passe incorretos."));
+        api.perform(post("/api/auth/login").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"unknown@example.invalid\",\"password\":\"wrong\"}"))
+                .andExpect(status().isUnauthorized()).andExpect(jsonPath("$.detail").value("Email ou palavra-passe incorretos."));
+        api.perform(post("/api/auth/login").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"ANA@EXAMPLE.INVALID\",\"password\":\"Matriz-Demo-2026!\"}"))
+                .andExpect(status().isOk());
+        api.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"ana@example.invalid\",\"password\":\"Matriz-Demo-2026!\"}"))
+                .andExpect(status().isForbidden());
+        for (int attempt = 0; attempt < 5; attempt++) {
+            api.perform(post("/api/auth/login").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"email\":\"locked@example.invalid\",\"password\":\"wrong\"}"))
+                    .andExpect(status().isUnauthorized());
+        }
+        api.perform(post("/api/auth/login").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"locked@example.invalid\",\"password\":\"wrong\"}"))
+                .andExpect(status().isTooManyRequests()).andExpect(header().exists("Retry-After"));
         db.update("UPDATE app_user SET active=false WHERE id='user-ana'");
         try {
-            api.perform(get("/api/auth/me").session(login("ana"))).andExpect(status().isUnauthorized());
+            api.perform(post("/api/auth/login").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"email\":\"ana@example.invalid\",\"password\":\"Matriz-Demo-2026!\"}"))
+                    .andExpect(status().isUnauthorized());
         } finally {
             db.update("UPDATE app_user SET active=true WHERE id='user-ana'");
         }

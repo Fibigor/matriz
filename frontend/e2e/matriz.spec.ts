@@ -14,31 +14,24 @@ async function expectNoAccessibilityViolations(page: import('@playwright/test').
 
 async function signIn(page: import('@playwright/test').Page) {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Entrar com Keycloak' }).click();
-  await page.getByLabel('Username').fill('ana');
-  await page.getByRole('textbox', { name: 'Password' }).fill('Matriz-Demo-2026!');
-  await page.getByRole('button', { name: 'Sign In' }).click();
+  await page.getByLabel('Email').fill('ana@example.invalid');
+  await page.getByLabel('Palavra-passe').fill('Matriz-Demo-2026!');
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Painel inicial' })).toBeVisible();
 }
 
 async function keyboardSignIn(page: import('@playwright/test').Page) {
   await page.goto('/');
-  const start = page.getByRole('button', { name: 'Entrar com Keycloak' });
-  await expect(start).toBeVisible();
+  const email = page.getByLabel('Email');
+  await email.focus();
+  await expect(email).toBeFocused();
+  await page.keyboard.type('ana@example.invalid');
   await page.keyboard.press('Tab');
-  await expect(start).toBeFocused();
-  await page.keyboard.press('Enter');
-  const username = page.getByRole('textbox', { name: 'Username' });
-  const password = page.getByRole('textbox', { name: 'Password' });
-  await expect(username).toBeFocused();
-  await page.keyboard.type('ana');
-  await page.keyboard.press('Tab');
+  const password = page.getByLabel('Palavra-passe');
   await expect(password).toBeFocused();
   await page.keyboard.type('Matriz-Demo-2026!');
   await page.keyboard.press('Tab');
-  await expect(page.getByRole('button', { name: 'Show password' })).toBeFocused();
-  await page.keyboard.press('Tab');
-  const submit = page.getByRole('button', { name: 'Sign In' });
+  const submit = page.getByRole('button', { name: 'Entrar', exact: true });
   await expect(submit).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('heading', { name: 'Painel inicial' })).toBeVisible();
@@ -98,19 +91,18 @@ test('percurso integrado: projeto, tarefas, filtros, atribuições, comentários
   await expect(page.getByRole('heading', { name: 'Entrar na Matriz' })).toBeVisible();
 });
 
-test('Keycloak rejeita credenciais inválidas e a vista móvel funciona', async ({ page }) => {
+test('login rejeita credenciais inválidas e a vista móvel funciona', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Entrar na Matriz' })).toBeVisible();
   await expect(page.getByRole('alert')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Entrar com Keycloak' }).click();
-  await page.getByLabel('Username').fill('ana');
-  await page.getByRole('textbox', { name: 'Password' }).fill('incorreta');
-  await page.getByRole('button', { name: 'Sign In' }).click();
-  await expect(page.getByRole('textbox', { name: 'Password' })).toBeVisible();
-  await expect(page.getByText('Invalid username or password.', { exact: true })).toBeVisible();
-  await page.getByRole('textbox', { name: 'Password' }).fill('Matriz-Demo-2026!');
-  await page.getByRole('button', { name: 'Sign In' }).click();
+  await page.getByLabel('Email').fill('ana@example.invalid');
+  await page.getByLabel('Palavra-passe').fill('incorreta');
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await expect(page.getByLabel('Palavra-passe')).toBeVisible();
+  await expect(page.getByText('Email ou palavra-passe incorretos.', { exact: true })).toBeVisible();
+  await page.getByLabel('Palavra-passe').fill('Matriz-Demo-2026!');
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Painel inicial' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });

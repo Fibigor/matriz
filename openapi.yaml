@@ -5,10 +5,9 @@ info:
   description: |
     Contrato da demonstração implementada, não uma API de produção certificada.
     Substitui o contrato parcial/Bearer/responsável único da ficha 02.
-    A autenticação inicia em GET /auth/login e segue OIDC Authorization Code
-    com Keycloak; a aplicação mantém sessão no servidor, CSRF e validação da
-    conta local ativa identificada pelo claim assinado app_user_id. Não cria contas.
-    O logout invalida a sessão Matriz; a sessão do fornecedor de identidade é independente.
+    A autenticação usa email e palavra-passe de contas locais ativas; a aplicação
+    mantém sessão no servidor, CSRF e hashes scrypt. Não cria contas públicas.
+    O logout invalida a sessão Matriz.
     A retenção anual é apenas um pressuposto provisório, sem eliminação automática;
     âmbito e evento inicial não estão definidos. p95 é uma métrica a observar,
     sem meta nem carga de referência aprovadas. Produção está diferida.
@@ -49,18 +48,34 @@ paths:
                   headerName: { type: string, const: X-CSRF-TOKEN }
                   token: { type: string }
   /auth/login:
-    get:
+    post:
       tags: [Identidade]
       operationId: login
-      summary: Iniciar autenticação OIDC com Keycloak
-      description: Redireciona o navegador para o fluxo Authorization Code; o callback OIDC não é uma operação da API pública.
-      security: []
+      summary: Autenticar uma conta local ativa
+      description: Erros de credenciais são genéricos; cinco falhas por email/endereço em 15 minutos bloqueiam novas tentativas durante 15 minutos.
+      security:
+        - CsrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
       responses:
-        '302':
-          description: Redirecionamento para o endpoint de autorização OIDC.
+        '200':
+          description: Credenciais aceites; sessão criada no servidor.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '400': { $ref: '#/components/responses/Failure' }
+        '401': { $ref: '#/components/responses/Failure' }
+        '403': { $ref: '#/components/responses/Failure' }
+        '429':
+          description: Limite de tentativas atingido.
           headers:
-            Location:
-              schema: { type: string, const: /oauth2/authorization/keycloak }
+            Retry-After: { schema: { type: integer, minimum: 1 } }
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
   /auth/me:
     get:
       tags: [Identidade]
@@ -446,7 +461,7 @@ components:
       type: apiKey
       in: cookie
       name: JSESSIONID
-      description: Sessão Matriz no servidor; timeout inativo 30 min; Secure configurável para HTTPS.
+      description: Sessão Matriz no servidor; cookie HttpOnly/SameSite Strict; Secure em HTTPS; timeout inativo 30 min.
     CsrfToken:
       type: apiKey
       in: header
@@ -464,6 +479,7 @@ components:
       description: |
         400 formato/tipo/campo desconhecido; 401 sessão ausente/inativa;
         403 CSRF/permissão; 404 recurso indisponível; 409 versão/restrição;
+        429 limite de tentativas de login;
         422 validação; 503 operação de dados falhou. Não expõe SQL ou conteúdo interno.
       content:
         application/problem+json:
@@ -471,6 +487,13 @@ components:
   schemas:
     Id: { type: string, minLength: 1 }
     Version: { type: integer, format: int64, minimum: 1 }
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        password: { type: string, minLength: 1, maxLength: 200, writeOnly: true }
     VersionInput:
       type: object
       additionalProperties: false
