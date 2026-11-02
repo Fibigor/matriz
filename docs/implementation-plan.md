@@ -6,7 +6,7 @@ Em 29-10-2026 o autor aprovou o âmbito integral da ficha 03, substituindo as ex
 
 O gestor gere o projeto, os membros e as atribuições. Todos os participantes ativos criam, editam e eliminam tarefas e comentam. Responsáveis são participantes ativos do mesmo projeto. A eliminação confirmada remove os dependentes numa transação. Permanecem os limites aprovados: projeto 1–120, tarefa 1–200 e descrições até 2 000 pontos de código após normalização de nome/título.
 
-Aprovados: sessão HttpOnly e CSRF com Spring Security, e posteriormente Keycloak OIDC Authorization Code para a demonstração; ligação do claim assinado `app_user_id` a perfil local ativo sem aprovisionamento automático. Retenção de um ano é pressuposto provisório sem purga; p95 é métrica sem alvo/carga; produção está diferida. Não aprovados ao agente: commit, push, deploy público, eliminação de dados existentes ou alteração do staging. Os commits e estado de branch abaixo descrevem a entrega histórica e não a alteração OIDC atual.
+Aprovados: sessão HttpOnly e CSRF com Spring Security, e posteriormente Keycloak OIDC Authorization Code para a demonstração; ligação do claim assinado `app_user_id` a perfil local ativo sem aprovisionamento automático. O autor autorizou preparar um Blueprint Render em Frankfurt com planos gratuitos, exclusivamente para uma demonstração temporária e aceitando dados descartáveis. Isto não autoriza provisionar recursos, efetuar deploy, commit, push, eliminar dados existentes ou alterar o staging. A base gratuita expira após 30 dias e, depois de mais 14 dias sem upgrade, é eliminada; o serviço gratuito pode dormir após 15 minutos sem tráfego. O Blueprint requer IdP OIDC externo e contas já provisionadas, sem incluir Keycloak. Retenção de um ano é pressuposto provisório sem purga; p95 é métrica sem alvo/carga; produção está diferida. Os commits e estado de branch abaixo descrevem a entrega histórica e não a alteração OIDC atual.
 
 ## Incrementos e verificações
 
@@ -24,7 +24,7 @@ Cada incremento é analisado e verificado antes do seguinte. O plano pode ser aj
 
 Criar `backend/` com código Java, SQL e testes; `frontend/` com código React, testes e manifests; configuração Docker e exemplo de ambiente. Atualizar requisitos, histórias, restrições, arquitetura, dados, API, README e AGENTS; manter o wireframe da ficha 02 identificado como referência histórica. Não alterar `.idea` nem o índice Git.
 
-Keycloak local, realm importado e seed de perfis servem exclusivamente a demonstração. Registo público, recuperação de palavra-passe, anexos, notificações, sprints e operação de produção permanecem fora do âmbito. Não há migração de dados de uma aplicação anterior, porque não existia implementação. V2 preserva hashes antigos e permite perfis OIDC sem hash local.
+Keycloak local, realm importado e seed de perfis servem exclusivamente a demonstração local. O Blueprint Render usa um IdP externo e mantém o seed desativado; a identidade e os perfis ativos correspondentes têm de ser configurados antes de o login poder funcionar. Registo público, recuperação de palavra-passe, anexos, notificações, sprints e operação de produção permanecem fora do âmbito. Não há migração de dados de uma aplicação anterior, porque não existia implementação. V2 preserva hashes antigos e permite perfis OIDC sem hash local.
 
 ## Fecho das verificações
 

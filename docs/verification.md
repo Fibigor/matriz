@@ -8,6 +8,20 @@ Entrega original da ficha 03 em `e73250d` (`feat: full stack implementation-plan
 
 O âmbito alargado e as regras de acesso foram aprovados antes de implementar. Limites 1–120/1–200/2 000 mantidos por decisão do autor, em vez de copiar os limites meramente exemplificativos da ficha. Não se presume aceitação pelo cliente ou preparação para produção.
 
+## Preparação Render — demonstração temporária
+
+Foi autorizado preparar `render.yaml` para um serviço Docker e PostgreSQL 17 gratuitos em Frankfurt, sem provisionar recursos ou efetuar deploy. A aplicação usa `PORT` quando fornecido pelo Render, preservando a porta local 8080; a ligação PostgreSQL Render é montada a partir de host/porta/base/utilizador/segredo referenciados no Blueprint, enquanto Compose continua a fornecer `DATABASE_URL`. O Blueprint configura `SERVER_FORWARD_HEADERS_STRATEGY=framework` para o callback OIDC refletir o HTTPS público, `COOKIE_SECURE=true`, `SameSite=Lax` apenas no Render (mantendo `Strict` por omissão/localmente), seed desativado, health check em `/api/auth/csrf` e deploy automático apenas após checks GitHub passarem.
+
+O Blueprint não inclui nem configura um IdP: é necessário um fornecedor OIDC HTTPS, cliente/callback para `/login/oauth2/code/keycloak`, segredo guardado no Render e perfis locais ativos com claim `app_user_id` correspondente. Sem esses pré-requisitos, o deploy pode servir a interface, mas o login não fica operacional. A demonstração aceita a expiração da base PostgreSQL gratuita após 30 dias, a janela de 14 dias para upgrade antes da eliminação e o sleep do serviço após 15 minutos sem tráfego; não é adequada a produção. Não foram criados recursos nem efetuado deploy.
+
+## Pipeline automatizada
+
+`.github/workflows/ci.yml` executa em pushes, pull requests para `main` e por acionamento manual. Os jobs cobrem testes Java com PostgreSQL via Testcontainers, testes de componentes e build TypeScript/Vite, e os percursos E2E contra a aplicação Compose com Keycloak real, incluindo uma auditoria axe-core em dez combinações de vista/viewport (WCAG 2.0, 2.1 e 2.2, níveis A/AA, incluindo contraste). O job E2E usa exclusivamente dados/credenciais fictícios de `.env.example` e, em caso de falha, conserva relatórios Playwright como artefactos durante sete dias.
+
+A definição do workflow foi validada no checkout, mas ainda não há uma execução GitHub Actions registada nesta atualização. Os resultados locais abaixo são evidência separada e não são apresentados como resultado da pipeline.
+
+Após adicionar a auditoria axe-core, a suite E2E correu contra um Compose isolado com PostgreSQL 17 e Keycloak 26.3.5: 4/4 testes passaram; as dez combinações auditadas não reportaram violações WCAG nos critérios selecionados. Os serviços foram parados e o volume isolado foi preservado. A instalação de `@axe-core/playwright` reportou zero vulnerabilidades conhecidas pelo `npm audit` nessa execução.
+
 ## Atualização aprovada — OIDC, retenção, p95 e produção
 
 O autor aprovou Keycloak OIDC Authorization Code para a demonstração, sessão Spring no servidor, CSRF e ligação do claim assinado `app_user_id` a perfil local ativo já existente. Não há aprovisionamento automático. Retenção de um ano é pressuposto provisório, sem âmbito/evento inicial definidos e sem purga automática. p95 é métrica sem alvo/carga definidos. Produção está diferida.

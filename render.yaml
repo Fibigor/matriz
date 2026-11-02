@@ -1,0 +1,57 @@
+services:
+  - type: web
+    name: matriz-demo
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/auth/csrf
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: SERVER_ADDRESS
+        value: 0.0.0.0
+      - key: SERVER_FORWARD_HEADERS_STRATEGY
+        value: framework
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: SESSION_COOKIE_SAME_SITE
+        value: lax
+      - key: DEMO_ENABLED
+        value: "false"
+      - key: DATABASE_HOST
+        fromDatabase:
+          name: matriz-demo-db
+          property: host
+      - key: DATABASE_PORT
+        fromDatabase:
+          name: matriz-demo-db
+          property: port
+      - key: DATABASE_NAME
+        fromDatabase:
+          name: matriz-demo-db
+          property: database
+      - key: DATABASE_USERNAME
+        fromDatabase:
+          name: matriz-demo-db
+          property: user
+      - key: DATABASE_PASSWORD
+        fromDatabase:
+          name: matriz-demo-db
+          property: password
+      - key: KEYCLOAK_ISSUER_URI
+        sync: false
+      - key: KEYCLOAK_PUBLIC_REALM_URI
+        sync: false
+      - key: KEYCLOAK_CLIENT_ID
+        sync: false
+      - key: KEYCLOAK_CLIENT_SECRET
+        sync: false
+
+databases:
+  - name: matriz-demo-db
+    databaseName: matriz
+    user: matriz
+    plan: free
+    region: frankfurt
+    postgresMajorVersion: "17"

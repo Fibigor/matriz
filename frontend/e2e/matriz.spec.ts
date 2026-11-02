@@ -1,4 +1,16 @@
+import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+
+async function expectNoAccessibilityViolations(page: import('@playwright/test').Page) {
+  const violations = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22a', 'wcag22aa'])
+    .analyze()
+    .then(results => results.violations);
+  const details = violations.map(violation =>
+    `${violation.id} (${violation.impact}): ${violation.help}\n${violation.nodes.map(node => `  ${node.target.join(', ')}`).join('\n')}`,
+  ).join('\n');
+  expect(violations, details).toEqual([]);
+}
 
 async function signIn(page: import('@playwright/test').Page) {
   await page.goto('/');
@@ -165,4 +177,40 @@ test('workspace Jira: dados reais, navegação móvel e teclado', async ({ page 
   await page.screenshot({ path: testInfo.outputPath('task-detail-mobile.png'), fullPage: true });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.screenshot({ path: testInfo.outputPath('task-detail-desktop.png'), fullPage: true });
+});
+
+test('acessibilidade: vistas principais sem violações WCAG 2.0/2.1/2.2 A/AA', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Entrar na Matriz' })).toBeVisible();
+  await expectNoAccessibilityViolations(page);
+
+  await keyboardSignIn(page);
+  await expectNoAccessibilityViolations(page);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expectNoAccessibilityViolations(page);
+  await page.getByRole('button', { name: 'Abrir menu' }).click();
+  await expect(page.getByRole('dialog', { name: 'Menu de navegação' })).toBeVisible();
+  await expectNoAccessibilityViolations(page);
+  await page.keyboard.press('Escape');
+
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.getByRole('link', { name: 'Projetos', exact: true }).first().click();
+  await expect(page.getByRole('heading', { name: 'Projetos', exact: true })).toBeVisible();
+  await expectNoAccessibilityViolations(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expectNoAccessibilityViolations(page);
+  await page.getByRole('link', { name: 'Alfa', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Alfa', exact: true })).toBeVisible();
+  await expectNoAccessibilityViolations(page);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await expectNoAccessibilityViolations(page);
+
+  const firstTask = page.getByRole('table').getByRole('link').first();
+  await expect(firstTask).toBeVisible();
+  await firstTask.click();
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await expectNoAccessibilityViolations(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expectNoAccessibilityViolations(page);
 });
