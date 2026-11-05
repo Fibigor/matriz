@@ -91,6 +91,25 @@ test('percurso integrado: projeto, tarefas, filtros, atribuições, comentários
   await expect(page.getByRole('heading', { name: 'Entrar na Matriz' })).toBeVisible();
 });
 
+test('Ficha 04: autenticar, abrir projeto, criar tarefa e confirmar listagem', async ({ page }) => {
+  const suffix = Date.now();
+  const projectName = `Ficha 04 ${suffix}`;
+  const taskTitle = `Tarefa de qualidade ${suffix}`;
+
+  await signIn(page);
+  await page.getByLabel('Nome do projeto *').fill(projectName);
+  await page.getByRole('button', { name: 'Criar projeto', exact: true }).click();
+  await page.getByRole('link', { name: projectName, exact: true }).click();
+  await page.getByLabel('Título *', { exact: true }).fill(taskTitle);
+  await page.getByRole('button', { name: 'Criar tarefa', exact: true }).click();
+  await expect(page.getByRole('link', { name: taskTitle, exact: true })).toHaveCount(1);
+
+  await page.getByText('Gerir projeto', { exact: true }).click();
+  page.once('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: 'Eliminar projeto', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Projetos', exact: true })).toBeVisible();
+});
+
 test('login rejeita credenciais inválidas e a vista móvel funciona', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');

@@ -138,6 +138,40 @@ class ApiIntegrationTest {
     }
 
     @Test
+    void taskCreationPersistsAndNonParticipantsCannotReadUpdateOrDeleteIt() throws Exception {
+        MockHttpSession ana = login("ana");
+        String project = createProject(ana).get("id").asText();
+        String tasks = "/api/projects/" + project + "/tasks";
+
+        JsonNode task = body(api.perform(post(tasks).session(ana).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Authorization boundary\",\"priority\":\"HIGH\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("TODO"))
+                .andExpect(jsonPath("$.assignees").isEmpty())
+                .andReturn());
+        String taskPath = tasks + "/" + task.get("id").asText();
+
+        api.perform(get(taskPath).session(login("ana")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Authorization boundary"))
+                .andExpect(jsonPath("$.priority").value("HIGH"));
+
+        MockHttpSession carla = login("carla");
+        api.perform(get(taskPath).session(carla)).andExpect(status().isNotFound());
+        api.perform(put(taskPath).session(carla).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Changed by outsider\",\"description\":\"\",\"status\":\"DONE\",\"priority\":\"LOW\",\"version\":1}"))
+                .andExpect(status().isNotFound());
+        api.perform(delete(taskPath).session(carla).with(csrf()).param("version", "1"))
+                .andExpect(status().isNotFound());
+
+        api.perform(get(taskPath).session(ana))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Authorization boundary"))
+                .andExpect(jsonPath("$.status").value("TODO"))
+                .andExpect(jsonPath("$.version").value(1));
+    }
+
+    @Test
     void validatesLimitsAndSupportsSearchPriorityAndMemberTaskCrud() throws Exception {
         MockHttpSession ana = login("ana"), bruno = login("bruno");
         String project = createProject(ana).get("id").asText();

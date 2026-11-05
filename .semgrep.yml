@@ -1,0 +1,7 @@
+rules:
+  - id: matriz.java-wildcard-cors
+    languages:
+      - java
+    message: Avoid exposing an API to every origin; restrict CORS to trusted origins.
+    pattern: '@CrossOrigin(origins = "*")'
+    severity: ERROR

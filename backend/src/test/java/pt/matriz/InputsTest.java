@@ -7,6 +7,31 @@ import static org.assertj.core.api.Assertions.*;
 
 class InputsTest {
     @Test
+    void acceptsValidTaskTitleAfterTrimming() {
+        assertThat(Inputs.title("  Preparar demo  ", 200, "title")).isEqualTo("Preparar demo");
+    }
+
+    @Test
+    void acceptsTaskTitleAtUnicodeCodePointLimit() {
+        String title = "🙂".repeat(200);
+        assertThat(Inputs.title(title, 200, "title")).isEqualTo(title);
+    }
+
+    @Test
+    void rejectsBlankAndOverLimitTaskTitles() {
+        assertThatThrownBy(() -> Inputs.title(" \u00a0 ", 200, "title"))
+                .isInstanceOfSatisfying(ApiException.class, error -> {
+                    assertThat(error.status()).isEqualTo(422);
+                    assertThat(error.field()).isEqualTo("title");
+                });
+        assertThatThrownBy(() -> Inputs.title("🙂".repeat(201), 200, "title"))
+                .isInstanceOfSatisfying(ApiException.class, error -> {
+                    assertThat(error.status()).isEqualTo(422);
+                    assertThat(error.field()).isEqualTo("title");
+                });
+    }
+
+    @Test
     void validatesUnicodeAfterTrimmingWithoutTruncation() {
         assertThat(Inputs.title("\u00a0 " + "🙂".repeat(200) + "\u0085", 200, "title")).isEqualTo("🙂".repeat(200));
         assertThatThrownBy(() -> Inputs.title(" \u00a0 ", 200, "title")).isInstanceOf(ApiException.class);

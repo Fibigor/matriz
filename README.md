@@ -39,6 +39,8 @@ A interface mantém o tema escuro/azul inspirado no [Black Dashboard React](http
 | [docs/ui/wireframe.png](docs/ui/wireframe.png) | Referência histórica da ficha 02, com [fonte SVG](docs/ui/wireframe.svg); não representa as extensões da ficha 03. |
 | [docs/implementation-plan.md](docs/implementation-plan.md) | Decisões aprovadas, diferenças face à ficha 02 e incrementos. |
 | [docs/verification.md](docs/verification.md) | Cenários, resultados reais, testes, revisão e limitações. |
+| [docs/test-plan.md](docs/test-plan.md) | Cenários unitários, de integração, E2E e autorização da ficha 04. |
+| [docs/quality-security-review.md](docs/quality-security-review.md) | Code Review, Security Review, evidência, resultados e limitações da ficha 04. |
 | [render.yaml](render.yaml) | Blueprint Render para demonstração temporária gratuita em Frankfurt. |
 
 Leitura recomendada: requisitos, restrições e User Stories. Os agentes devem começar pelo `AGENTS.md`.
@@ -118,7 +120,15 @@ npm run test:e2e
 
 ### CI — GitHub Actions
 
-O workflow `.github/workflows/ci.yml` corre em cada push, em pull requests para `main` e manualmente. Executa em jobs separados os testes backend (PostgreSQL/Testcontainers), os testes de componentes e build frontend, e os E2E contra a aplicação completa em Docker Compose, incluindo axe-core. Usa apenas as credenciais fictícias de `.env.example`; não publica nem faz deploy da aplicação. Em caso de falha, os relatórios Playwright são guardados por sete dias.
+O workflow `.github/workflows/ci.yml` corre em cada push, em pull requests para `main` e manualmente. Executa em jobs separados a análise estática Semgrep (regras Java e TypeScript), os testes backend (PostgreSQL/Testcontainers), os testes de componentes e build frontend, e os E2E contra a aplicação completa em Docker Compose, incluindo axe-core. A análise estática falha o job se encontrar problemas; usa a imagem oficial `semgrep/semgrep`, sem conta ou token. O workflow usa apenas as credenciais fictícias de `.env.example`; não publica nem faz deploy da aplicação. Em caso de falha, os relatórios Playwright são guardados por sete dias.
+
+Para executar localmente, com Docker Desktop ativo e na raiz do repositório:
+
+```powershell
+docker run --rm --mount "type=bind,source=$($PWD.Path),target=/src,readonly" --workdir /src --entrypoint semgrep semgrep/semgrep scan --config .semgrep.yml --error
+```
+
+O scan aplica os rulesets públicos `p/java` e `p/typescript` e a regra local `.semgrep.yml`, que rejeita CORS Java com origem wildcard. Semgrep precisa de acesso à internet para obter os rulesets na primeira execução. A análise não altera ficheiros do projeto.
 
 ### Render — demonstração temporária
 
