@@ -23,11 +23,11 @@ Verificações locais em 02-11-2026:
 | YAML e configuração Compose | `render.yaml` e `openapi.yaml` analisados por PyYAML; `docker compose ... config --quiet` e `git diff --check` passaram. |
 | Fecho do ensaio | Serviços `matriz-auth-check` parados; volume `matriz-auth-check_matriz_data` preservado. Não foi feito deploy, commit ou push. |
 
-## Preparação Render — demonstração temporária
+## Render — demonstração temporária
 
-Foi autorizado preparar `render.yaml` para um serviço Docker e PostgreSQL 17 gratuitos em Frankfurt, sem provisionar recursos ou efetuar deploy. A aplicação usa `PORT` quando fornecido pelo Render, preservando a porta local 8080; a ligação PostgreSQL Render é montada a partir de host/porta/base/utilizador/segredo referenciados no Blueprint, enquanto Compose continua a fornecer `DATABASE_URL`. O Blueprint define `COOKIE_SECURE=true`, mantém `SameSite=Strict`, ativa o seed das contas demo, usa a página estática `/` como health check para não criar sessões de verificação e só inicia deploys automáticos quando os checks GitHub passam.
+Foi autorizado preparar `render.yaml` para um serviço Docker e PostgreSQL 17 gratuitos em Frankfurt; nessa fase, não foram provisionados recursos nem efetuado deploy. A aplicação usa `PORT` quando fornecido pelo Render, preservando a porta local 8080; a ligação PostgreSQL Render é montada a partir de host/porta/base/utilizador/segredo referenciados no Blueprint, enquanto Compose continua a fornecer `DATABASE_URL`. O Blueprint define `COOKIE_SECURE=true`, mantém `SameSite=Strict`, ativa o seed das contas demo, usa a página estática `/` como health check para não criar sessões de verificação e só inicia deploys automáticos quando os checks GitHub passam.
 
-O login local elimina a necessidade de IdP externo. As contas e a palavra-passe de demonstração ficam públicas; os visitantes do Render podem alterar os mesmos dados, que são descartáveis. A demonstração aceita a expiração da base PostgreSQL gratuita após 30 dias, a janela de 14 dias para upgrade antes da eliminação e o sleep do serviço após 15 minutos sem tráfego; não é adequada a produção. Não foram criados recursos nem efetuado deploy.
+**Estado atual da demonstração (05-11-2026):** o backend está disponível em [https://matriz-demo-h27u.onrender.com](https://matriz-demo-h27u.onrender.com). A base PostgreSQL gratuita atual, com duração de 30 dias, expira em **2 de dezembro de 2026**. Após expirar, há 14 dias para upgrade antes da eliminação; o serviço gratuito pode dormir após 15 minutos sem tráfego. As contas e a palavra-passe de demonstração ficam públicas; os visitantes podem alterar os mesmos dados, que são descartáveis. Esta é uma demonstração temporária, não produção. A expiração da base hospedada não constitui nem substitui uma policy de retenção da aplicação.
 
 ## Pipeline automatizada
 

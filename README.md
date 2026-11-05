@@ -34,6 +34,7 @@ A interface mantém o tema escuro/azul inspirado no [Black Dashboard React](http
 | [docs/constraints.md](docs/constraints.md) | Factos, pressupostos, perguntas, segurança, decisões pendentes, revisão crítica e desafio complementar. |
 | [AGENTS.md](AGENTS.md) | Instruções persistentes para agentes que trabalhem neste projeto. |
 | [docs/architecture.md](docs/architecture.md) | Comparação de arquiteturas, monólito modular escolhido, componentes, fluxos e revisão crítica. |
+| [docs/adr/README.md](docs/adr/README.md) | Índice dos Architecture Decision Records (ADRs) e decisões técnicas aceites. |
 | [docs/database.md](docs/database.md) | Entidades, cardinalidades, integridade e diagrama ER em Mermaid. |
 | [openapi.yaml](openapi.yaml) | Contrato OpenAPI 3.1 da implementação da ficha 03. |
 | [docs/ui/wireframe.png](docs/ui/wireframe.png) | Referência histórica da ficha 02, com [fonte SVG](docs/ui/wireframe.svg); não representa as extensões da ficha 03. |
@@ -41,7 +42,7 @@ A interface mantém o tema escuro/azul inspirado no [Black Dashboard React](http
 | [docs/verification.md](docs/verification.md) | Cenários, resultados reais, testes, revisão e limitações. |
 | [docs/test-plan.md](docs/test-plan.md) | Cenários unitários, de integração, E2E e autorização da ficha 04. |
 | [docs/quality-security-review.md](docs/quality-security-review.md) | Code Review, Security Review, evidência, resultados e limitações da ficha 04. |
-| [render.yaml](render.yaml) | Blueprint Render para demonstração temporária gratuita em Frankfurt. |
+| [render.yaml](render.yaml) | Blueprint Render da demonstração temporária, atualmente disponível em [matriz-demo-h27u.onrender.com](https://matriz-demo-h27u.onrender.com). |
 
 Leitura recomendada: requisitos, restrições e User Stories. Os agentes devem começar pelo `AGENTS.md`.
 
@@ -132,11 +133,11 @@ O scan aplica os rulesets públicos `p/java` e `p/typescript` e a regra local `.
 
 ### Render — demonstração temporária
 
-`render.yaml` prepara um serviço Docker e PostgreSQL 17 gratuitos em Frankfurt. O serviço respeita a porta `PORT` fornecida pelo Render; o Compose local continua a usar `8080`, `DATABASE_URL` e as mesmas portas/valores locais. No Render, o Blueprint ativa o seed de contas fictícias, define `COOKIE_SECURE=true` e mantém SameSite Strict. O workflow GitHub Actions não publica a aplicação; o Blueprint configura o Render para só iniciar deploys automáticos quando os checks GitHub passam. Nenhum recurso foi criado nem deploy efetuado.
+`render.yaml` configura um serviço Docker e PostgreSQL 17 gratuitos em Frankfurt. O backend da demonstração está disponível em [https://matriz-demo-h27u.onrender.com](https://matriz-demo-h27u.onrender.com). O serviço respeita a porta `PORT` fornecida pelo Render; o Compose local continua a usar `8080`, `DATABASE_URL` e as mesmas portas/valores locais. No Render, o Blueprint ativa o seed de contas fictícias, define `COOKIE_SECURE=true` e mantém SameSite Strict. O workflow GitHub Actions não publica a aplicação; o Blueprint configura o Render para só iniciar deploys automáticos quando os checks GitHub passam.
 
 Não é necessária configuração de IdP externo. As contas de demonstração e a palavra-passe acima ficam acessíveis a qualquer visitante; os respetivos dados são partilhados e podem ser alterados. Este perfil é exclusivamente para demonstração temporária, não produção.
 
-Este perfil é exclusivamente para demonstração temporária, não produção: o serviço gratuito pode suspender-se após 15 minutos sem tráfego e a base de dados gratuita expira ao fim de 30 dias. Após expirar, há 14 dias para atualizar a base antes da eliminação dos dados; não há backups para a base gratuita e só pode existir uma base gratuita ativa por workspace. Verificar as [limitações atuais do Render Free](https://render.com/docs/free) antes de criar recursos.
+Este perfil é exclusivamente para demonstração temporária, não produção: o serviço gratuito pode suspender-se após 15 minutos sem tráfego e a base de dados gratuita atual, com duração de 30 dias, expira em **2 de dezembro de 2026**. Após expirar, há 14 dias para atualizar a base antes da eliminação dos dados; não há backups para a base gratuita e só pode existir uma base gratuita ativa por workspace. Esta expiração da infraestrutura não define a policy de retenção da aplicação. Verificar as [limitações atuais do Render Free](https://render.com/docs/free) antes de depender da demonstração ou alterar o plano.
 
 Parar serviços sem apagar o volume: `docker compose -p matriz-ficha3 stop`. Depois, `docker compose -p matriz-ficha3 start` volta a iniciá-los com os dados existentes.
 
@@ -146,4 +147,4 @@ A entrega original da ficha 03 foi versionada pelo autor em `e73250d`; a revisã
 
 As conclusões da comparação de prompts realizada pelo autor no Gemini Pro estão em [docs/requirements.md](docs/requirements.md), sem transcrições das conversas. Os procedimentos para reproduzir a entrega numa cópia limpa, percorrer os fluxos por teclado e verificar o contrato e os diagramas estão em [docs/verification.md](docs/verification.md).
 
-Produção está diferida; foi autorizada apenas a preparação de suporte para uma demonstração temporária Render, sem criar recursos ou efetuar deploy. Um ano de retenção é apenas pressuposto provisório, sem policy aprovada, âmbito ou evento inicial definidos; não existe purga automática. p95 é uma métrica a observar, mas não há carga de referência nem alvo aprovados. Antes de qualquer decisão futura de produção será necessário validar política de identidade, HTTPS/segredos, retenção, backups, volumes/escala e acessibilidade. As verificações não são certificação de segurança, conformidade ou desempenho.
+Produção está diferida. A demonstração temporária está publicada no Render em [matriz-demo-h27u.onrender.com](https://matriz-demo-h27u.onrender.com), com a base de dados gratuita atual a expirar em 2 de dezembro de 2026; isto não representa prontidão para produção. Um ano de retenção é apenas pressuposto provisório, sem policy aprovada, âmbito ou evento inicial definidos; não existe purga automática. A expiração da base de demonstração é independente dessa policy. p95 é uma métrica a observar, mas não há carga de referência nem alvo aprovados. Antes de qualquer decisão futura de produção será necessário validar política de identidade, HTTPS/segredos, retenção, backups, volumes/escala e acessibilidade. As verificações não são certificação de segurança, conformidade ou desempenho.
