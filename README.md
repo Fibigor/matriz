@@ -33,6 +33,9 @@ A interface mantém o tema escuro/azul inspirado no [Black Dashboard React](http
 | [docs/user-stories.md](docs/user-stories.md) | Onze User Stories atuais, critérios, exceções e histórico da ficha 01. |
 | [docs/constraints.md](docs/constraints.md) | Factos, pressupostos, perguntas, segurança, decisões pendentes, revisão crítica e desafio complementar. |
 | [AGENTS.md](AGENTS.md) | Instruções persistentes para agentes que trabalhem neste projeto. |
+| [.github/copilot-instructions.md](.github/copilot-instructions.md) | Orientação curta do Copilot e ligação às regras do projeto. |
+| [.github/agents/](.github/agents/) | Agentes especializados para planeamento, coordenação, implementação e revisão. |
+| [.github/skills/](.github/skills/) | Skills reutilizáveis de contexto e validação da Matriz. |
 | [docs/architecture.md](docs/architecture.md) | Comparação de arquiteturas, monólito modular escolhido, componentes, fluxos e revisão crítica. |
 | [docs/adr/README.md](docs/adr/README.md) | Índice dos Architecture Decision Records (ADRs) e decisões técnicas aceites. |
 | [docs/database.md](docs/database.md) | Entidades, cardinalidades, integridade e diagrama ER em Mermaid. |
@@ -45,6 +48,20 @@ A interface mantém o tema escuro/azul inspirado no [Black Dashboard React](http
 | [render.yaml](render.yaml) | Blueprint Render da demonstração temporária, atualmente disponível em [matriz-demo-h27u.onrender.com](https://matriz-demo-h27u.onrender.com). |
 
 Leitura recomendada: requisitos, restrições e User Stories. Os agentes devem começar pelo `AGENTS.md`.
+
+## Utilizar o fluxo de agentes
+
+Para alterações não triviais, comece pelo agente **Planeador Matriz** no seletor de agentes do Copilot. Descreva o resultado pretendido e peça uma proposta com âmbito, critérios de aceitação, ficheiros afetados, dependências e validações. Responda às perguntas de clarificação e reveja o plano antes de o aprovar. O planeador não deve alterar ficheiros nesta fase.
+
+Depois da aprovação:
+
+1. Para trabalho com várias tarefas, entregue o plano aprovado ao **Orquestrador Matriz**. Ele coordena as tarefas e só paraleliza até três quando não há conflitos de ficheiros, dependências ou validação; caso contrário, segue sequencialmente.
+2. Para uma tarefa isolada, ou quando o orquestrador a encaminhar, escolha o agente adequado: **Engenheiro Backend Matriz** para Java/Spring e persistência; **Engenheiro Frontend Matriz** para React/TypeScript e interface; **Engenheiro de Documentação e Configuração Matriz** para documentação, CI e configuração.
+3. Dê a cada tarefa um âmbito e critérios aprovados. Confirme os ficheiros novos/removidos e qualquer mudança fora do plano antes de permitir que avance.
+4. Peça ao **Revisor Matriz** uma revisão independente depois da implementação. O revisor não altera ficheiros; verifica critérios e evidências e assinala o que não conseguiu validar.
+5. Inspecione as alterações e os resultados. A pessoa responsável decide os próximos passos e executa commit, push ou publicação apenas com a aprovação necessária.
+
+As skills `contexto-matriz` e `validacao-matriz` complementam o fluxo: a primeira orienta a leitura das regras atuais e fontes de verdade; a segunda ajuda a selecionar verificações existentes e a relatar resultados reais. Todos os agentes devem respeitar `AGENTS.md`: usar dados fictícios, preservar `.env` e volumes, não inventar resultados e pedir autorização para operações sensíveis. Para uma tarefa pequena, o planeador pode propor um único passo, sem necessidade de criar um plano extenso.
 
 ## Executar localmente
 
