@@ -6,6 +6,8 @@ spring:
     username: ${DATABASE_USERNAME:matriz}
     password: ${DATABASE_PASSWORD}
   jackson:
+    # Jackson 3 mapper, with Boot 3 JSON/date/coercion defaults; not the Jackson 2 module.
+    use-jackson2-defaults: true
     deserialization:
       fail-on-unknown-properties: true
   sql:

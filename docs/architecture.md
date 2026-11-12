@@ -1,8 +1,8 @@
-# Matriz — Arquitetura das fichas 02 e 03
+# Matriz — Arquitetura atual e histórico das fichas 02 e 03
 
-## Arquitetura implementada — ficha 03
+## Arquitetura implementada — candidato da ficha 05
 
-Decisões aprovadas pelo autor em 29-10-2026: monólito modular mantido; Java 21/Spring Boot 3.5, React/TypeScript/Vite, PostgreSQL 17 e Flyway. JDBC é usado com parâmetros preparados; não há ORM, serviços distribuídos ou persistência em memória.
+Decisões aprovadas pelo autor em 29-10-2026: monólito modular, Java 21/Spring Boot, React/TypeScript/Vite, PostgreSQL 17 e Flyway. A baseline original usou Boot 3.5; a migração autorizada em 12-11-2026 mantém o desenho e prepara **`0.4.0-rc.1`**, não publicado e com **T6 concluído localmente**. Prova positiva/negativa GitHub Actions, uploads/retenção reais e revisão final humana/independente continuam pendentes; não se declaram todos os critérios da ficha concluídos. Stack efetiva: Boot **4.0.9**, Framework **7.0.10**, Security **7.0.8**, Jackson **3.1.7**, Flyway **11.14.1**, Java **21**, PostgreSQL **17**; Docker compila frontend com Node **22**. JDBC é usado com parâmetros preparados; não há ORM, serviços distribuídos ou persistência em memória.
 
 | Componente | Implementação e responsabilidade |
 |---|---|
@@ -13,6 +13,36 @@ Decisões aprovadas pelo autor em 29-10-2026: monólito modular mantido; Java 21
 | Transversal | `backend/.../common`: DTOs tipados, erros Problem Details, validação Unicode e paginação. |
 | Persistência | Migration Flyway e PostgreSQL com FKs/restrições; transações locais, bloqueio de projeto nas escritas e versão otimista. |
 | Entrega | Dockerfile multi-stage compila React e inclui o resultado no JAR. Compose executa aplicação e PostgreSQL com volume persistente. Vite separado apenas em desenvolvimento. |
+| Observabilidade local | Actuator opt-in no perfil `observability`, no mesmo listener da aplicação; apenas health mínimo e métricas JVM/HTTP autenticadas. Sem serviço externo de monitorização. |
+
+### Implantação atual
+
+```mermaid
+flowchart LR
+    Browser["Browser"] -->|"HTTP, mesma origem"| App["Spring Boot: estáticos React + API /api"]
+    App -->|"JDBC / Flyway"| DB[("PostgreSQL 17 + volume persistente")]
+    App -.->|"opt-in local, mesma porta da aplicação"| Ops["/actuator: health + métricas JVM/HTTP"]
+```
+
+`Ops` é uma superfície HTTP do **mesmo processo**, não um serviço/contentor adicional. Em Compose a aplicação escuta dentro do contentor em `0.0.0.0:8080`, publicada no host apenas em `127.0.0.1:${APP_HOST_PORT:-8080}`; PostgreSQL também fica em loopback, porta host configurável (55432 por omissão). Fora de Compose, a aplicação usa `SERVER_ADDRESS=127.0.0.1` por omissão e respeita `PORT`. O diagrama descreve a configuração atual, não uma implantação nova verificada ao vivo.
+
+### Migração e compatibilidade
+
+O POM usa os starters modulares oficiais MVC/MVC-test/Flyway e Testcontainers 2 (apenas testes). Segurança e erros usam o `JsonMapper` Jackson 3 autoconfigurado. `spring.jackson.use-jackson2-defaults=true` preserva defaults JSON/data/coerção de Boot 3 **sobre Jackson 3**, mantendo recusa de campos desconhecidos; não adiciona o módulo de compatibilidade MVC Jackson 2. O JAR também contém Jackson 2 core/databind 2.21.7 por dependência interna de Flyway, gerida pelo BOM, não como mapper paralelo da API. Problem Details mantém `type: about:blank`, extensões, UTF-8 e tratamento de IOException, com regressões locais documentadas.
+
+Sem migrations SQL novas: V1–V3, JDBC, sessão/scrypt/CSRF, permissões e regras RF-01–11/RN atuais permanecem. T6 validou localmente o rebuild fresco com metadados `0.4.0-rc.1`: 19 testes Maven, 13 frontend e 5 E2E passaram; build frontend concluído, Semgrep com 0 findings e Trivy com 0 HIGH/CRITICAL, cobertura 216/216 pares npm incluindo dev e 63/63 JARs internos. A mesma imagem passou os scans, E2E, recriação app/db com dados/volume preservados e readiness perante paragem real da DB própria (503/DOWN, liveness 200/UP) e retoma (readiness 200/UP, sessão/dados iguais). São resultados T6 registados em 12-11-2026, não medições novas desta correção nem reutilização do histórico pré-T5; não substituem validação pelo cliente ou revisão final humana/independente. [Release notes](../RELEASE_NOTES.md) e [verificação](verification.md#ficha-05--candidato-040-rc1) detalham evidência e limites.
+
+### Superfície operacional e gates
+
+Sem `observability`, o resolver fornece `Access.NONE` a todos os endpoints operacionais mesmo com exposição wildcard. Com o perfil, só health/metrics recebem acesso read-only; restantes continuam indisponíveis. GET anónimo de `/actuator/health` devolve `status` e nomes dos grupos, sem detalhes/componentes; `/actuator/health/liveness` e `/actuator/health/readiness` devolvem só `status`, sem criar sessão. Liveness inclui `livenessState`; readiness inclui `readinessState,db`. Não há `/livez`/`/readyz` ou listener de gestão separado.
+
+`/actuator/metrics` e leituras `jvm.*`/`http.server.requests` exigem a sessão autenticada local existente; nomes de outras famílias e endpoints sensíveis são recusados. Não recolher corpos, cookies, tokens ou credenciais nos logs. A observabilidade não inclui monitoring externo, tracing, dashboard ou alvo p95. O perfil é local opt-in, desligado por omissão e não configurado no Render.
+
+Compose base: health HTTP em `/`, que não comprova readiness DB. O override `compose.observability.yaml` ativa o perfil e verifica readiness DB na mesma porta; não acrescenta serviço, volume ou publicação externa. T6 ensaiou-o no projeto isolado `matriz-ficha05-final`, portas 18085/55435 em loopback; app/db próprios ficaram parados e volume/fixture preservados. Procedimentos seguros de arranque/paragem e preservação de `.env`/volumes em [README](../README.md#observabilidade-local--opt-in).
+
+Na definição atual de CI, Semgrep/testes backend/testes-build frontend antecedem o job integrado; este constrói uma imagem, aplica Trivy 0.76.2 fixado por digest e verifica cobertura npm (incluindo dev) e JAR entregue, antes de E2E na mesma imagem. Só vulnerabilidades de bibliotecas são analisadas, não SO. HIGH/CRITICAL bloqueiam mesmo sem fix; scanner/DB/cobertura em erro também bloqueiam, sem ignores/exceções. Relatórios têm retenção configurada de sete dias; gates/fixtures locais passaram em T6, mas prova positiva/negativa GitHub Actions, upload em falha e retenção reais continuam não verificados. Bases públicas são descarregadas sem upload de código; sem telemetry/consultas remotas de dependências.
+
+Render mantém `autoDeployTrigger: checksPass` e health `/`, sem perfil operacional. Isso requer autorização específica antes de push/checks remotos, mesmo sem deploy no workflow. Produção diferida; a janela curta de suporte OSS Boot 4.0 indicada para dezembro de 2026 requer reconfirmação/decisão antes de operação prolongada.
 
 ### Identidade e ciclo de acesso
 

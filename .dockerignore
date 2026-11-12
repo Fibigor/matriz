@@ -1,5 +1,14 @@
 .git
 .env
+**/.env
+**/.env.*
+**/secrets
+**/.secrets
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.keystore
 .idea
 backend/target
 frontend/node_modules

@@ -1,0 +1,9 @@
+# Local opt-in: combine with compose.yaml; never enable on Render/public hosts.
+# Actuator shares app port 8080, published on loopback by the base Compose.
+services:
+  app:
+    environment:
+      SPRING_PROFILES_ACTIVE: observability
+    healthcheck:
+      # Readiness includes the database; liveness remains independent of it.
+      test: ["CMD", "busybox", "wget", "-q", "-T", "3", "-O", "/dev/null", "http://127.0.0.1:8080/actuator/health/readiness"]

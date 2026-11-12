@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Matriz — API da ficha 03
-  version: 0.3.0
+  version: 0.4.0-rc.1
   description: |
     Contrato da demonstração implementada, não uma API de produção certificada.
     Substitui o contrato parcial/Bearer/responsável único da ficha 02.

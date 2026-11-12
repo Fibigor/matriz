@@ -1,0 +1,33 @@
+# Local opt-in only: inherits the application listener (PORT, default 8080).
+# T3 must publish 127.0.0.1:8080:8080; no separate management port.
+# Do not enable this profile on Render/public hosts.
+management:
+  endpoints:
+    access:
+      default: none
+    web:
+      discovery:
+        enabled: false
+      exposure:
+        include: health,metrics
+  endpoint:
+    health:
+      access: read-only
+      show-details: never
+      show-components: never
+      probes:
+        enabled: true
+        add-additional-paths: false
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,db
+    metrics:
+      access: read-only
+  metrics:
+    enable:
+      all: false
+      jvm: true
+      http.server.requests: true
+      http.server.requests.active: false

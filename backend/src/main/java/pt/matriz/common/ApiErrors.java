@@ -2,9 +2,11 @@ package pt.matriz.common;
 
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.exc.JacksonIOException;
+import tools.jackson.databind.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
@@ -22,7 +24,7 @@ public class ApiErrors {
 
     @ExceptionHandler(ApiException.class)
     ProblemDetail expected(ApiException error) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.valueOf(error.status()), error.getMessage());
+        ProblemDetail problem = problem(error.status(), error.getMessage());
         if (error.field() != null) {
             problem.setProperty("errors", List.of(Map.of("field", error.field(), "message", error.getMessage())));
         }
@@ -32,20 +34,32 @@ public class ApiErrors {
     @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class,
             MissingServletRequestParameterException.class})
     ProblemDetail malformed(Exception error) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Formato do pedido inválido.");
+        return problem(400, "Formato do pedido inválido.");
     }
 
     @ExceptionHandler(DataAccessException.class)
     ProblemDetail database(DataAccessException error) {
         // SQL and parameters can contain user content: log only the failure category.
         LOG.error("Database operation failed: {}", error.getClass().getSimpleName());
-        return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, "Não foi possível concluir a operação.");
+        return problem(503, "Não foi possível concluir a operação.");
     }
 
-    public static void write(HttpServletResponse response, ObjectMapper mapper, int status, String detail) throws IOException {
+    private static ProblemDetail problem(int status, String detail) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.valueOf(status), detail);
+        // Framework 7 leaves this null; the existing API requires an explicit type.
+        problem.setType(URI.create("about:blank"));
+        return problem;
+    }
+
+    public static void write(HttpServletResponse response, JsonMapper mapper, int status, String detail) throws IOException {
         response.setStatus(status);
         response.setContentType("application/problem+json");
-        mapper.writeValue(response.getOutputStream(),
-                ProblemDetail.forStatusAndDetail(HttpStatus.valueOf(status), detail));
+        try {
+            mapper.writeValue(response.getOutputStream(), problem(status, detail));
+        } catch (JacksonIOException error) {
+            // Jackson 3 wraps transport IO failures in an unchecked exception.
+            // Preserve the servlet/security handler's IOException contract.
+            throw error.getCause();
+        }
     }
 }

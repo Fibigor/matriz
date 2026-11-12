@@ -13,6 +13,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Official release verified publicly; run locally on the runner, never upload source.
+  TRIVY_IMAGE: aquasec/trivy:0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb
+
 jobs:
   static-analysis:
     name: Static analysis (Semgrep)
@@ -62,11 +66,146 @@ jobs:
         run: npm run build
 
   end-to-end:
+    # Keep the existing check name; the integrated build and gates precede E2E.
     name: End-to-end tests
+    needs: [static-analysis, backend-tests, frontend-checks]
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
+    env:
+      IMAGE_NAME: matriz-ci-app:latest
+      WORKSPACE: ${{ github.workspace }}
     steps:
+      - name: Initialize report directory
+        shell: bash
+        run: echo "REPORT_DIR=$RUNNER_TEMP/matriz-reports" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
+      - name: Validate Compose without printing configuration
+        run: docker compose --project-name matriz-ci --env-file .env.example config --quiet
+      - name: Build application image once
+        run: docker compose --project-name matriz-ci --env-file .env.example build app
+      - name: Scan dependencies and verify delivered library coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import io
+          import json
+          import os
+          from pathlib import Path
+          import subprocess
+          import tarfile
+          import zipfile
+
+          reports = Path(os.environ["REPORT_DIR"])
+          reports.mkdir(parents=True, exist_ok=True)
+          workspace = Path(os.environ["WORKSPACE"])
+          image = os.environ["IMAGE_NAME"]
+          scanner = os.environ["TRIVY_IMAGE"]
+          statuses = {}
+
+          def execute(label, command):
+              result = subprocess.run(command, text=True, stdout=subprocess.PIPE,
+                                      stderr=subprocess.STDOUT)
+              (reports / (label + ".txt")).write_text(
+                  json.dumps(command) + "\n" + result.stdout +
+                  "\nexit_code=" + str(result.returncode) + "\n")
+              print(result.stdout, end="")
+              statuses[label] = result.returncode
+              return result
+
+          # No host environment, Docker credentials, source code or .env mounts.
+          execute("scanner-version", ["docker", "run", "--rm", scanner, "--version"])
+          mounts = ["--mount", f"type=bind,source={reports},target=/reports"]
+          common = ["--config", "", "--cache-dir", "/reports/trivy-cache",
+                    "--timeout", "15m"]
+          policy = ["--scanners", "vuln", "--pkg-types", "library", "--offline-scan",
+                    "--disable-telemetry", "--skip-version-check", "--no-progress",
+                    "--ignorefile", "", "--severity", "HIGH,CRITICAL", "--exit-code", "1",
+                    "--list-all-pkgs", "--format", "json"]
+          frontend_mounts = []
+          for filename in ("package.json", "package-lock.json"):
+              frontend_mounts += ["--mount",
+                  f"type=bind,source={workspace / 'frontend' / filename},"
+                  f"target=/frontend/{filename},readonly"]
+          execute("frontend-scan", ["docker", "run", "--rm"] + mounts + frontend_mounts +
+                  [scanner] + common + ["fs"] + policy +
+                  ["--include-dev-deps", "--output", "/reports/frontend-trivy.json",
+                   "/frontend"])
+          # Always attempt both scans, even if the first fails. A scanner/DB error fails the gate.
+          execute("image-scan", ["docker", "run", "--rm"] + mounts +
+                  ["--mount", "type=bind,source=/var/run/docker.sock,target=/var/run/docker.sock",
+                   scanner] + common + ["image", "--image-src", "docker"] + policy +
+                  ["--output", "/reports/image-trivy.json", image])
+
+          coverage = {"image": image, "statuses": statuses}
+          errors = []
+          findings = []
+          try:
+              frontend = json.loads((reports / "frontend-trivy.json").read_text())
+              delivered = json.loads((reports / "image-trivy.json").read_text())
+              npm = [p for r in frontend.get("Results", []) if r.get("Type") == "npm"
+                     for p in r.get("Packages", [])]
+              java = [p for r in delivered.get("Results", []) if r.get("Type") == "jar"
+                      for p in r.get("Packages", [])]
+              lock = json.loads((workspace / "frontend/package-lock.json").read_text())
+              expected = {(v.get("name") or k.rsplit("node_modules/", 1)[-1], v["version"])
+                          for k, v in lock["packages"].items() if k and v.get("version")}
+              found = {(p["Name"], p["Version"]) for p in npm}
+              missing_npm = sorted(expected - found)
+              coverage.update(lockfileVersion=lock["lockfileVersion"],
+                              npmExpected=len(expected), npmReported=len(found),
+                              npmMissing=missing_npm, frontendPackages=npm, javaPackages=java)
+              if not expected or missing_npm:
+                  errors.append("Incomplete npm lock coverage (including dev dependencies)")
+
+              # Read the exact delivered JAR in memory, without starting the application.
+              coverage["imageId"] = subprocess.check_output(
+                  ["docker", "image", "inspect", image, "--format", "{{.Id}}"],
+                  text=True).strip()
+              cid = subprocess.check_output(["docker", "create", image], text=True).strip()
+              try:
+                  raw = subprocess.check_output(["docker", "cp", cid + ":/app/app.jar", "-"])
+                  with tarfile.open(fileobj=io.BytesIO(raw)) as archive:
+                      with zipfile.ZipFile(archive.extractfile("app.jar")) as jar:
+                          nested = {n for n in jar.namelist()
+                                    if n.startswith("BOOT-INF/lib/") and n.endswith(".jar")}
+              finally:
+                  subprocess.run(["docker", "rm", cid], check=True, stdout=subprocess.PIPE)
+              paths = {p.get("FilePath", "").split("app/app.jar/", 1)[-1] for p in java}
+              missing_java = sorted(nested - paths)
+              coverage.update(nestedJars=sorted(nested), jarExpected=len(nested),
+                              jarReported=len(java), jarMissing=missing_java)
+              if not nested or missing_java:
+                  errors.append("Incomplete executable Spring Boot nested JAR coverage")
+              for report in (frontend, delivered):
+                  for result in report.get("Results", []):
+                      for finding in result.get("Vulnerabilities", []):
+                          if finding["Severity"] in ("HIGH", "CRITICAL"):
+                              findings.append(finding)
+                              print(finding["PkgName"], finding["InstalledVersion"],
+                                    finding["VulnerabilityID"], finding["Severity"],
+                                    "fix:", finding.get("FixedVersion") or "not available")
+          except Exception as error:
+              errors.append(str(error))
+          # FixedVersion is deliberately NOT a gate condition; exceptions require human approval.
+          failed = any(code != 0 for code in statuses.values()) or bool(errors) or bool(findings)
+          coverage.update(errors=errors, highCritical=len(findings), gatePassed=not failed)
+          (reports / "coverage.json").write_text(json.dumps(coverage, indent=2) + "\n")
+          print(json.dumps({k: v for k, v in coverage.items()
+                            if k not in ("frontendPackages", "javaPackages", "nestedJars")},
+                           indent=2))
+          raise SystemExit(1 if failed else 0)
+          PY
+      - name: Upload dependency scan reports even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-reports
+          path: |
+            ${{ runner.temp }}/matriz-reports/*.json
+            ${{ runner.temp }}/matriz-reports/*.txt
+          if-no-files-found: warn
+          retention-days: 7
       - uses: actions/setup-node@v4
         with:
           node-version: "22.12.0"
@@ -79,31 +218,15 @@ jobs:
         working-directory: frontend
         run: npx playwright install --with-deps chromium
       - name: Start application stack
-        run: docker compose --project-name matriz-ci --env-file .env.example up --build --detach
-      - name: Wait for application
-        shell: bash
-        run: |
-          set -euo pipefail
-          for endpoint in http://localhost:8080/api/auth/csrf; do
-            for attempt in $(seq 1 60); do
-              if curl --fail --silent "$endpoint" >/dev/null; then
-                break
-              fi
-              if [ "$attempt" -eq 60 ]; then
-                echo "Timed out waiting for $endpoint" >&2
-                docker compose --project-name matriz-ci --env-file .env.example logs
-                exit 1
-              fi
-              sleep 5
-            done
-          done
+        # Base HTTP health only; Actuator/readiness remains a local opt-in override.
+        run: docker compose --project-name matriz-ci --env-file .env.example up --no-build --wait --wait-timeout 180
       - name: Run end-to-end tests
         working-directory: frontend
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:8080
         run: npm run test:e2e -- --reporter=html
       - name: Upload Playwright reports
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
@@ -111,6 +234,62 @@ jobs:
             frontend/playwright-report/
             frontend/test-results/
           if-no-files-found: ignore
+          retention-days: 7
+      - name: Collect sanitized Compose diagnostics on failure
+        if: failure()
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import subprocess
+
+          reports = Path(os.environ["REPORT_DIR"])
+          reports.mkdir(parents=True, exist_ok=True)
+          compose = ["docker", "compose", "--project-name", "matriz-ci",
+                     "--env-file", ".env.example"]
+          # Never run `config` without --quiet, dump environment or inspect container secrets.
+          values = []
+          for line in Path(".env.example").read_text().splitlines():
+              if "=" in line and not line.lstrip().startswith("#"):
+                  value = line.split("=", 1)[1].strip().strip("'\"")
+                  if value:
+                      values.append(value)
+          def redact(text):
+              text = re.sub(r"(?im)^.*(?:password|secret|token|authorization|cookie|csrf).*$",
+                            "[redacted sensitive log line]", text)
+              text = re.sub(r"jdbc:[^\s]+", "[redacted database URL]", text)
+              for value in sorted(set(values), key=len, reverse=True):
+                  text = text.replace(value, "[redacted example environment value]")
+              return text
+          for label, args in (("compose-status", ["ps", "--all", "--format", "json"]),
+                              ("compose-logs", ["logs", "--no-color", "--tail", "200"])):
+              result = subprocess.run(compose + args, text=True, stdout=subprocess.PIPE,
+                                      stderr=subprocess.PIPE)
+              text = result.stdout
+              if label == "compose-status" and result.returncode == 0:
+                  try:
+                      rows = json.loads(text) if text.strip().startswith("[") else [
+                          json.loads(line) for line in text.splitlines() if line.strip()]
+                      text = json.dumps([{k: row.get(k) for k in
+                                          ("Service", "State", "Health", "ExitCode")}
+                                         for row in rows], indent=2)
+                  except ValueError:
+                      text = "Compose status format could not be parsed"
+              text = redact(text + "\n" + result.stderr)
+              (reports / (label + ".txt")).write_text(
+                  text + "\nexit_code=" + str(result.returncode) + "\n")
+              print(text)
+          PY
+      - name: Upload Compose diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compose-diagnostics
+          path: ${{ runner.temp }}/matriz-reports/compose-*.txt
+          if-no-files-found: warn
           retention-days: 7
       - name: Stop application stack
         if: always()

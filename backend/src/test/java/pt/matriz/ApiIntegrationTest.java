@@ -1,10 +1,10 @@
 package pt.matriz;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpSession;
@@ -12,7 +12,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import static org.assertj.core.api.Assertions.*;
@@ -26,7 +26,7 @@ import org.springframework.http.MediaType;
 @Testcontainers
 class ApiIntegrationTest {
     @Container
-    static final PostgreSQLContainer<?> DATABASE = new PostgreSQLContainer<>("postgres:17-alpine");
+    static final PostgreSQLContainer DATABASE = new PostgreSQLContainer("postgres:17-alpine");
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
@@ -37,7 +37,7 @@ class ApiIntegrationTest {
     }
 
     @Autowired MockMvc api;
-    @Autowired ObjectMapper json;
+    @Autowired JsonMapper json;
     @Autowired JdbcTemplate db;
 
     MockHttpSession login(String name) throws Exception {
@@ -54,6 +54,71 @@ class ApiIntegrationTest {
         return body(api.perform(post("/api/projects").session(session).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Integration\",\"description\":\"Persisted\"}"))
                 .andExpect(status().isCreated()).andReturn());
+    }
+
+    @Test
+    void jackson3PreservesStrictRequestsUnicodeDatesAndProblemDetails() throws Exception {
+        MockHttpSession session = login("ana");
+        for (String invalid : new String[]{
+                "{\"name\":\"Rejected\",\"ownerId\":\"user-carla\"}",
+                "{\"name\":{\"nested\":\"wrong type\"}}", "{\"name\":"}) {
+            api.perform(post("/api/projects").session(session).with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON).content(invalid))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                    .andExpect(jsonPath("$.type").value("about:blank"))
+                    .andExpect(jsonPath("$.status").value(400))
+                    .andExpect(jsonPath("$.detail").value("Formato do pedido inválido."))
+                    .andExpect(jsonPath("$.properties").doesNotExist());
+        }
+        String name = "Á🚀".repeat(60);
+        String description = "Descrição 🚀 com espaços  ";
+        JsonNode project = body(api.perform(post("/api/projects").session(session).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(java.util.Map.of("name", name, "description", description))))
+                .andExpect(status().isCreated()).andReturn());
+        assertThat(project.get("name").asText()).isEqualTo(name);
+        assertThat(project.get("description").asText()).isEqualTo(description);
+        assertThat(project.get("createdAt").isTextual()).isTrue();
+        assertThat(java.time.Instant.parse(project.get("createdAt").asText())).isNotNull();
+        assertThat(db.queryForObject("SELECT name FROM project WHERE id=?", String.class,
+                project.get("id").asText())).isEqualTo(name);
+        api.perform(post("/api/projects").session(session).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(java.util.Map.of("name", name + "🚀"))))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.type").value("about:blank"))
+                .andExpect(jsonPath("$.errors[0].field").value("name"))
+                .andExpect(jsonPath("$.properties").doesNotExist());
+        for (var response : new MvcResult[]{
+                api.perform(get("/api/projects")).andExpect(status().isUnauthorized()).andReturn(),
+                api.perform(post("/api/projects").session(session).contentType(MediaType.APPLICATION_JSON)
+                        .content("{}")).andExpect(status().isForbidden()).andReturn()}) {
+            assertThat(response.getResponse().getContentType()).isEqualTo("application/problem+json");
+            JsonNode problem = json.readTree(response.getResponse().getContentAsByteArray());
+            assertThat(problem.get("type").asText()).isEqualTo("about:blank");
+            assertThat(problem.get("status").asInt()).isEqualTo(response.getResponse().getStatus());
+            assertThat(problem.get("detail").asText()).isEqualTo(response.getResponse().getStatus() == 401
+                    ? "É necessário acesso válido."
+                    : "Operação recusada. Atualize a sessão e tente novamente.");
+            assertThat(problem.has("properties")).isFalse();
+        }
+    }
+
+    @Test
+    void securityProblemWriterPreservesTransportIOException() {
+        var failure = new java.io.IOException("Isolated response transport failure");
+        var response = new org.springframework.mock.web.MockHttpServletResponse() {
+            @Override public jakarta.servlet.ServletOutputStream getOutputStream() {
+                return new jakarta.servlet.ServletOutputStream() {
+                    @Override public boolean isReady() { return true; }
+                    @Override public void setWriteListener(jakarta.servlet.WriteListener listener) { }
+                    @Override public void write(int value) throws java.io.IOException { throw failure; }
+                };
+            }
+        };
+        assertThatThrownBy(() -> pt.matriz.common.ApiErrors.write(response, json, 401, "Acesso inválido."))
+                .isSameAs(failure);
     }
 
     @Test
