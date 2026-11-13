@@ -1,5 +1,58 @@
 # Matriz — Verificação atual e histórico
 
+## Extensões de tarefas — 13-11-2026
+
+**Estado atual:** âmbito académico aprovado pelo autor, não cliente. HEAD de referência `640b7e847f385cd69fabf0ff5ffd62dbf7f06cc2`; candidato mantém `0.4.0-rc.1`, implementação em worktree, sem SHA final publicado/tag ou bump. Esta tarefa **só leu fontes e reports armazenados e validou documentação**; não executou Maven/npm/build/E2E/scans/serviços, instalou dependências, consultou `.env`, escreveu no Git ou publicou.
+
+**Final local atual concluído:** a [execução final de 13-11](#validação-final-local-das-extensões--execução-de-13-11-2026) passou com **41 Maven / 43 frontend / 6 E2E sem falhas**, imagem final fresca em contentores novos, Trivy **0 HIGH/CRITICAL** (**294/294 pares npm, 63/63 bibliotecas JAR**), Semgrep **135 regras/47 alvos/0 findings** e actionlint **1.7.7 PASS**. V3 populada→V4/MAT/defaults foi testada no Maven; HTTP real confirmou BLOCKS, anexos/comentário multipart e downloads/bytehashes, com limites/413 nos testes backend. Recriação app/db mudou ambos IDs mantendo o volume e snapshots de dados/links/comentários/bytes; paragem somente da DB própria deu readiness **503**/liveness **200**, retoma **200** e dados iguais. App/db próprios terminaram parados, volume retido. **Pendentes atuais:** revisão independente, inspeção/aceitação humana/cliente, prova GitHub Actions no âmbito/branch atual e uploads/retenção reais; capacidade/backups/policy de retenção/p95/produção continuam por decidir.
+
+Os relatórios de revisão UI e as suas pendências abaixo, até «Verificação desta escrita documental», registam a fase documental anterior ao final local. O contentor reutilizado, scans anteriores e final então pendente são proveniência histórica legítima, não o estado atual: prevalecem o resumo acima e a execução final no fim deste documento. Não se reescrevem esses resultados nem os recibos brutos.
+
+### Contrato atual e fontes
+
+Confirmado em ApiModels, TaskController, TaskAttachmentController, serviços Task/Link/Attachment/Activity, migration V4 e frontend atual (types/api/detalhe/painel/Markdown/templates/links/anexos/atividade). OpenAPI descreve **29 operações**; POST comentário JSON e multipart é uma operação, Actuator não pertence ao contrato de negócio. `info.version`, sessão/CSRF mantidos.
+
+Cobertura: MAT global/lacunas/UUID estável, tipos/peso/motivo só DONE/todo DONE no progresso, omissão/presença PUT, links/duas versões/BLOCKS real, lock/revalidação/atomicidade, BYTEA 5 diretos/5 por comentário/4 MiB/download autorizado, história tipada sem conteúdo/backfill, Markdown/templates e painel/página/rascunhos. [Requirements](requirements.md), [histórias](user-stories.md), [test-plan](test-plan.md).
+
+Artefactos externos: `C:\Users\CTW03863\.copilot\session-state\511773b1-1ef5-450c-9195-750d6ee3d4ed\files`. Nomes são proveniência local, não links portáveis/artefactos publicados; originais preservados.
+
+| Evidência guardada consultada | Resultado registado, não executado pelo agente documental |
+|---|---|
+| tasks-backend-contract.md, tasks-backend-results.md, tasks-backend-final-41.log, tasks-backend-final-audit.json | Maven final 13-11, 01:45:18Z: **41**, zero falhas/erros/skips, API 30 + Inputs 5 + LoginThrottle 1 + Observability 5; 8 API originais preservados + 22 novos. Migração populada/vazia, null/omissão, grafo/races/revogação/lock, limites servlet reais, rollback, história tipada/paginação/FKs/cascatas. |
+| tasks-frontend-final-audit.json | Fase UI anterior: 35 componentes/5 E2E e gate **294/294 pares npm**, **63 bibliotecas JAR**, 0 HIGH/CRITICAL; anterior às últimas correções P2, não resultado final de testes/scan da imagem final. |
+| tasks-ui-reviewfix-summary.md, tasks-ui-reviewfix-tests-final.log, tasks-ui-reviewfix-tests-repeat.log, tasks-ui-reviewfix-final-audit.json | **43/43**, nove ficheiros, duas execuções finais; 13 originais conservados, 35 anteriores + 2 templates descobertos + 6 regressões. vite.config.ts inclui TS+TSX: ajuste técnico necessário, não novo âmbito de produto. |
+| tasks-ui-reviewfix-build-final.log, tasks-ui-reviewfix-docker-build-final.log | Build host e Docker --no-cache passaram na revisão; Docker frontend Node 22, testes/runner host Node 26.13.1. Não execução deste agente nem ensaio de todos os testes host com Node 22. |
+| tasks-ui-reviewfix-e2e.log, tasks-ui-reviewfix-e2e-report.json, tasks-ui-reviewfix-final-audit.json | **6/6**, zero skipped/unexpected/flaky, início 02:24:25.974Z, 29,499 s. Sexto cenário: rascunhos/atribuição/relação, retries/Enter e conflito externo 409/recuperação confirmada. |
+
+### Precisão do runtime e dos relatórios
+
+Projeto existente `matriz-tasks-ui-check`, app/db previamente parados, loopback 18086/55436. Executou JAR extraído de build fresco copiado para **contentor app existente reutilizado**, não contentor fresco da imagem final. JAR fresco/executado SHA-256 `f09a87584c027a4dcb814d0628ad5df12a35d78cbb8e7b867947702a7f7e6f90`; imagem fonte `sha256:16c2630ad1414938a769164292ee5c6b2a77aef67f96969701f96df371c3805b`. ID histórico da imagem do contentor não prova a imagem fonte. Reports confirmam readiness HTTP 200/asset, contentores próprios parados no fim e volume preservado; tasks-ui-reviewfix-runtime-receipt.json regista proveniência.
+
+Linhas brutas Playwright são coordenadas JS ESM transformadas por Babel no runner Windows/Node 26, não fontes antigas: 43→40, 232→110, 479→209, 713→319, 745→335, 888→399 (coluna 1). Harness anterior verificou cache exclusiva nova, declarações test no JS, mappings VLQ e SHA sourcesContent; fonte E2E final SHA `f18d8c05928aad50f0422e240d9ed8a393e6de33a21410b4d4559436e88c9711`, igual ao embutido. Report bruto preservado SHA `4ea88bb8ece85e1ac2f44ffb149351ac42c106c4f5bfa1487d1ba06af3b85949`. Esta escrita leu auditoria, não repetiu descodificação/browser.
+
+Falhas intermédias preservadas: novo E2E enviava read-only no PUT de preparação (400); teste componente observava mock antes do fim UI. Corrigidos testes, finais repetidos sem ocultar logs. Três achados UI corrigidos: rascunho/base após mutação local, retry no form, seleção/Enter inválidos; summary detalha. Refetch externo não avança base suja; só resposta local reconhecida correspondente à versão de partida; recuperação exige confirmação.
+
+### Segurança temporal e pendências
+
+- Gate npm/JAR pré-última revisão P2: 294 pares npm/63 bibliotecas JAR, 0 HIGH/CRITICAL. Lock/backend não mudaram, **não houve scan da imagem final**; gate fresco pendente.
+- Semgrep **135 regras/29 alvos/0 findings** T6 é pré-extensões, não cobertura V4/TSX atual.
+- Sucesso GitHub antigo reportado pelo autor é histórico/pré-funcionalidades, não nova prova remota positiva/negativa, upload em falha ou retenção real.
+- Final integrado autorizado necessário: imagem/contentores frescos identificados, scans atuais npm/JAR/Semgrep, E2E da mesma imagem, migração V3 populada→V4/persistência após recriação, readiness/outage/recovery, preservação de volumes/dados e revisão independente/humana.
+- Inspeção visual humana screenshots/teclado/resize pendente; axe não certifica acessibilidade integral. Ficheiros: validação limitada, não antivírus/parsing completo/certificação PDF.
+- Capacidade BYTEA/história, backups/recuperação, retention/base legal/p95/produção e aceitação do cliente por decidir, sem autosweep/policy nova. Sem Defcon/Goal, @mentions, notificações/serviços externos.
+
+### Verificação desta escrita documental
+
+Exclusivamente README, AGENTS, OpenAPI e oito docs requirements/constraints/user-stories/architecture/database/implementation-plan/test-plan/verification; nenhum ficheiro novo/removido no repositório. Guião, implementação dirty, outras configurações/índice preservados por SHA-256. Histórico dobrado fichas 01/02 e resultados/datas T6 abaixo mantidos, não promovidos a V4.
+
+Verificações estáticas: YAML sem chaves duplicadas, refs/esquemas/parâmetros/operationIds e 29 operações contra controllers; links/âncoras Markdown locais, fences/histórico; git diff --check e hashes fora do âmbito/índice/HEAD. Logs/manifesto na pasta de sessão prefixo **tasks-docs-**: tasks-docs-validation.json, tasks-docs-validation.log, tasks-docs-preservation-before.json, tasks-docs-final-audit.json. Não validador integral OpenAPI, execução workflow, Mermaid renderizado ou teste funcional.
+
+Resultado desta escrita: PyYAML 6.0.3, **17 caminhos / 29 operações / 44 schemas / 225 referências** (incluindo mappings discriminator) resolvidos; **75 links locais / 12 âncoras** válidos. Propriedades obrigatórias conferidas em 14 schemas DTO; cinco blocos históricos dobrados iguais ao HEAD. `git diff --check` exit 0; **98 ficheiros fora do âmbito**, guião incluído, sem diferenças SHA-256; nenhum ficheiro novo no repositório, HEAD/índice inalterados. O módulo jsonschema não está instalado; a sondagem de disponibilidade falhou sem instalação, não se alega validação integral JSON Schema.
+
+## Baseline histórica anterior às extensões
+
+Secções seguintes mantêm datas, contagens e fontes originais de 12-11/fases anteriores. “Final/T6” é dessas fases, não final integrado V4 de 13-11.
+
 ## Ficha 05 — candidato 0.4.0-rc.1
 
 **Data: 12-11-2026. Estado: T6 integrado LOCAL passou; critérios remotos e revisão humana final PENDENTES.** Candidato não publicado; sem tag, commit, push, deploy ou execução GitHub Actions nesta tarefa. HEAD de referência **`46694e535333c15769ac14a70d1d3b61010b8216`**, alterações do candidato **não committed**: não existe SHA final inventado. Aprovações do autor para ficha 05, dependências, observabilidade local e migração Boot 4 não constituem validação do cliente ou certificação de produção.
@@ -373,3 +426,80 @@ Oportunidade identificada: evitar duplicar validação, autorização e estados 
 - O autor autorizou parar os serviços locais ao terminar, conservando o volume `matriz-ficha3_matriz_data`. Para voltar a executar, seguir [README.md](../README.md); nunca remover o volume para um simples reinício.
 
 Fecho observado na entrega original: aplicação e PostgreSQL parados; volume `matriz-ficha3_matriz_data` confirmado existente; portas locais 8080, 5173 e 55432 sem listeners. Verificação documental dessa entrega: 32 ligações locais existentes, nove cenários presentes e blocos de histórico equilibrados. O índice manteve as mesmas onze eliminações anteriores.
+
+## Validação final local das extensões — execução de 13-11-2026
+
+Este registo **acrescenta uma execução nova** à atualização documental e aos relatórios históricos acima; não transforma as suas execuções em provas atuais. As indicações de final integrado pendente na fase documental anterior são históricas; a abertura e os documentos com contradição atual foram agora alinhados, sem repetir execuções ou mudar o âmbito. A validação local abaixo não equivale a revisão independente/humana, aceitação do cliente ou publicação.
+
+Autorização: escrita no repositório somente neste ficheiro; harnesses/evidência externa com prefixo `tasks-final-` na pasta de sessão já indicada. HEAD `640b7e847f385cd69fabf0ff5ffd62dbf7f06cc2`, candidato `0.4.0-rc.1`, worktree dirty aprovada preservada. Sem alterações de produto, testes, migrations, fixtures/configuração versionadas, dependências ou workflow; sem commit/push/deploy/escrita no índice. `.env` não foi lido; Compose utilizou exclusivamente `.env.example` fictício e variáveis locais de portas/seed. Nenhum volume foi eliminado.
+
+### Comandos e resultados desta execução
+
+Comandos a partir da raiz, salvo frontend. Logs registam argumentos reais, início e exit code; corpos das autenticações, headers de sessão/CSRF e palavras-passe não são guardados.
+
+| Verificação executada | Resultado observado e evidência `tasks-final-*` |
+|---|---|
+| `mvn -f backend\pom.xml test -Dapi.version=1.44` | **41 testes**, zero falhas/erros/skips; 30 API, 5 Inputs, 1 LoginThrottle e 5 Observability. `backend-tests.log`, `backend-structured.json`, quatro XML válidos em `surefire-reports/`. Hashes dos XML originais e nomes/resultados de cada testcase preservados; cópias persistentes sanitizadas por nós XML, não removendo linhas de markup. |
+| Em frontend: `npm test`; `npm run build` | **43 testes em 9 ficheiros**, todos passaram; TypeScript/Vite 7.3.7 passou, 200 módulos. `frontend-tests.log`, `frontend-build.log`. Host Node 26.13.1/npm 11.2.0; isto não é execução dos testes host em Node 22. |
+| Docker Semgrep, mount readonly `/src`, `SEMGREP_SEND_METRICS=off`, `scan --config .semgrep.yml --config p/java --config p/typescript --error` | Exit 0, **135 regras / 47 alvos / 0 findings**: 19 Java e 28 TS/TSX; ~100% linhas analisadas, quatro exclusões por ignore e âmbito Git reportado pelo scanner. `semgrep.log`. Não reutiliza os 29 alvos históricos, não prova cobertura exaustiva. |
+| `docker run --rm rhysd/actionlint:1.7.7@sha256:887a259a5a534f3c4f36cb02dca341673c6089431057242cdc931e9f133147e9 -version`; validação do workflow readonly com `-shellcheck= -pyflakes= /work/ci.yml` | Versão **1.7.7**, validação exit 0. `actionlint-version.log`, `actionlint.log`. Subvalidadores shellcheck/pyflakes não executados; `bash -n` verificou separadamente todos os blocos `run`. Nenhum workflow novo ou alteração de CI. |
+| `docker compose -p matriz-tasks-final-check --env-file .env.example config --quiet`, base e com `-f compose.yaml -f compose.observability.yaml` | Ambos exit 0, sem imprimir configuração expandida. `compose-base-config.log`, `compose-obs-config.log`. Docker cliente/servidor 29.8.0. |
+| Mesmo Compose: `build --no-cache app` | **Um único build integrado**, após as fontes finais; sem rebuild ou alterações posteriores de código. Docker frontend Node 22; Maven empacotou com `-DskipTests`, não segunda execução dos 41 testes. `fresh-build.log`, `sources-before-build.json`, `image-jar-metadata.json`. |
+| Código Python do passo atual `Scan dependencies and verify delivered library coverage`, extraído de `.github/workflows/ci.yml` inalterado | Trivy **0.76.2** com digest CI `sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb`; versão e ambos os scans exit 0, **0 HIGH/CRITICAL**, sem erros de scanner/DB/cobertura. `workflow-scanner-source.py`, `trivy-gate.log`, `trivy-reports/coverage.json` e JSON/TXT dos scans. |
+| Em frontend: `PLAYWRIGHT_BASE_URL=http://127.0.0.1:18087`; `npm run test:e2e -- --reporter=line,json --output=<sessão>\tasks-final-e2e-results` | **6/6**, zero unexpected/flaky/skipped, início **02:50:07.085Z**, duração **28,608 s**. Backend real, frontend estático da imagem nova, PostgreSQL e sessões/CSRF reais. `e2e.log`, `e2e-report.json`, `e2e-results/`, cache exclusiva `playwright-cache/`. Sem edição ou relaxamento dos E2E existentes. |
+| YAML/contrato e revisão documental local | PyYAML 6.0.3: **17 caminhos, 29 operações, 44 schemas, 225 referências** incluindo mappings discriminator resolvidos; IDs únicos, parâmetros de caminho e rotas conferidos contra controllers/logout. YAML sem chaves duplicadas, links/âncoras e Markdown conferidos na revisão final. `openapi.json`, `final-receipt.json`. Validação estrutural, não validador integral OpenAPI/JSON Schema nem Mermaid renderizado. |
+
+O gate compara os pares nome/versão do lock **incluindo dev**: **294 esperados/294 reportados**, sem pares em falta. Compara também os caminhos físicos do JAR entregue: **63/63 `BOOT-INF/lib/*.jar` cobertos**. Trivy reportou **64 entradas Java**, não 63: a adicional é a aplicação `pt.matriz:matriz:0.4.0-rc.1`, caminho `app/app.jar`. Inventário completo e hashes individuais de entradas/JARs constam de `image-jar-metadata.json`; packages/caminhos reais constam de `coverage.json`.
+
+Flags do código atual: `--scanners vuln --pkg-types library --offline-scan --disable-telemetry --skip-version-check --ignorefile "" --severity HIGH,CRITICAL --exit-code 1 --list-all-pkgs --format json`, mais `--include-dev-deps` no npm e `--image-src docker` na imagem. Sem `ignore-unfixed`, ignores ou exceções; **SO fora do âmbito**. Nesta execução as DBs públicas em falta foram descarregadas de `mirror.gcr.io/aquasec/trivy-db:2` e `mirror.gcr.io/aquasec/trivy-java-db:1`, com sucesso; não houve fallback de harness para ocultar erros. Scans locais, sem upload de código, `.env` ou credenciais.
+
+As **cinco fixtures locais** avaliam a expressão real `failed` do workflow atual: clean permite; HIGH sem fix, CRITICAL sem fix, erro de scanner/DB e cobertura incompleta bloqueiam. `workflow-gate-fixtures.json` regista SHA do workflow e resultados; não são execuções GitHub Actions.
+
+### Imagem/contentores realmente frescos e proveniência E2E
+
+Projeto **novo** `matriz-tasks-final-check`, portas **18087/55437**, ambas com bind local bem-sucedido antes do arranque, volume inicialmente inexistente. Foi usado `up --no-build -d --wait --wait-timeout 180 app db` após o gate. Sem arranque/paragem de `matriz-tasks-ui-check` nem de outros projetos existentes. O ensaio não copiou um JAR para um contentor histórico.
+
+- Imagem criada/scanned/executada: `sha256:b830dc1bd50640e6302597e7f16ba8819fb9301cb63ae49dec35a71cc43136a9`.
+- JAR extraído em memória e efetivamente servido (`sha256sum /app/app.jar`): `0ab257671a838828dbb12e86ab9287f48bf8d5fa2d23a313c7ef5f30d5a42ca5`.
+- App nova no E2E: `b491b1bc316489f80f1d07424047b6b63345874e2fbacc9c658106061318f9e6`.
+- DB nova: `7e8c1810196afaf69151cde820730f23a7950215871f141ca8efd480a2381162`.
+- Após recriar ambas: app `a3ce7091d5a81fe3c9c9a9c1c2d04c836e708daff2ea4a413c32e579b7394108`, DB `22e1300a215d901978bc517f71f52da22a0482fe0609737558000ce6b1d9c0e2`.
+- App recriada com override observability: `c015b13eda22d717b0fd8fc133ec75d51dd2d94c962cb04b016916eb35c1033f`; imagem permanece a mesma. Volume **`matriz-tasks-final-check_matriz_data`** conservado durante todos os passos e no fecho.
+
+`fresh-runtime-receipt.json` e os snapshots contêm IDs completos, imagem, estado, health, publicações loopback e identidade do volume. Base `/` respondeu 200 e Docker healthy; API anónima 401; Actuator base indisponível para anónimo e utilizador autenticado.
+
+Report E2E bruto SHA-256 `086b6402972220efb6c2d61d64c69db66b78b4a797dc5d9343def432ec8e7107`. Fonte exata e `sourcesContent` SHA-256 `f18d8c05928aad50f0422e240d9ed8a393e6de33a21410b4d4559436e88c9711`. **110 hashes de ficheiros de origem** permaneceram iguais entre pré-build, pré-E2E e pós-E2E; não existe apenas um agregado sem inventário.
+
+Foram verificadas novamente as seis declarações no JS gerado e os segmentos VLQ do mapa fresco: linhas brutas **43/232/479/713/745/888 → 40/110/209/319/335/399**, todas coluna 1. `e2e-source-map-receipt.json` contém por teste os frames brutos, posições originais, segmentos/valores VLQ, resultados/durações e hashes físicos do JS/mapa. Report não reescrito; cache exclusiva conserva artefactos transformados e source maps da execução atual, não reports antigos.
+
+### Provas adicionais HTTP, SQL, browser e persistência
+
+Harness `runtime.py` externo usou logins reais fictícios Ana/Bruno/Carla; credenciais, cookies e tokens apenas em memória. Fixture final: projeto `82c28a9c-a82c-4541-aded-78cddd34753c`; aliases **A/B/C**, chaves **MAT-15/MAT-16/MAT-17**, versões finais **5/7/1**, IDs e cada passo/versão/resposta em `retry1-fixture-ids-and-steps.json`.
+
+Observado na aplicação real:
+
+- Criação BUG/peso 5/chaves distintas; PUT sem type/weight preservou-os e incrementou versão. A BLOCKS B aparece na consulta de links **de entrada** de B; ciclo e auto-relação 422; alvo de outro projeto 404. POST repetido com versões atuais 200 sem incremento.
+- B pode iniciar mas concluir antes de A dá **422**. Concluir A e depois B é permitido; reabrir A com B DONE e inserir C não DONE BLOCKS B DONE dá **422**. Após reabrir B, reabrir A é permitido. DONE→DONE sem motivo preserva CANCELLED; reabertura limpa motivo; entrada em DONE sem motivo resulta null. Não se substituiu o bloqueio semântico por expectativa 409.
+- Upload direto de **PNG RGB 1×1 de 69 bytes com chunks/CRC reais** e **TXT UTF-8 de 35 bytes**, multipart tipado; download compara os bytes exatos/SHA, `attachment`, `nosniff`, `no-store`. Anónimo 401; Carla e caminho de outra tarefa 404; Bruno não autor ao eliminar anexos de Ana **403**. Sem pseudo-PDF.
+- Comentário multipart de Bruno com parte `comment` application/json e TXT gera um comentário, metadados e **um único COMMENT_ADDED**, sem duplicar ATTACHMENT_ADDED para esse ficheiro. Histórico não contém cópias de título/descrição/texto do comentário; autoria e metadados conferidos.
+- Browser adicional **só de leitura** na mesma imagem: descrição fictícia guardada com Markdown e `<b>`; preview cria `h1`/`strong`, não cria `b/script/img/iframe`, conserva texto literal. `ui-probe.json`, captura PNG física `ui-markdown.png`, SQL antes/depois igual em `ui-probe-data-unchanged.json`. Complementa o E2E de imagens/URLs perigosas, não certifica HTML/Markdown em geral.
+
+Uma **falha inicial do harness**, não um defeito de produto confirmado, foi preservada: comparação associava anexos pela ordem da resposta, não garantida pelo contrato. Correção externa passou a associar por `filename`; tentativa original/log HTTP/fixtures permanecem, serviços próprios foram parados e retomados sem rebuild. `integrated-failure.json`, `integrated-runtime-http.json` e `harness-notes.json` distinguem esta tentativa de **retry1 passada**. Sem alteração de testes/produto ou limpeza dos dados da tentativa.
+
+Snapshots completos **antes** e **depois** de `up --no-build -d --force-recreate --wait --wait-timeout 180 app db` foram persistidos: HTTP de projetos/membros/tarefas/comentários/links/atividade/anexos, downloads/bytehashes e SQL, sem hashes de palavras-passe/bytes de anexos no dump. Ambos IDs mudaram, volume igual; sessão antiga **401**, novo login e snapshots de dados **iguais**. Contagens SQL inalteradas: **3 users, 7 projetos, 10 participações, 15 tarefas, 3 atribuições, 2 comentários, 2 links, 5 anexos, 46 eventos e 4 migrations**. Incluem seed e fixtures preservadas da primeira tentativa; não são números de uma base sem ensaios.
+
+A migração **V3 populada→V4** foi efetivamente executada no teste Maven `populatedV3MigrationAssignsDeterministicGlobalKeysWithoutChangingDatesVersionsOrInventingHistory`: três tarefas fora de ordem, em dois projetos/datas empatadas; aplicação de uma migration, UUID/campos/datas/versões iguais, MAT-1/2/3 por `(created_at,id)`, TASK, opcionais null, zero backfill, nova MAT-4, repetição sem migration e unicidade recusando duplicado. Testcase passou no XML persistente atual; não se confunde com o arranque vazio V1–V4 da imagem fresca.
+
+### Observabilidade, fecho e limites
+
+Após E2E base e recriação app/db, só app própria foi recriada com `-f compose.yaml -f compose.observability.yaml ... up --no-build -d --force-recreate --wait --wait-timeout 180 --no-deps app`. Health raiz/grupos mínimo UP, sem Set-Cookie; métricas anónimas **401**, sessão **200**, nomes restritos e medidas reais `jvm.memory.used`/`http.server.requests`.
+
+`stop db` parou **somente a DB própria**: readiness **503/DOWN**, liveness **200/UP** e Docker app **unhealthy**, amostras temporais em `retry1-db-stopped-samples.json`. `start db` recuperou readiness **200/UP** e Docker healthy; sessão continuou válida e snapshot HTTP/SQL/downloads ficou igual ao pré-paragem. Evidência `retry1-snapshot-before-db-stop.json`, `retry1-snapshot-after-db-recovery.json`, `retry1-integrated-runtime-http.json`, `retry1-runtime-results.json`.
+
+Fecho com `stop app db`, inclusive após o browser de leitura: ambos **exited**, volume retido. O health residual dos contentores parados não é medição de readiness em execução. Diagnósticos próprios sanitizados; instâncias preexistentes e fontes fora deste documento conferidas na revisão final. `final-receipt.json` e `sources-after-final.json` registam preservação dos **109 ficheiros fora do âmbito**, HEAD/índice, zero ficheiros novos/removidos no inventário do repositório e estado dos contentores anteriores.
+
+Evidência física adicional: `preservation-before.json`, `workflow-gate-fixtures.json`, `harness-notes.json`, `git-diff-check-final.log`, `final-receipt.json`, `raw-artifact-manifest.json` e `raw-manifest-receipt.json`. O manifesto lista **cada ficheiro existente** com caminho/tamanho/SHA-256, incluindo XML, JSON/logs, PNGs, JS/source maps e relatórios/DBs do scanner; exclui-se a si próprio, cujo hash é dado no recibo separado. Nomes nesta secção usam o prefixo comum **`tasks-final-`**, não são artefactos publicados.
+
+**Concluído localmente:** testes/builds/gates atuais, imagem/contentores frescos, E2E, contrato estrutural, migração Maven populada, persistência/recriação e outage/recovery próprios; afirmações documentais atuais de final local pendente corrigidas nesta atualização estreita. **Continua pendente:** nova prova positiva/negativa GitHub Actions neste âmbito/branch atual, uploads/retenção reais e revisão independente/humana/cliente. Axe nos seis E2E não certifica WCAG integral. SO, pentest, interleavings exaustivas, capacidade BYTEA/história, backups/recuperação, retention/base legal/p95 e produção não foram aprovados/validados; sem autosweep ou nova policy.
+
+Rastreabilidade desta correção exclusivamente documental: `tasks-final-documentation-receipt.json`, apenas na pasta de sessão, lista os sete caminhos afetados com hashes antes/depois/atuais, UTC e hash do manifesto bruto anterior `tasks-final-raw-artifact-manifest-v2.json` (102 entradas). Recibos T6, relatório documental anterior e manifestos brutos mantêm os seus hashes históricos, incluindo o hash antigo deste documento; o suplemento não os substitui nem apresenta esses hashes como atuais.

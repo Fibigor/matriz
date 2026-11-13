@@ -29,7 +29,16 @@ public final class Inputs {
     }
 
     public static long version(Long value) {
-        if (value == null || value < 1) throw invalid("version", "É necessária a versão atual.");
+        return version(value, "version");
+    }
+
+    public static long version(Long value, String field) {
+        if (value == null || value < 1) throw invalid(field, "É necessária a versão atual.");
+        return value;
+    }
+
+    public static Integer weight(Integer value) {
+        if (value != null && !Set.of(1, 2, 3, 5, 8, 13).contains(value)) throw invalid("weight", "Peso inválido.");
         return value;
     }
 

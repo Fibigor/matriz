@@ -1,5 +1,21 @@
 # Ficha 03 — Plano de implementação
 
+## Incremento autorizado atual — 13-11-2026
+
+Autor aprovou as extensões, não cliente: V4/MAT global, tipo/peso/motivo, relações BLOCKS reais, anexos PostgreSQL, comentários multipart/histórico, Markdown/templates e detalhe partilhado. Referência HEAD `640b7e847f385cd69fabf0ff5ffd62dbf7f06cc2`, candidato `0.4.0-rc.1` sem bump/tag/publicação. As fases da ficha 03 abaixo são histórico do plano anterior; a exclusão de anexos foi substituída por este incremento.
+
+| Entrega aprovada | Componentes consultados | Estado/evidência armazenada |
+|---|---|---|
+| Backend V4 | ApiModels/Inputs/ApiErrors, TaskController/Service, TaskLinkService, TaskAttachmentService/controller, TaskActivityService, application.yaml, migration V4 e ApiIntegrationTest | Contrato confrontado com código; log final 41 sem falhas/erros/skips, incluindo migração populada/vazia, grafo/locks/revogação/rollback e uploads reais. |
+| Frontend | App/Tasks/types/api/estilos, detalhe/painel, Markdown/templates, links/anexos/atividade, manifests/testes/E2E | react-markdown 10.1.0 aprovada; reports anteriores 35/5 substituídos como resultado final por 43/6 após revisão. |
+| Correções de revisão | Tasks/TaskDetail/TaskLinks, testes, E2E e vite.config.ts | Base suja só avança por resposta local reconhecida; retry não submete, seleção/Enter sem falso sucesso; descoberta TS+TSX é extensão técnica necessária. 43 testes em duas execuções finais e 6 E2E passaram. |
+| Documentação autorizada | README, AGENTS, OpenAPI e requirements/constraints/user-stories/architecture/database/implementation-plan/test-plan/verification | Apenas estes 11 ficheiros, nenhum novo no repositório; implementação dirty, guião e índice preservados. Validação estática e leitura de reports, sem testes/builds/serviços. |
+| Final integrado | Imagem final fresca, scans npm/JAR/Semgrep, E2E da mesma imagem, migração/persistência e revisão independente | **Validação local concluída**: 41/43/6, imagem/contentores novos, scans atuais e actionlint 1.7.7 PASS; V3 populada→V4/MAT/defaults no Maven, recriação app/db e outage/recovery próprios com dados/bytes/volume preservados. App/db próprios parados no fim, volume retido. **Revisão independente/humana e aceitação do cliente pendentes**, não incluídas no sucesso local. |
+
+Critérios atuais em [requirements](requirements.md), [histórias](user-stories.md), [OpenAPI](../openapi.yaml) e [test-plan](test-plan.md). Preservar restantes permissões, sessão/CSRF e CI; sem Defcon/Goal, @mentions, notificações/serviços externos. Capacidade/backups/retention por decidir, sem autosweep.
+
+O scan anterior à última revisão P2 e Semgrep pré-extensões permanecem históricos. A execução final atual cobre 294/294 pares npm e 63/63 bibliotecas do JAR entregue, Trivy 0 HIGH/CRITICAL; Semgrep 135 regras/47 alvos/0 findings. Scans e 6 E2E usaram a mesma imagem final fresca, não o contentor reutilizado da revisão UI anterior. Sucesso GitHub anterior reportado pelo autor não valida as novas funcionalidades remotamente: prova no âmbito/branch atual, uploads/retenção reais continuam pendentes. [Proveniência e pendências](verification.md#validação-final-local-das-extensões--execução-de-13-11-2026). Esta atualização documental não repetiu execuções.
+
 ## Decisões validadas pelo autor
 
 Em 29-10-2026 o autor aprovou o âmbito integral da ficha 03, substituindo as exclusões da ficha 02: comentários, prioridade, pesquisa/filtros, edição/eliminação de projetos/tarefas e vários responsáveis. Escolheu Java 21, Spring Boot, React e PostgreSQL, mantendo o monólito modular.
@@ -24,7 +40,7 @@ Cada incremento é analisado e verificado antes do seguinte. O plano pode ser aj
 
 Criar `backend/` com código Java, SQL e testes; `frontend/` com código React, testes e manifests; configuração Docker e exemplo de ambiente. Atualizar requisitos, histórias, restrições, arquitetura, dados, API, README e AGENTS; manter o wireframe da ficha 02 identificado como referência histórica. Não alterar `.idea` nem o índice Git.
 
-O login local e contas fictícias servem exclusivamente a demonstração. O Blueprint Render ativa o seed; visitantes poderão alterar os dados demo, que são descartáveis. Registo público, recuperação de palavra-passe, anexos, notificações, sprints e operação de produção permanecem fora do âmbito. Não há migração de dados de uma aplicação anterior, porque não existia implementação. V3 adiciona email e índice único case-insensitive; V2 permanece no histórico de schema.
+O login local e contas fictícias servem exclusivamente a demonstração. O Blueprint Render ativa o seed; visitantes poderão alterar os dados demo, que são descartáveis. Na entrega inicial, anexos ficaram fora do âmbito e não havia dados de aplicação anterior; V4 agora inclui anexos e migra tarefas V3 persistidas. Registo público, recuperação de palavra-passe, notificações, sprints e produção continuam excluídos. V3 adiciona email e índice único case-insensitive; V2 permanece no histórico de schema.
 
 ## Fecho das verificações
 

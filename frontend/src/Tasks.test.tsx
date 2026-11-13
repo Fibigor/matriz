@@ -17,6 +17,7 @@ const page: TaskPage = {
   progress: { total: 0, todo: 0, inProgress: 0, done: 0, completedPercent: 0 },
 };
 const createdTask: Task = { id: 't1', projectId: 'alpha', title: 'Nova tarefa real', description: '', status: 'TODO',
+  key: 'MAT-1', type: 'TASK', weight: null, closeReason: null,
   priority: 'MEDIUM', assignees: [], version: 1, createdAt: '', updatedAt: '' };
 
 describe('Criação de tarefas', () => {
@@ -101,7 +102,7 @@ describe('Criação de tarefas', () => {
     let created = false;
     vi.mocked(api).mockImplementation(async path => {
       if (path.endsWith('/members')) return [];
-      return created ? { ...page, items: [{ id: 't1', projectId: 'alpha', title: 'Nova tarefa real', description: '', status: 'TODO', priority: 'MEDIUM', assignees: [], version: 1, createdAt: '', updatedAt: '' }],
+      return created ? { ...page, items: [createdTask],
         pagination: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1 }, progress: { total: 1, todo: 1, inProgress: 0, done: 0, completedPercent: 0 } } : page;
     });
     vi.mocked(write).mockImplementation(async () => { created = true; return createdTask; });
@@ -153,10 +154,13 @@ describe('Criação de tarefas', () => {
     let created = false;
     vi.mocked(api).mockImplementation(async path => {
       if (path.endsWith('/members')) return [];
+      if (path.endsWith('/attachments')) return { items: [] };
+      if (path.includes('/activity?') || path.includes('/links?')) return { items: [], pagination: page.pagination };
+      if (path.includes('/tasks?')) return page;
       if (path.includes('/comments?')) {
         const lastPage = created && path.includes('page=2');
         return { items: lastPage ? [{ id: 'c21', taskId: 't1', author: { id: 'ana', displayName: 'Ana' },
-          content: 'Comentário 21', createdAt: '2026-10-29T12:00:00Z' }] : [],
+          content: 'Comentário 21', createdAt: '2026-10-29T12:00:00Z', attachments: [] }] : [],
         pagination: { page: lastPage ? 2 : 1, pageSize: 20, totalItems: created ? 21 : 20, totalPages: created ? 2 : 1 } };
       }
       if (path.endsWith('/tasks/t1')) return createdTask;

@@ -2,6 +2,28 @@
 
 ## Arquitetura implementada — candidato da ficha 05
 
+### Extensões atuais — 13-11-2026
+
+Âmbito aprovado pelo autor, não cliente: V4 sobre HEAD `640b7e847f385cd69fabf0ff5ffd62dbf7f06cc2`, mantendo `0.4.0-rc.1`, monólito, sessão/CSRF, JDBC e permissões anteriores. T6 de 12-11 e respetivos números abaixo são baseline histórica, não prova atual de V4. O final local de 13-11 passou com 41/43/6, imagem fresca identificada em contentores novos e a mesma imagem nos scans/E2E: Trivy 0 HIGH/CRITICAL, 294/294 pares npm e 63/63 bibliotecas JAR; Semgrep 135 regras/47 alvos/0 findings; actionlint 1.7.7 PASS. Migração populada V3→V4/MAT/defaults passou no Maven; recriação app/db mudou ambos IDs, mantendo volume e snapshots de dados/links/comentários/bytes. Paragem só da DB própria deu readiness 503/liveness 200, recuperação 200 e dados iguais; app/db próprios ficaram parados com volume retido. Revisão independente/humana, aceitação do cliente e prova GitHub Actions no âmbito/branch atual, uploads/retenção reais continuam pendentes. Esta escrita só leu [relatórios guardados](verification.md#validação-final-local-das-extensões--execução-de-13-11-2026), sem novas execuções.
+
+| Componente atual | Responsabilidade confirmada no código |
+|---|---|
+| `TaskService` / `ApiModels` | Chave MAT global, TASK/BUG/IMPROVEMENT, peso opcional, motivo só DONE; PUT com presença dos novos campos (`@JsonSetter`), mantendo campos antigos. Todo DONE conta no progresso, sem ponderação por peso. |
+| `TaskLinkService` | RELATED canónica/simétrica, BLOCKS/DUPLICATES dirigidas; mesmo projeto, duas versões, eventos por extremo. BLOCKS valida ciclos e conclusão/reabertura; remover link/eliminar bloqueador não altera estados dos dependentes. |
+| `TaskAttachmentService` / controller | BYTEA PostgreSQL; lote validado antes da gravação, 5 diretos/tarefa ou 5/comentário e 4 MiB cada; acesso atual ao download e autor/gestor participante na eliminação. |
+| `TaskActivityService` | Payload JSONB tipado, ator/data na mesma transação da mutação; apenas leitura paginada, snapshots sem FK ao link/ficheiro/extremo removido e sem cópias de conteúdo textual. |
+| `TaskDetail`, `TaskDetailPanel`, `App` | Detalhe partilhado painel/página hash; painel aberto da lista em >960 px, acesso direto/móvel em página; foco/Escape/inert e layout adaptável ao resize. |
+| `MarkdownEditor`, `taskTemplates` | react-markdown 10.1.0, Markdown básico em descrição/comentário; sem HTML/imagens/GFM, só HTTP/HTTPS; três templates fixos, confirmação antes de substituir texto. |
+| `TaskLinks`, `TaskAttachments`, `TaskActivity`, `api.ts` | Relações, upload/download binário, comentários JSON/multipart e histórico; CSRF existente, FormData sem forçar boundary. Pesquisa/filtros visuais limitados à página indicada, sem inventar novos parâmetros de API. |
+
+Todas as escritas das extensões bloqueiam a linha existente do projeto. Após esperar pelo lock, revalidam participação/permissão e conta ativa num snapshot atual; isto evita que a autorização anterior à espera sobreviva a uma revogação. Grafo, estado, contagem de ficheiros e eventos são atómicos. POST de link novo/DELETE explícito incrementam ambas as versões/updatedAt; POST duplicado atual não o faz. Cascata de eliminação de tarefa regista remoção no sobrevivente sem mudar a sua versão/estado/datas.
+
+Comentário JSON `{content}` ou multipart com `comment` application/json e `files` repetidos: texto obrigatório, lote/comentário/evento numa transação, sem upload posterior nem edição/eliminação isolada do comentário. Anexos/comentários não alteram versão/updatedAt da tarefa. Download entrega bytes com MIME canónico, Content-Length, Content-Disposition attachment UTF-8, nosniff e no-store.
+
+Validação de ficheiros é limitada: assinaturas PNG/JPEG/GIF, RIFF/chunks WebP delimitados, PDF cabeçalho/EOF, TXT/MD UTF-8 estrito sem NUL/markup HTML/XML/SVG; não antivírus nem parsing completo. Armazenamento/crescimento/backups/retention exigem decisão, sem autosweep. Histórico não copia título/descrição/comentário; flags, valores tipados e metadados bastam. V4 atribui chaves por `(created_at,id)` sem modificar datas/versões ou backfill.
+
+Respostas locais conhecidas de atribuição/relação podem avançar a base do rascunho apenas se coincidir com a versão de partida, conservando campos editáveis. Refetch externo nunca promove base suja; 409 preserva texto, recuperação exige confirmação. Mudar de painel para página não remonta o detalhe; sair com rascunho exige confirmação. Não se afirma conformidade integral de acessibilidade.
+
 Decisões aprovadas pelo autor em 29-10-2026: monólito modular, Java 21/Spring Boot, React/TypeScript/Vite, PostgreSQL 17 e Flyway. A baseline original usou Boot 3.5; a migração autorizada em 12-11-2026 mantém o desenho e prepara **`0.4.0-rc.1`**, não publicado e com **T6 concluído localmente**. Prova positiva/negativa GitHub Actions, uploads/retenção reais e revisão final humana/independente continuam pendentes; não se declaram todos os critérios da ficha concluídos. Stack efetiva: Boot **4.0.9**, Framework **7.0.10**, Security **7.0.8**, Jackson **3.1.7**, Flyway **11.14.1**, Java **21**, PostgreSQL **17**; Docker compila frontend com Node **22**. JDBC é usado com parâmetros preparados; não há ORM, serviços distribuídos ou persistência em memória.
 
 | Componente | Implementação e responsabilidade |
@@ -30,7 +52,7 @@ flowchart LR
 
 O POM usa os starters modulares oficiais MVC/MVC-test/Flyway e Testcontainers 2 (apenas testes). Segurança e erros usam o `JsonMapper` Jackson 3 autoconfigurado. `spring.jackson.use-jackson2-defaults=true` preserva defaults JSON/data/coerção de Boot 3 **sobre Jackson 3**, mantendo recusa de campos desconhecidos; não adiciona o módulo de compatibilidade MVC Jackson 2. O JAR também contém Jackson 2 core/databind 2.21.7 por dependência interna de Flyway, gerida pelo BOM, não como mapper paralelo da API. Problem Details mantém `type: about:blank`, extensões, UTF-8 e tratamento de IOException, com regressões locais documentadas.
 
-Sem migrations SQL novas: V1–V3, JDBC, sessão/scrypt/CSRF, permissões e regras RF-01–11/RN atuais permanecem. T6 validou localmente o rebuild fresco com metadados `0.4.0-rc.1`: 19 testes Maven, 13 frontend e 5 E2E passaram; build frontend concluído, Semgrep com 0 findings e Trivy com 0 HIGH/CRITICAL, cobertura 216/216 pares npm incluindo dev e 63/63 JARs internos. A mesma imagem passou os scans, E2E, recriação app/db com dados/volume preservados e readiness perante paragem real da DB própria (503/DOWN, liveness 200/UP) e retoma (readiness 200/UP, sessão/dados iguais). São resultados T6 registados em 12-11-2026, não medições novas desta correção nem reutilização do histórico pré-T5; não substituem validação pelo cliente ou revisão final humana/independente. [Release notes](../RELEASE_NOTES.md) e [verificação](verification.md#ficha-05--candidato-040-rc1) detalham evidência e limites.
+Na migração Boot 4 de 12-11 não houve migrations SQL novas: V1–V3, JDBC, sessão/scrypt/CSRF e permissões permaneceram. A extensão aprovada de 13-11 acrescenta V4 e RF-12–16/RN-13–19. T6 validou localmente o rebuild fresco com metadados `0.4.0-rc.1`: 19 testes Maven, 13 frontend e 5 E2E passaram; build frontend concluído, Semgrep com 0 findings e Trivy com 0 HIGH/CRITICAL, cobertura 216/216 pares npm incluindo dev e 63/63 JARs internos. A mesma imagem passou os scans, E2E, recriação app/db com dados/volume preservados e readiness perante paragem real da DB própria (503/DOWN, liveness 200/UP) e retoma (readiness 200/UP, sessão/dados iguais). São resultados T6 registados em 12-11-2026, não medições novas desta correção nem reutilização do histórico pré-T5; não substituem validação pelo cliente ou revisão final humana/independente. [Release notes](../RELEASE_NOTES.md) e [verificação](verification.md#ficha-05--candidato-040-rc1) detalham evidência e limites.
 
 ### Superfície operacional e gates
 
@@ -78,7 +100,7 @@ O painel representa a distribuição atual dos três estados do projeto selecion
 
 API completa da demonstração em [openapi.yaml](../openapi.yaml); plano/resultados em [implementation-plan.md](implementation-plan.md) e [verification.md](verification.md). O wireframe da ficha 02 é histórico; interface real inclui prioridade, responsáveis múltiplos e comentários.
 
-Continuam fora do âmbito registo público, recuperação de palavra-passe, anexos, notificações, sprints e operação pública. Não foram assumidas escalabilidade ou conformidade. Não se reivindica certificação de segurança; políticas corporativas, limitação de tentativas, HTTPS, logs/monitorização e recuperação devem ser tratados antes de produção.
+Continuam fora do âmbito registo público, recuperação de palavra-passe, Defcon/Goal, @mentions, notificações, sprints, integrações/serviços externos e operação de produção. Anexos fazem parte de V4. Não foram assumidas escalabilidade ou conformidade. Não se reivindica certificação de segurança; políticas corporativas, limitação de tentativas, HTTPS, logs/monitorização e recuperação devem ser tratados antes de produção.
 
 <details>
 <summary>Architecture Pack original da ficha 02 — preservado como histórico; contrato parcial e responsável único foram substituídos</summary>

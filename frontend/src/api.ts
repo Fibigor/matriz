@@ -6,13 +6,13 @@ export class ApiError extends Error {
 
 const API_BASE = '/api';
 
-export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function api<T>(path: string, init: RequestInit = {}, responseType: 'json' | 'blob' = 'json'): Promise<T> {
   const headers = new Headers(init.headers);
   const method = init.method ?? 'GET';
   if (!['GET', 'HEAD'].includes(method)) {
     const csrf = await api<{ headerName: string; token: string }>('/auth/csrf');
     headers.set(csrf.headerName, csrf.token);
-    if (init.body && !(init.body instanceof URLSearchParams)) headers.set('Content-Type', 'application/json');
+    if (init.body && !(init.body instanceof URLSearchParams) && !(init.body instanceof FormData)) headers.set('Content-Type', 'application/json');
   }
   let response: Response;
   try {
@@ -44,6 +44,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new ApiError(detail, response.status, fields);
   }
   if (response.status === 204) return undefined as T;
+  if (responseType === 'blob') return await response.blob() as T;
   return response.json() as Promise<T>;
 }
 

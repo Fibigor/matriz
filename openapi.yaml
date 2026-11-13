@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Matriz — API da ficha 03
+  title: Matriz — API atual com extensões de tarefas V4
   version: 0.4.0-rc.1
   description: |
     Contrato da demonstração implementada, não uma API de produção certificada.
@@ -11,7 +11,10 @@ info:
     A retenção anual é apenas um pressuposto provisório, sem eliminação automática;
     âmbito e evento inicial não estão definidos. p95 é uma métrica a observar,
     sem meta nem carga de referência aprovadas. Produção está diferida.
-    IDs são texto opaco. Datas são instantes UTC. Conteúdo é texto simples.
+    Âmbito académico aprovado pelo autor em 13-11-2026, não validação do cliente.
+    IDs são texto opaco; UUID da tarefa é estável e key MAT-n é global sequencial
+    com lacunas permitidas. Datas são instantes UTC. Descrição/comentário são strings
+    apresentadas em Markdown básico seguro, sem HTML/imagens/GFM, só HTTP/HTTPS.
     Conta ativa e participação são verificadas no servidor em cada operação.
     Projeto alheio e inexistente dão 404 com o mesmo detalhe; membro sem gestão dá 403.
     Campos JSON desconhecidos são recusados com 400; formato/tipo inválido dá 400;
@@ -21,6 +24,12 @@ info:
     Pagination é baseada em 1; página além do fim é vazia; zero itens implica zero páginas.
     Nomes, títulos e comentários são aparados nas extremidades; descrições e pesquisa
     conservam espaços. Limites em pontos de código Unicode.
+    Novos campos opcionais de resposta são emitidos como null; listas sem itens são [].
+    BLOCKS tem efeito real: todos os bloqueadores diretos DONE antes de concluir;
+    início permitido, reabertura de bloqueador recusada com qualquer dependente direto DONE.
+    Anexos BYTEA: 5 diretos por tarefa, 5 por comentário, 4 MiB cada, validação limitada.
+    Upload/limite técnico 413; MIME do pedido/parte não suportado 415;
+    formato de ficheiro/count/ciclo/bloqueio semântico 422, versão antiga 409.
 servers:
   - url: /api
 security:
@@ -297,6 +306,13 @@ paths:
                     - $ref: '#/components/schemas/Priority'
                     - type: 'null'
                   default: MEDIUM
+                type:
+                  oneOf:
+                    - $ref: '#/components/schemas/TaskType'
+                    - type: 'null'
+                  default: TASK
+                  description: Omitido ou null na criação usa TASK; null explícito no PUT é inválido.
+                weight: { $ref: '#/components/schemas/NullableWeight' }
             example: { title: Preparar demonstração, description: Rever o fluxo completo., priority: HIGH }
       responses:
         '201':
@@ -324,7 +340,14 @@ paths:
       tags: [Tarefas]
       operationId: updateTask
       summary: Participante substitui campos editáveis com versão atual
-      description: Transições livres entre estados; concluir não exige responsável.
+      description: |
+        Concluir não exige responsável, mas exige todos os bloqueadores diretos DONE.
+        Reabrir bloqueador com qualquer dependente direto DONE dá 422 status.
+        type/weight omitidos preservam; type null explícito é 422; weight null limpa.
+        closeReason omitido preserva em DONE->DONE, entrada em DONE dá null;
+        reabertura limpa motivo, motivo não null fora de DONE é 422 closeReason.
+        description omitida/null continua a normalizar para vazio.
+        PUT aceite incrementa versão mesmo idêntico; idêntico não cria evento.
       security:
         - Session: []
           CsrfToken: []
@@ -345,6 +368,9 @@ paths:
                 status: { $ref: '#/components/schemas/Status' }
                 priority: { $ref: '#/components/schemas/Priority' }
                 version: { $ref: '#/components/schemas/Version' }
+                type: { $ref: '#/components/schemas/TaskType' }
+                weight: { $ref: '#/components/schemas/NullableWeight' }
+                closeReason: { $ref: '#/components/schemas/NullableCloseReason' }
       responses:
         '200':
           description: Tarefa atualizada e versão incrementada.
@@ -355,7 +381,11 @@ paths:
     delete:
       tags: [Tarefas]
       operationId: deleteTask
-      summary: Participante elimina tarefa, atribuições e comentários
+      summary: Participante elimina tarefa e dependentes
+      description: |
+        Cascata de atribuições/comentários/links/anexos/história da tarefa.
+        Extremos sobreviventes recebem LINK_REMOVED, sem alterar estado/versão/datas;
+        eliminar bloqueador desbloqueia sem mudar estados dos dependentes.
       security:
         - Session: []
           CsrfToken: []
@@ -432,6 +462,11 @@ paths:
       tags: [Tarefas]
       operationId: createComment
       summary: Participante comenta; autor e data são definidos no servidor
+      description: |
+        JSON antigo sem ficheiros devolve attachments vazio; multipart exige parte comment
+        application/json e files repetidos opcionais (até 5, 4 MiB cada).
+        Texto sempre obrigatório; comentário/lote/evento atómicos, sem upload posterior
+        ou edição/eliminação de comentário isolado. Não altera versão/updatedAt da tarefa.
       security:
         - Session: []
           CsrfToken: []
@@ -448,12 +483,241 @@ paths:
                   type: string
                   minLength: 1
                   description: Entre 1 e 2 000 pontos de código após remover espaços nas extremidades.
+          multipart/form-data:
+            schema:
+              type: object
+              required: [comment]
+              properties:
+                comment: { $ref: '#/components/schemas/CommentInput' }
+                files:
+                  type: array
+                  maxItems: 5
+                  items: { type: string, format: binary }
+            encoding:
+              comment:
+                contentType: application/json
+              files:
+                contentType: image/png, image/jpeg, image/gif, image/webp, application/pdf, text/plain, text/markdown
+                style: form
+                explode: true
       responses:
         '201':
           description: Comentário persistido.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Comment' }
+        '400': { $ref: '#/components/responses/Failure' }
+        '413': { $ref: '#/components/responses/Failure' }
+        '415': { $ref: '#/components/responses/Failure' }
+        '422': { $ref: '#/components/responses/Failure' }
+        default: { $ref: '#/components/responses/Failure' }
+  /projects/{projectId}/tasks/{taskId}/links:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/TaskId'
+    get:
+      tags: [Tarefas]
+      operationId: listTaskLinks
+      summary: Listar relações incidentes de entrada e saída
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Página ascendente de relações incidentes.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LinkPage' }
+        default: { $ref: '#/components/responses/Failure' }
+    post:
+      tags: [Tarefas]
+      operationId: createTaskLink
+      summary: Participante cria relação com ambas as versões atuais
+      description: |
+        Mesmo projeto, sem auto-relação. RELATED simétrica com IDs em ordem canónica;
+        BLOCKS/DUPLICATES dirigidas da tarefa da rota para targetTaskId.
+        Tipos distintos coexistem; DUPLICATES não exige aciclicidade.
+        BLOCKS proíbe ciclos e A não DONE BLOCKS B DONE (422 targetTaskId).
+        Novo link incrementa ambas as versões/updatedAt e emite evento por extremo;
+        duplicado com versões atuais dá 200 sem incremento/evento.
+        version pertence à tarefa da rota e targetVersion ao outro extremo.
+      security:
+        - Session: []
+          CsrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LinkInput' }
+      responses:
+        '201':
+          description: Relação nova, tarefas com versões incrementadas.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LinkMutation' }
+        '200':
+          description: Relação existente, sem alterações; exige ambas as versões atuais.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LinkMutation' }
+        '409': { $ref: '#/components/responses/Failure' }
+        '422': { $ref: '#/components/responses/Failure' }
+        default: { $ref: '#/components/responses/Failure' }
+  /projects/{projectId}/tasks/{taskId}/links/{linkId}:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/TaskId'
+      - $ref: '#/components/parameters/LinkId'
+    delete:
+      tags: [Tarefas]
+      operationId: deleteTaskLink
+      summary: Remover relação incidente com ambas as versões atuais
+      description: |
+        version é da tarefa da rota, targetVersion do outro extremo, mesmo pela entrada.
+        Incrementa ambas uma vez; desbloqueia sem alterar estados. Link não incidente dá 404.
+      security:
+        - Session: []
+          CsrfToken: []
+      parameters:
+        - $ref: '#/components/parameters/Version'
+        - $ref: '#/components/parameters/TargetVersion'
+      responses:
+        '200':
+          description: Tarefas dos dois extremos atualizadas; não devolve link eliminado.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LinkDeletion' }
+        '409': { $ref: '#/components/responses/Failure' }
+        default: { $ref: '#/components/responses/Failure' }
+  /projects/{projectId}/tasks/{taskId}/attachments:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/TaskId'
+    get:
+      tags: [Tarefas]
+      operationId: listTaskAttachments
+      summary: Listar só anexos diretos, sem paginação
+      responses:
+        '200':
+          description: Metadados diretos por createdAt/id, sem bytes ou ficheiros dos comentários.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AttachmentList' }
+        default: { $ref: '#/components/responses/Failure' }
+    post:
+      tags: [Tarefas]
+      operationId: uploadTaskAttachments
+      summary: Participante adiciona lote atómico de anexos diretos
+      description: |
+        Repetir partes files, 1..5; máximo atual 5 diretos por tarefa e 4 MiB por ficheiro.
+        MIME e extensão devem corresponder; assinaturas/estrutura limitada PNG/JPEG/GIF/WebP/PDF;
+        TXT/MD UTF-8 estrito sem NUL ou markup HTML/XML/SVG. Não antivírus/certificação PDF.
+        Extensões permitidas por MIME: .png, .jpg/.jpeg, .gif, .webp, .pdf, .txt,
+        .md/.markdown respetivamente. Parâmetros MIME são removidos para storage/download.
+        Lote validado antes de gravar, count+storage+eventos sob lock do projeto.
+        Nome sem diretórios, NFC, sem controlos/format chars, até 255 pontos Unicode.
+        Não altera versão/updatedAt da tarefa. Servlet 4MB/21MB, descarte limitado 32MB;
+        pedidos arbitrariamente maiores/abortados não têm corpo HTTP legível garantido.
+      security:
+        - Session: []
+          CsrfToken: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [files]
+              properties:
+                files:
+                  type: array
+                  minItems: 1
+                  maxItems: 5
+                  items: { type: string, format: binary }
+            encoding:
+              files:
+                contentType: image/png, image/jpeg, image/gif, image/webp, application/pdf, text/plain, text/markdown
+                style: form
+                explode: true
+      responses:
+        '201':
+          description: Só metadados dos ficheiros do novo lote.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AttachmentList' }
+        '400': { $ref: '#/components/responses/Failure' }
+        '413': { $ref: '#/components/responses/Failure' }
+        '415': { $ref: '#/components/responses/Failure' }
+        '422': { $ref: '#/components/responses/Failure' }
+        default: { $ref: '#/components/responses/Failure' }
+  /projects/{projectId}/tasks/{taskId}/attachments/{attachmentId}:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/TaskId'
+      - $ref: '#/components/parameters/AttachmentId'
+    get:
+      tags: [Tarefas]
+      operationId: downloadTaskAttachment
+      summary: Descarregar ficheiro direto ou de comentário com acesso atual
+      responses:
+        '200':
+          description: Bytes, não JSON; MIME canónico, sempre attachment.
+          headers:
+            Content-Length:
+              schema: { type: integer, minimum: 1, maximum: 4194304 }
+            Content-Disposition:
+              schema: { type: string }
+              description: attachment; nome UTF-8 sanitizado.
+            X-Content-Type-Options:
+              schema: { type: string, const: nosniff }
+            Cache-Control:
+              schema: { type: string, const: no-store }
+          content:
+            image/png: { schema: { type: string, format: binary } }
+            image/jpeg: { schema: { type: string, format: binary } }
+            image/gif: { schema: { type: string, format: binary } }
+            image/webp: { schema: { type: string, format: binary } }
+            application/pdf: { schema: { type: string, format: binary } }
+            text/plain: { schema: { type: string, format: binary } }
+            text/markdown: { schema: { type: string, format: binary } }
+        default: { $ref: '#/components/responses/Failure' }
+    delete:
+      tags: [Tarefas]
+      operationId: deleteTaskAttachment
+      summary: Autor ou gestor ainda participante elimina ficheiro direto ou de comentário
+      description: Sem versão; preserva metadados históricos, não muda versão/updatedAt da tarefa.
+      security:
+        - Session: []
+          CsrfToken: []
+      responses:
+        '204': { description: Ficheiro removido, evento gravado atomicamente. }
+        '403': { $ref: '#/components/responses/Failure' }
+        default: { $ref: '#/components/responses/Failure' }
+  /projects/{projectId}/tasks/{taskId}/activity:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/TaskId'
+    get:
+      tags: [Tarefas]
+      operationId: listTaskActivity
+      summary: Consultar história paginada, sem API de escrita
+      description: |
+        Ator/data do servidor; todos os eventos, sem filtro API.
+        TASK_UPDATED só alterações efetivas, title/description só flags, nunca texto copiado.
+        ASSIGNEES_CHANGED usa IDs ordenados; COMMENT_ADDED tem commentId e attachments,
+        sem cópia de conteúdo ou eventos ATTACHMENT_ADDED duplicados.
+        LINK_ADDED/REMOVED por extremo, snapshot sem FK ao recurso removido.
+        Anexos diretos usam attachment singular; remoção de ficheiro de comentário tem commentId.
+        Referências não usadas null, listas vazias []; sem backfill, cascata com a tarefa.
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Página ascendente no mesmo snapshot count/items.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ActivityPage' }
         default: { $ref: '#/components/responses/Failure' }
 components:
   securitySchemes:
@@ -471,6 +735,9 @@ components:
     ProjectId: { name: projectId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
     TaskId: { name: taskId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
     UserId: { name: userId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
+    LinkId: { name: linkId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
+    AttachmentId: { name: attachmentId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
+    TargetVersion: { name: targetVersion, in: query, required: true, schema: { $ref: '#/components/schemas/Version' } }
     Version: { name: version, in: query, required: true, schema: { $ref: '#/components/schemas/Version' } }
     Page: { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
     PageSize: { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
@@ -478,7 +745,8 @@ components:
     Failure:
       description: |
         400 formato/tipo/campo desconhecido; 401 sessão ausente/inativa;
-        403 CSRF/permissão; 404 recurso indisponível; 409 versão/restrição;
+        403 CSRF/permissão; 404 recurso indisponível; 409 versão antiga/restrições existentes;
+        413 tamanho de upload/pedido; 415 media type de pedido/parte não suportado;
         429 limite de tentativas de login;
         422 validação; 503 operação de dados falhou. Não expõe SQL ou conteúdo interno.
       content:
@@ -502,6 +770,15 @@ components:
         version: { $ref: '#/components/schemas/Version' }
     Status: { type: string, enum: [TODO, IN_PROGRESS, DONE] }
     Priority: { type: string, enum: [LOW, MEDIUM, HIGH] }
+    TaskType: { type: string, enum: [TASK, BUG, IMPROVEMENT] }
+    NullableWeight:
+      type: [integer, 'null']
+      enum: [null, 1, 2, 3, 5, 8, 13]
+      description: Na criação omissão/null dá null; no PUT omissão preserva e null limpa.
+    NullableCloseReason:
+      type: [string, 'null']
+      enum: [null, COMPLETED, CANCELLED, DUPLICATE, WONT_DO]
+      description: Só não null em DONE; omissão preserva em DONE->DONE, entrada em DONE dá null, reabertura limpa.
     OptionalDescription:
       type: [string, 'null']
       maxLength: 2000
@@ -523,7 +800,7 @@ components:
     Progress:
       type: object
       required: [total, todo, inProgress, done, completedPercent]
-      description: Total global; soma dos três estados; percentagem 0 se vazio, arredondada com meios para cima.
+      description: Total global; todos os DONE contam independentemente de motivo/peso; percentagem 0 se vazio, arredondada com meios para cima.
       properties:
         total: { type: integer, minimum: 0 }
         todo: { type: integer, minimum: 0 }
@@ -572,7 +849,7 @@ components:
         progress: { $ref: '#/components/schemas/Progress' }
     Task:
       type: object
-      required: [id, projectId, title, description, status, priority, assignees, version, createdAt, updatedAt]
+      required: [id, projectId, title, description, status, priority, assignees, version, createdAt, updatedAt, key, type, weight, closeReason]
       properties:
         id: { $ref: '#/components/schemas/Id' }
         projectId: { $ref: '#/components/schemas/Id' }
@@ -580,7 +857,11 @@ components:
         description: { type: string }
         status: { $ref: '#/components/schemas/Status' }
         priority: { $ref: '#/components/schemas/Priority' }
-        assignees: { type: array, items: { $ref: '#/components/schemas/User' } }
+        assignees: { type: array, default: [], items: { $ref: '#/components/schemas/User' } }
+        key: { type: string, pattern: '^MAT-[1-9][0-9]*$' }
+        type: { $ref: '#/components/schemas/TaskType' }
+        weight: { $ref: '#/components/schemas/NullableWeight' }
+        closeReason: { $ref: '#/components/schemas/NullableCloseReason' }
         version: { $ref: '#/components/schemas/Version' }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
@@ -594,13 +875,218 @@ components:
         progress: { $ref: '#/components/schemas/Progress' }
     Comment:
       type: object
-      required: [id, taskId, author, content, createdAt]
+      required: [id, taskId, author, content, createdAt, attachments]
       properties:
         id: { $ref: '#/components/schemas/Id' }
         taskId: { $ref: '#/components/schemas/Id' }
         author: { $ref: '#/components/schemas/User' }
         content: { type: string }
         createdAt: { type: string, format: date-time }
+        attachments:
+          type: array
+          default: []
+          maxItems: 5
+          items: { $ref: '#/components/schemas/TaskAttachment' }
+    CommentInput:
+      type: object
+      additionalProperties: false
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
+          description: 1..2000 pontos de código após aparar; obrigatório mesmo com ficheiros.
+    LinkType: { type: string, enum: [RELATED, BLOCKS, DUPLICATES] }
+    TaskReference:
+      type: object
+      required: [id, key, title, status, version]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        key: { type: string }
+        title: { type: string }
+        status: { $ref: '#/components/schemas/Status' }
+        version: { $ref: '#/components/schemas/Version' }
+    TaskLink:
+      type: object
+      required: [id, projectId, type, sourceTaskId, targetTaskId, createdBy, createdAt, sourceTask, targetTask]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        projectId: { $ref: '#/components/schemas/Id' }
+        type: { $ref: '#/components/schemas/LinkType' }
+        sourceTaskId: { $ref: '#/components/schemas/Id' }
+        targetTaskId: { $ref: '#/components/schemas/Id' }
+        createdBy: { $ref: '#/components/schemas/User' }
+        createdAt: { type: string, format: date-time }
+        sourceTask: { $ref: '#/components/schemas/TaskReference' }
+        targetTask: { $ref: '#/components/schemas/TaskReference' }
+    LinkInput:
+      type: object
+      additionalProperties: false
+      required: [type, targetTaskId, version, targetVersion]
+      properties:
+        type: { $ref: '#/components/schemas/LinkType' }
+        targetTaskId: { $ref: '#/components/schemas/Id' }
+        version: { $ref: '#/components/schemas/Version' }
+        targetVersion: { $ref: '#/components/schemas/Version' }
+    LinkMutation:
+      type: object
+      required: [link, task, otherTask]
+      properties:
+        link: { $ref: '#/components/schemas/TaskLink' }
+        task: { $ref: '#/components/schemas/Task' }
+        otherTask: { $ref: '#/components/schemas/Task' }
+    LinkDeletion:
+      type: object
+      required: [task, otherTask]
+      properties:
+        task: { $ref: '#/components/schemas/Task' }
+        otherTask: { $ref: '#/components/schemas/Task' }
+    LinkPage:
+      type: object
+      required: [items, pagination]
+      properties:
+        items: { type: array, default: [], items: { $ref: '#/components/schemas/TaskLink' } }
+        pagination: { $ref: '#/components/schemas/Pagination' }
+    TaskAttachment:
+      type: object
+      required: [id, taskId, commentId, filename, contentType, sizeBytes, author, createdAt, canDelete]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        taskId: { $ref: '#/components/schemas/Id' }
+        commentId: { type: [string, 'null'] }
+        filename: { type: string, maxLength: 255 }
+        contentType:
+          type: string
+          enum: [image/png, image/jpeg, image/gif, image/webp, application/pdf, text/plain, text/markdown]
+        sizeBytes: { type: integer, minimum: 1, maximum: 4194304 }
+        author: { $ref: '#/components/schemas/User' }
+        createdAt: { type: string, format: date-time }
+        canDelete: { type: boolean, description: Autor ou gestor da sessão atual; acesso continua obrigatório. }
+    AttachmentList:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, default: [], maxItems: 5, items: { $ref: '#/components/schemas/TaskAttachment' } }
+    ActivityType:
+      type: string
+      enum: [TASK_CREATED, TASK_UPDATED, ASSIGNEES_CHANGED, COMMENT_ADDED, LINK_ADDED, LINK_REMOVED, ATTACHMENT_ADDED, ATTACHMENT_REMOVED]
+    TextValue:
+      type: object
+      additionalProperties: false
+      required: [kind, value]
+      properties:
+        kind: { type: string, const: text }
+        value: { type: [string, 'null'] }
+    NumberValue:
+      type: object
+      additionalProperties: false
+      required: [kind, value]
+      properties:
+        kind: { type: string, const: number }
+        value: { type: [integer, 'null'] }
+    UserIdsValue:
+      type: object
+      additionalProperties: false
+      required: [kind, userIds]
+      properties:
+        kind: { type: string, const: userIds }
+        userIds: { type: array, default: [], items: { $ref: '#/components/schemas/Id' } }
+    ActivityValue:
+      oneOf:
+        - $ref: '#/components/schemas/TextValue'
+        - $ref: '#/components/schemas/NumberValue'
+        - $ref: '#/components/schemas/UserIdsValue'
+      discriminator:
+        propertyName: kind
+        mapping:
+          text: '#/components/schemas/TextValue'
+          number: '#/components/schemas/NumberValue'
+          userIds: '#/components/schemas/UserIdsValue'
+    TextChange:
+      type: object
+      additionalProperties: false
+      required: [field, oldValue, newValue]
+      properties:
+        field: { type: string, enum: [status, priority, type, closeReason] }
+        oldValue: { $ref: '#/components/schemas/TextValue' }
+        newValue: { $ref: '#/components/schemas/TextValue' }
+    NumberChange:
+      type: object
+      additionalProperties: false
+      required: [field, oldValue, newValue]
+      properties:
+        field: { type: string, const: weight }
+        oldValue: { $ref: '#/components/schemas/NumberValue' }
+        newValue: { $ref: '#/components/schemas/NumberValue' }
+    AssigneesChange:
+      type: object
+      additionalProperties: false
+      required: [field, oldValue, newValue]
+      properties:
+        field: { type: string, const: assignees }
+        oldValue: { $ref: '#/components/schemas/UserIdsValue' }
+        newValue: { $ref: '#/components/schemas/UserIdsValue' }
+    ActivityChange:
+      oneOf:
+        - $ref: '#/components/schemas/TextChange'
+        - $ref: '#/components/schemas/NumberChange'
+        - $ref: '#/components/schemas/AssigneesChange'
+      description: Discriminado por field; valores text/number/userIds têm discriminator kind.
+      discriminator:
+        propertyName: field
+        mapping:
+          status: '#/components/schemas/TextChange'
+          priority: '#/components/schemas/TextChange'
+          type: '#/components/schemas/TextChange'
+          closeReason: '#/components/schemas/TextChange'
+          weight: '#/components/schemas/NumberChange'
+          assignees: '#/components/schemas/AssigneesChange'
+    RelationActivity:
+      type: object
+      required: [id, type, sourceTaskId, targetTaskId, otherTaskId, otherTaskKey]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        type: { $ref: '#/components/schemas/LinkType' }
+        sourceTaskId: { $ref: '#/components/schemas/Id' }
+        targetTaskId: { $ref: '#/components/schemas/Id' }
+        otherTaskId: { $ref: '#/components/schemas/Id' }
+        otherTaskKey: { type: string }
+    AttachmentActivity:
+      type: object
+      required: [id, filename, contentType, sizeBytes]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        filename: { type: string }
+        contentType: { type: string }
+        sizeBytes: { type: integer, minimum: 1, maximum: 4194304 }
+    TaskActivity:
+      type: object
+      required: [id, taskId, actor, createdAt, type, changes, titleChanged, descriptionChanged, commentId, relation, attachment, attachments]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        taskId: { $ref: '#/components/schemas/Id' }
+        actor: { $ref: '#/components/schemas/User' }
+        createdAt: { type: string, format: date-time }
+        type: { $ref: '#/components/schemas/ActivityType' }
+        changes: { type: array, default: [], items: { $ref: '#/components/schemas/ActivityChange' } }
+        titleChanged: { type: boolean }
+        descriptionChanged: { type: boolean }
+        commentId: { type: [string, 'null'] }
+        relation:
+          oneOf:
+            - $ref: '#/components/schemas/RelationActivity'
+            - type: 'null'
+        attachment:
+          oneOf:
+            - $ref: '#/components/schemas/AttachmentActivity'
+            - type: 'null'
+        attachments: { type: array, default: [], items: { $ref: '#/components/schemas/AttachmentActivity' } }
+    ActivityPage:
+      type: object
+      required: [items, pagination]
+      properties:
+        items: { type: array, default: [], items: { $ref: '#/components/schemas/TaskActivity' } }
+        pagination: { $ref: '#/components/schemas/Pagination' }
     Problem:
       type: object
       required: [type, title, status, detail]

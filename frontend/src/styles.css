@@ -287,3 +287,24 @@ footer { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wr
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }
 }
+/* Task workspace: one detail tree, responsive without replacing draft forms. */
+.form-fields { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 12px; }
+.task-panel-backdrop { position: fixed; inset: 0; z-index: 80; background: #070d18b8; display: flex; justify-content: flex-end; }
+.task-panel { width: min(1120px, 88vw); height: 100dvh; overflow-y: auto; overscroll-behavior: contain; background: var(--bg, #101827); padding: 24px; box-shadow: -12px 0 48px #0008; }
+.task-panel-toolbar, .editor-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; }
+.task-panel-toolbar { position: sticky; top: -24px; padding: 12px 0; background: #101827; z-index: 2; }
+.task-panel .task-detail-layout { grid-template-columns: minmax(0, 1fr); }
+.markdown-body { overflow-wrap: anywhere; min-width: 0; }
+.markdown-body pre { white-space: pre-wrap; background: #070d18; padding: 12px; border-radius: 6px; }
+.markdown-body blockquote { margin-left: 0; padding-left: 16px; border-left: 3px solid #90b8ff; }
+.markdown-body h1 { font-size: 1.5rem; }
+.markdown-body h2 { font-size: 1.25rem; }
+.markdown-editor textarea { width: 100%; min-height: 120px; }
+.editor-toolbar [aria-pressed="true"] { outline: 2px solid #b5ceff; outline-offset: 2px; }
+.file-picker { border: 1px dashed #8ca4ca; padding: 12px; border-radius: 8px; margin: 12px 0; overflow-wrap: anywhere; }
+.task-panel li, .task-full-page li { overflow-wrap: anywhere; }
+@media (max-width: 960px) {
+  .task-panel { width: 100%; padding: 16px; }
+  .task-panel-toolbar { top: -16px; }
+  .task-detail-layout { grid-template-columns: minmax(0, 1fr); }
+}

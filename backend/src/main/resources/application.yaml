@@ -10,12 +10,21 @@ spring:
     use-jackson2-defaults: true
     deserialization:
       fail-on-unknown-properties: true
+      accept-float-as-int: false
   sql:
     init:
       mode: never
+  servlet:
+    multipart:
+      max-file-size: 4MB
+      max-request-size: 21MB
 server:
   port: ${PORT:8080}
   address: ${SERVER_ADDRESS:127.0.0.1}
+  tomcat:
+    # Bounded discard lets ordinary over-limit multipart requests receive the JSON 413
+    # instead of a connection reset. This does not raise the 4/21 MiB acceptance limits.
+    max-swallow-size: 32MB
   servlet:
     session:
       timeout: 30m

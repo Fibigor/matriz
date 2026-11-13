@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import type { FormEvent } from 'react';
 import { api, ApiError } from './api';
 import type { User } from './types';
@@ -6,10 +6,17 @@ import { Projects } from './Projects';
 import { ProjectDetail, TaskDetail } from './Tasks';
 import { Feedback, useMutation } from './ui';
 import { Layout } from './Layout';
+import { TaskDetailPanel, requestTaskClose } from './TaskDetailPanel';
 
 function subscribe(callback: () => void) {
-  window.addEventListener('hashchange', callback);
-  return () => window.removeEventListener('hashchange', callback);
+  let previous = window.location.hash;
+  const navigate = () => {
+    if (!requestTaskClose()) window.history.replaceState(null, '', previous || '#/');
+    else previous = window.location.hash;
+    callback();
+  };
+  window.addEventListener('hashchange', navigate);
+  return () => window.removeEventListener('hashchange', navigate);
 }
 const hash = () => window.location.hash;
 
@@ -83,6 +90,31 @@ export default function App() {
   const [starting, setStarting] = useState(true);
   const [notice, setNotice] = useState('');
   const logout = useMutation();
+  const [background, setBackground] = useState<string>();
+  const [full, setFull] = useState(false);
+  const closePanel = useCallback(() => {
+    setBackground(previous => { if (previous) window.location.hash = '/' + previous; return undefined; });
+  }, []);
+  useEffect(() => {
+    const click = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+      const anchor = (event.target as Element).closest('a');
+      if (!anchor || anchor.target || anchor.hasAttribute('download')) return;
+      const match = anchor.getAttribute('href')?.match(/^#\/projects\/([^/]+)\/tasks\/([^/]+)$/);
+      if (!match || !window.matchMedia('(min-width: 961px)').matches) return;
+      const current = window.location.hash.replace(/^#\/?/, '');
+      if (current !== 'projects/' + match[1]) return;
+      event.preventDefault(); setBackground(current); setFull(false); window.location.hash = anchor.hash;
+    };
+    const fullPage = () => setFull(true);
+    document.addEventListener('click', click); window.addEventListener('task-full-page', fullPage);
+    const deleted = () => setBackground(undefined);
+    window.addEventListener('task-deleted', deleted);
+    return () => { document.removeEventListener('click', click); window.removeEventListener('task-full-page', fullPage); window.removeEventListener('task-deleted', deleted); };
+  }, []);
+  useEffect(() => {
+    if (background && (!path.startsWith(background + '/tasks/') || route.length !== 4)) setBackground(undefined);
+  }, [path]);
   useEffect(() => {
     const expired = () => { setUser(undefined); setNotice('A sessão terminou. Inicie sessão novamente.'); };
     window.addEventListener('session-expired', expired);
@@ -94,14 +126,20 @@ export default function App() {
   if (starting) return <main className="session-loading"><p role="status">A verificar sessão…</p></main>;
   if (!user) return <Login notice={notice} onLogin={setUser} />;
   let content = <Projects dashboard />;
+  const panel = !!background && route[0] === 'projects' && route[2] === 'tasks' && !!route[3];
   if (route[0] === 'projects') {
-    if (route[1] && route[2] === 'tasks' && route[3]) content = <TaskDetail key={route[3]} projectId={route[1]} id={route[3]} />;
+    if (panel) content = <ProjectDetail key={route[1]} id={route[1]} />;
+    else if (route[1] && route[2] === 'tasks' && route[3]) content = <TaskDetail key={route[3]} projectId={route[1]} id={route[3]} />;
     else if (route[1]) content = <ProjectDetail key={route[1]} id={route[1]} />;
     else content = <Projects />;
   }
-  return <Layout user={user} route={path} busy={logout.busy} onLogout={() => void logout.run(async () => {
+  return <Layout user={user} route={path} busy={logout.busy} onLogout={() => {
+    if (!requestTaskClose()) return;
+    void logout.run(async () => {
         await api('/auth/logout', { method: 'POST' }); setUser(undefined); setNotice('Sessão terminada.'); window.location.hash = '/';
-      }, '')}>
-    <Feedback error={logout.error} />{content}
+      }, '');
+    }}>
+    <Feedback error={logout.error} /><div hidden={panel && full}>{content}</div>
+    {panel && <TaskDetailPanel key={route[3]} close={closePanel} full={full}><TaskDetail key={route[3]} projectId={route[1]} id={route[3]} /></TaskDetailPanel>}
   </Layout>;
 }

@@ -2,7 +2,9 @@
 
 Aplicação de gestão de projetos e tarefas desenvolvida na ficha 03 de AI-Powered Software Engineering, a partir dos Specification Pack e Architecture Pack das fichas 01 e 02.
 
-**Ficha 05 — candidato `0.4.0-rc.1`, 12-11-2026:** migração autorizada para Spring Boot 4; T6 (rebuild fresco e verificação integrada final) **concluído localmente**. Passaram 19 testes Maven, 13 frontend e 5 E2E; Semgrep: 0 findings; Trivy: 0 HIGH/CRITICAL. Persistência após recriação e readiness com paragem/retoma real da DB própria passaram. Candidato não publicado; prova positiva/negativa GitHub Actions, uploads/retenção reais e revisão final humana/independente **pendentes** — não se declaram todos os critérios da ficha concluídos. Consultar [CHANGELOG.md](CHANGELOG.md), [RELEASE_NOTES.md](RELEASE_NOTES.md) e [evidências/limitações](docs/verification.md#ficha-05--candidato-040-rc1).
+**Estado atual — 13-11-2026:** extensões de tarefas aprovadas pelo autor, sobre HEAD `640b7e847f385cd69fabf0ff5ffd62dbf7f06cc2`; mantém-se o candidato `0.4.0-rc.1`, sem nova versão ou publicação. A validação final local passou: **41 testes backend, 43 frontend e 6 E2E sem falhas**, imagem final fresca em contentores novos, Trivy **0 HIGH/CRITICAL** com **294/294 pares npm e 63/63 bibliotecas JAR**, Semgrep **135 regras/47 alvos/0 findings** e actionlint **1.7.7 PASS**. Migração populada V3→V4/MAT/defaults passou no Maven; dados, relações, comentários e hashes dos bytes sobreviveram à recriação app/db no mesmo volume e à paragem/retoma da DB própria, com readiness 503 e liveness 200 durante a indisponibilidade. Esta atualização só leu evidência guardada, sem repetir execuções. Revisão independente, inspeção/aceitação humana e prova GitHub Actions no âmbito/branch atual, uploads/retenção reais continuam pendentes. [Contrato e evidências atuais](docs/verification.md#extensões-de-tarefas--13-11-2026).
+
+**Histórico da ficha 05 — 12-11-2026:** migração Spring Boot 4 e T6 local passaram com 19 Maven, 13 frontend e 5 E2E, Semgrep 0 findings e Trivy 0 HIGH/CRITICAL; persistência/readiness também passaram nessa baseline anterior às extensões. Não são prova atual das novas funcionalidades. [CHANGELOG](CHANGELOG.md), [RELEASE_NOTES](RELEASE_NOTES.md) e [registo histórico T6](docs/verification.md#ficha-05--candidato-040-rc1) permanecem fontes históricas. Prova remota GitHub Actions, uploads/retenção e aceitação humana não estão concluídos.
 
 ## Problema e objetivos
 
@@ -22,17 +24,21 @@ O autor aprovou o âmbito alargado da ficha 03 para implementação. Isso não e
 - Comentários com autor autenticado e data atribuídos pelo servidor.
 - Estados “Por fazer”, “Em curso” e “Concluída”.
 - Contagens por estado e percentagem de tarefas concluídas por projeto.
+- Chave global estável `MAT-n` (UUID continua identidade), tipos TASK/BUG/IMPROVEMENT, peso opcional e motivo de fecho opcional apenas em DONE.
+- Relações RELATED, BLOCKS e DUPLICATES no mesmo projeto; BLOCKS impede conclusão com bloqueadores não concluídos e reabertura de bloqueadores com dependentes concluídos.
+- Até cinco anexos diretos por tarefa e cinco por comentário, 4 MiB cada, guardados no PostgreSQL; download autenticado e eliminação pelo autor ou gestor.
+- Histórico imutável pela API, Markdown básico seguro em descrição/comentários e três templates fixos; detalhe partilhado entre painel desktop e página completa.
 
-Notificações, sprints, anexos, integrações, registo público, recuperação de palavra-passe e relatórios avançados ficam fora do MVP.
+Notificações, @mentions, Defcon/Goal, sprints, integrações/serviços externos, registo público, recuperação de palavra-passe e relatórios avançados ficam fora do âmbito. A aprovação de 13-11 é do autor, não validação pelo cliente; capacidade de armazenamento, backups e retenção continuam por decidir, sem purga automática.
 
-A interface mantém o tema escuro/azul inspirado no [Black Dashboard React](https://github.com/creativetimofficial/black-dashboard-react), com estrutura de espaço de trabalho ao estilo Jira: barra superior, navegação lateral, breadcrumbs, vistas e tabelas compactas. Em telemóvel, a navegação abre num diálogo modal. O painel usa as contagens reais do projeto selecionado, não métricas fictícias nem somas de uma página de projetos. Implementação original na stack existente, sem importar o template ou acrescentar dependências.
+A interface mantém o tema escuro/azul inspirado no [Black Dashboard React](https://github.com/creativetimofficial/black-dashboard-react), com estrutura de espaço de trabalho ao estilo Jira: barra superior, navegação lateral, breadcrumbs, vistas e tabelas compactas. Em telemóvel, a navegação abre num diálogo modal. O painel usa as contagens reais do projeto selecionado, não métricas fictícias nem somas de uma página de projetos. Não importa o template; a extensão aprovada usa `react-markdown` **10.1.0**, sem HTML, imagens ou GFM.
 
 ## Documentação
 
 | Ficheiro | Conteúdo |
 |---|---|
 | [docs/requirements.md](docs/requirements.md) | Visão, utilizadores, requisitos, prioridades, âmbito e exercício de Prompt Engineering. |
-| [docs/user-stories.md](docs/user-stories.md) | Onze User Stories atuais, critérios, exceções e histórico da ficha 01. |
+| [docs/user-stories.md](docs/user-stories.md) | User Stories atuais, extensões de 13-11, critérios, exceções e histórico da ficha 01. |
 | [docs/constraints.md](docs/constraints.md) | Factos, pressupostos, perguntas, segurança, decisões pendentes, revisão crítica e desafio complementar. |
 | [AGENTS.md](AGENTS.md) | Instruções persistentes para agentes que trabalhem neste projeto. |
 | [.github/copilot-instructions.md](.github/copilot-instructions.md) | Orientação curta do Copilot e ligação às regras do projeto. |
@@ -41,7 +47,7 @@ A interface mantém o tema escuro/azul inspirado no [Black Dashboard React](http
 | [docs/architecture.md](docs/architecture.md) | Comparação de arquiteturas, monólito modular escolhido, componentes, fluxos e revisão crítica. |
 | [docs/adr/README.md](docs/adr/README.md) | Índice dos Architecture Decision Records (ADRs) e decisões técnicas aceites. |
 | [docs/database.md](docs/database.md) | Entidades, cardinalidades, integridade e diagrama ER em Mermaid. |
-| [openapi.yaml](openapi.yaml) | Contrato OpenAPI 3.1 da implementação da ficha 03. |
+| [openapi.yaml](openapi.yaml) | Contrato OpenAPI 3.1 atual: 29 operações, incluindo extensões V4. |
 | [docs/ui/wireframe.png](docs/ui/wireframe.png) | Referência histórica da ficha 02, com [fonte SVG](docs/ui/wireframe.svg); não representa as extensões da ficha 03. |
 | [docs/implementation-plan.md](docs/implementation-plan.md) | Decisões aprovadas, diferenças face à ficha 02 e incrementos. |
 | [docs/verification.md](docs/verification.md) | Cenários, resultados reais, testes, revisão e limitações. |
@@ -94,7 +100,7 @@ Se já existir um volume inicializado, usar a palavra-passe com que a base de da
 
 Abrir `http://localhost:8080`. PostgreSQL fica exposto apenas em `127.0.0.1:55432` e a aplicação apenas localmente. O Dockerfile compila React e inclui os ficheiros estáticos no JAR.
 
-Flyway aplica as migrations V1, V2 e V3 automaticamente. O volume Docker conserva a base de dados. O seed fictício é ativado por `DEMO_ENABLED=true`; cria Ana, Bruno e Carla, mas não redefine palavras-passe nem dados em arranques seguintes. Não usar `docker compose down -v` para reiniciar: isso elimina o volume.
+Flyway aplica as migrations V1–V4 automaticamente. V4 atribui chaves às tarefas existentes por `(created_at,id)`, preserva UUIDs/datas/versões, define TASK e valores opcionais null, sem inventar histórico. A migração é aditiva; não apagar volumes nem editar migrations aplicadas. O volume Docker conserva a base de dados. O seed fictício é ativado por `DEMO_ENABLED=true`; cria Ana, Bruno e Carla, mas não redefine palavras-passe nem dados em arranques seguintes. Não usar `docker compose down -v` para reiniciar: isso elimina o volume.
 
 As contas fictícias usam os emails `ana@example.invalid`, `bruno@example.invalid` e `carla@example.invalid`, todas com palavra-passe **`Matriz-Demo-2026!`**. Ana gere Alfa, Bruno participa em Alfa e Carla só tem o seu projeto Beta. Estas credenciais são públicas e exclusivas da demonstração; os visitantes do Render podem alterar os dados demo. Não usar dados pessoais ou credenciais reais.
 
@@ -203,6 +209,8 @@ Este perfil é exclusivamente para demonstração temporária, não produção: 
 Parar serviços sem apagar o volume: `docker compose -p matriz-ficha3 stop`. Depois, `docker compose -p matriz-ficha3 start` volta a iniciá-los com os dados existentes.
 
 ## Estado da entrega
+
+**Final local atual das extensões — 13-11-2026:** concluído nos termos da abertura e da [execução final registada](docs/verification.md#validação-final-local-das-extensões--execução-de-13-11-2026), não uma publicação ou aceitação do cliente. App/db próprios terminaram parados e o volume foi conservado. GitHub Actions no âmbito/branch atual, uploads/retenção reais e revisão independente/humana continuam pendentes. Os parágrafos datados seguintes são históricos; os seus HEADs e números não descrevem a entrega V4 atual.
 
 Em 12-11-2026, T5 alinhou documentação, OpenAPI e manifests frontend com `0.4.0-rc.1`; o POM já tinha essa versão. T6 concluiu localmente um build fresco após esse alinhamento e validou a mesma imagem nos scans, 5 E2E, recriação app/db com persistência e observabilidade com paragem/retoma real da DB própria. Passaram 19 testes Maven e 13 frontend, além do build frontend; Semgrep teve 0 findings e Trivy 0 HIGH/CRITICAL, com cobertura 216/216 pares npm incluindo dev e 63/63 JARs internos. São resultados T6 registados, não novas execuções desta correção documental nem reutilização das medições pré-T5. Evidência e limites em [verification.md](docs/verification.md#ficha-05--candidato-040-rc1). Prova positiva/negativa GitHub Actions, uploads/retenção reais, revisão final humana/independente e arquivo/entrega portável continuam pendentes. HEAD de referência `46694e5`, candidato na worktree sem commit final; sem release/tag/publicação, validação de cliente ou certificação de produção. Não se declara a ficha integralmente concluída.
 

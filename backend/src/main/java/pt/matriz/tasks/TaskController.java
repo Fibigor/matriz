@@ -1,7 +1,11 @@
 package pt.matriz.tasks;
 
 import java.security.Principal;
+import java.util.List;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.*;
 import pt.matriz.identity.IdentityService;
 import static pt.matriz.common.ApiModels.*;
@@ -11,10 +15,14 @@ import static pt.matriz.common.ApiModels.*;
 public class TaskController {
     private final TaskService tasks;
     private final IdentityService identities;
+    private final TaskLinkService links;
+    private final TaskActivityService activity;
 
-    public TaskController(TaskService tasks, IdentityService identities) {
+    public TaskController(TaskService tasks, IdentityService identities, TaskLinkService links, TaskActivityService activity) {
         this.tasks = tasks;
         this.identities = identities;
+        this.links = links;
+        this.activity = activity;
     }
 
     private String user(Principal principal) { return identities.current(principal).id(); }
@@ -67,10 +75,43 @@ public class TaskController {
         return tasks.comments(projectId, id, user(principal), page, pageSize);
     }
 
-    @PostMapping("/{id}/comments")
+    @PostMapping(value = "/{id}/comments", consumes = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     public CommentView comment(Principal principal, @PathVariable String projectId, @PathVariable String id,
                                @RequestBody CommentInput input) {
         return tasks.comment(projectId, id, user(principal), input.content());
+    }
+
+    @PostMapping(value = "/{id}/comments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public CommentView commentFiles(Principal principal, @PathVariable String projectId, @PathVariable String id,
+                                    @RequestPart("comment") CommentInput input,
+                                    @RequestPart(value = "files", required = false) List<MultipartFile> files) {
+        return tasks.comment(projectId, id, user(principal), input.content(), files);
+    }
+
+    @GetMapping("/{id}/links")
+    public LinkPage links(Principal principal, @PathVariable String projectId, @PathVariable String id,
+                           @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int pageSize) {
+        return links.list(projectId, id, user(principal), page, pageSize);
+    }
+
+    @PostMapping("/{id}/links")
+    public ResponseEntity<LinkMutation> link(Principal principal, @PathVariable String projectId, @PathVariable String id,
+                                             @RequestBody LinkInput input) {
+        TaskLinkService.Created result = links.create(projectId, id, user(principal), input);
+        return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK).body(result.result());
+    }
+
+    @DeleteMapping("/{id}/links/{linkId}")
+    public LinkDeletion unlink(Principal principal, @PathVariable String projectId, @PathVariable String id,
+                               @PathVariable String linkId, @RequestParam Long version, @RequestParam Long targetVersion) {
+        return links.delete(projectId, id, linkId, user(principal), version, targetVersion);
+    }
+
+    @GetMapping("/{id}/activity")
+    public ActivityPage activity(Principal principal, @PathVariable String projectId, @PathVariable String id,
+                                 @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int pageSize) {
+        return activity.list(projectId, id, user(principal), page, pageSize);
     }
 }

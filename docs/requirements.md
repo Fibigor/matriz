@@ -1,6 +1,6 @@
 # Matriz — Requisitos e âmbito funcional
 
-## Especificação em vigor — ficha 03
+## Especificação em vigor — ficha 03 e extensões de 13-11-2026
 
 Em 29-10-2026 o autor aprovou implementar integralmente o âmbito da ficha 03 e as regras abaixo. Esta secção substitui as exclusões e a responsabilidade única da ficha 01; o levantamento original é conservado no histórico no final, não é uma segunda especificação em vigor. Não se presume validação com o cliente ou autorização de produção.
 
@@ -15,10 +15,15 @@ Stack escolhida: Java 21/Spring Boot, React/TypeScript e PostgreSQL, monólito m
 | RF-05 | Criar/listar/consultar tarefas persistidas, com paginação e filtros por estado e prioridade. | Must |
 | RF-06 | Participantes editam título, descrição, estado e prioridade com controlo de versão. | Must |
 | RF-07 | Gestor associa zero ou vários participantes ativos à tarefa, sem duplicados, e remove atribuições. | Must |
-| RF-08 | Transições livres entre TODO, IN_PROGRESS e DONE, incluindo reabertura e conclusão sem responsáveis. | Must |
+| RF-08 | Transições TODO/IN_PROGRESS/DONE, sem responsável obrigatório, sujeitas às invariantes BLOCKS de RN-15. | Must |
 | RF-09 | Painel e projeto apresentam contagens globais e percentagem concluída, independentes da página/filtros. | Must |
 | RF-10 | Gestor edita/elimina projetos; participantes eliminam tarefas; confirmar eliminação na interface. | Must |
 | RF-11 | Participantes adicionam/listam comentários com autor autenticado e data do servidor. | Must |
+| RF-12 | Identificar tarefas por chave global MAT-n estável; editar tipo, peso opcional e motivo de fecho opcional. | Must |
+| RF-13 | Participantes criam/listam/removem relações RELATED/BLOCKS/DUPLICATES com controlo das duas versões. | Must |
+| RF-14 | Adicionar/listar/descarregar anexos diretos ou de comentário; eliminar apenas como autor ou gestor participante. | Must |
+| RF-15 | Consultar histórico paginado, com autoria/data e alterações tipadas, sem API de edição/eliminação. | Must |
+| RF-16 | Editar/pré-visualizar Markdown básico, aplicar templates fixos e usar detalhe partilhado painel/página com rascunhos protegidos. | Must |
 
 ### Regras em vigor
 
@@ -28,18 +33,27 @@ Stack escolhida: Java 21/Spring Boot, React/TypeScript e PostgreSQL, monólito m
 - **RN-04:** membros sem atribuições podem ser removidos; atribuições de tarefas concluídas também bloqueiam remoção. Remoção retira acesso nas operações seguintes. Adição repetida não duplica participação.
 - **RN-05:** tarefa pertence a um projeto fixo; estado inicial TODO, prioridade inicial MEDIUM, sem responsáveis. Prioridades LOW/MEDIUM/HIGH. Participantes podem criar, editar e eliminar qualquer tarefa do projeto.
 - **RN-06:** tarefa admite zero ou vários responsáveis. Só participantes ativos do mesmo projeto são elegíveis; o par tarefa/utilizador é único. Atribuição inválida preserva o estado anterior.
-- **RN-07:** transições livres entre os três estados; não exigir passagem por estado intermédio ou atribuição para concluir.
+- **RN-07:** não exigir estado intermédio ou atribuição para concluir; reabertura e conclusão respeitam RN-15.
 - **RN-08:** progresso global: 100 vezes concluídas/total, arredondamento inteiro com meios para cima; projeto sem tarefas apresenta 0% e “Sem tarefas”. Filtros afetam resultados/paginação, não os agregados globais.
 - **RN-09:** operações transacionais; nenhuma falha é anunciada como sucesso. Edições de projeto/tarefa e alterações de atribuição exigem versão atual, caso contrário 409. Atribuição repetida é idempotente quando a versão é atual. Falha de transporte pode deixar resultado incerto; não repetir escritas automaticamente.
-- **RN-10:** eliminar tarefa remove comentários/atribuições; eliminar projeto remove também tarefas/participações. Só remover após confirmação humana na interface. Não eliminar contas por esta API.
-- **RN-11:** comentários têm 1–2 000 pontos de código após remoção de espaços nas extremidades, autor/data definidos no servidor; conteúdo tratado como texto. Não há edição/eliminação de comentário isolado no MVP.
+- **RN-10:** eliminar tarefa remove comentários/atribuições/relações/anexos/histórico; eliminar projeto remove também tarefas/participações. Extremos sobreviventes registam LINK_REMOVED sem mudar estado/versão/datas. Só remover após confirmação humana na interface. Não eliminar contas por esta API.
+- **RN-11:** comentários têm 1–2 000 pontos de código após remoção de espaços nas extremidades, autor/data definidos no servidor; Markdown básico seguro conforme RN-18. Não há edição/eliminação de comentário isolado nem upload posterior ao comentário.
 - **RN-12:** autenticação local usa hash scrypt e sessão no servidor com timeout inativo de 30 minutos; CSRF protege login e escritas, erros de credenciais são genéricos e cinco falhas por email/endereço em 15 minutos bloqueiam novas tentativas durante 15 minutos. O limite é mantido em memória por instância e reiniciar o serviço limpa o estado; produção está diferida. Não há registo público nem recuperação de palavra-passe.
+- **RN-13:** chave única global `MAT-n`, sequencial com lacunas permitidas; UUID continua identidade e projeto é fixo. Tipo TASK/BUG/IMPROVEMENT, inicial TASK; peso null ou 1/2/3/5/8/13, sem ponderação do progresso. Motivo null ou COMPLETED/CANCELLED/DUPLICATE/WONT_DO apenas em DONE; todos os DONE contam como concluídos.
+- **RN-14:** PUT continua a exigir título/estado/prioridade/versão; descrição omitida/null normaliza para vazio. Tipo/peso omitidos preservam; type null explícito no PUT é 422, weight null limpa. Motivo omitido preserva em DONE→DONE, entrada em DONE sem motivo dá null; reabertura limpa-o, motivo não null fora de DONE é 422. PUT aceite incrementa versão mesmo sem alteração efetiva; nesse caso não emite evento.
+- **RN-15:** RELATED simétrica com extremos canónicos por ID; BLOCKS/DUPLICATES dirigidas, mesmo projeto, sem auto-relação ou duplicação do mesmo tipo/direção. Tipos distintos podem coexistir; apenas BLOCKS proíbe ciclos. A BLOCKS B permite B iniciar/editar, mas entrar em DONE exige todos os bloqueadores diretos DONE; A não reabre com qualquer dependente direto DONE. Criar A não DONE BLOCKS B DONE é 422. Remover relação/eliminar bloqueador desbloqueia sem mudar estados.
+- **RN-16:** POST/DELETE de relação exigem versão da tarefa da rota e targetVersion do outro extremo, mesmo no POST repetido ou DELETE pelo extremo de entrada. Criação/remoção explícita incrementa ambas uma vez; POST duplicado atual dá 200 sem incremento/evento. Versão antiga é 409; auto-relação/ciclo/bloqueio semântico é 422. Lock da linha do projeto serializa verificações/escritas, com revalidação de conta ativa/participação após espera; histórico participa na mesma transação.
+- **RN-17:** anexos PostgreSQL BYTEA, até 5 diretos por tarefa e independentemente 5 por comentário, cada um 1–4 194 304 bytes. Multipart `files` repetidos; comentário aceita JSON `{content}` ou multipart `comment` application/json mais ficheiros opcionais, texto sempre obrigatório e lote/comentário/evento atómicos. PNG/JPEG/GIF/WebP/PDF/TXT/MD exigem extensão/MIME/validação limitada de conteúdo; UTF-8 estrito, sem NUL ou markup HTML/XML/SVG nos ficheiros textuais. Participante adiciona; só autor ou gestor ainda participante elimina; download revalida acesso e usa attachment/nosniff/no-store. Anexos/comentários não incrementam versão/updatedAt da tarefa.
+- **RN-18:** descrição/comentário mantêm limite de 2 000 pontos de código; react-markdown 10.1.0 apresenta títulos, listas, negrito, ênfase, citações e código, ligações HTTP/HTTPS, sem HTML/imagens/GFM. Três templates fixos TASK/BUG/IMPROVEMENT; substituir descrição não vazia exige confirmação; mudar tipo não aplica template. Painel a partir da lista desktop (>960 px), página em acesso hash direto/móvel, mesmo detalhe; foco devolvido, Escape/inert no painel, adaptação ao redimensionamento e rascunhos protegidos na navegação.
+- **RN-19:** histórico apenas de leitura, com ator/data do servidor; antigos/novos `text`, `number` ou `userIds`, sem copiar título/descrição/texto de comentário. Comentário gera uma referência/evento com metadados dos seus anexos, sem eventos duplicados de upload; relações geram evento por extremo, anexos diretos eventos singulares. Referências opcionais null/listas vazias. V4 preserva datas/versões e não cria backfill; cascata remove história da tarefa eliminada, não os snapshots dos sobreviventes.
+
+A aprovação destes RF-12–16/RN-13–19 é do autor em **13-11-2026**, para implementação académica; não é validação do cliente. Contrato atual em [OpenAPI](../openapi.yaml), arquitetura/dados e [evidência](verification.md#extensões-de-tarefas--13-11-2026).
 
 ### Qualidade e exclusões
 
 Mantêm-se RNF-01 a RNF-06 do levantamento inicial: autorização direta, persistência, validação com texto conservado, teclado/rótulos/estados textuais, minimização de dados e concorrência sem perda silenciosa. Um ano de retenção é apenas um pressuposto provisório para discussão, não uma policy aprovada: âmbito dos dados e evento inicial do prazo continuam indefinidos; não existe purga automática. A demonstração temporária está publicada em [https://matriz-demo-h27u.onrender.com](https://matriz-demo-h27u.onrender.com), com a base de dados gratuita atual a expirar em 2 de dezembro de 2026; este limite da infraestrutura não define a retenção da aplicação. p95 é uma métrica a recolher, sem carga de referência ou alvo aprovado. A produção continua diferida; a demonstração não implica autorização nem prontidão de produção. A cobertura observada nos testes da ficha 03 e os procedimentos para verificar cada fluxo por teclado estão em [verification.md](verification.md); não se alega conformidade integral de acessibilidade.
 
-Sem notificações, anexos, sprints, integrações, registo público ou relatórios avançados. A policy de retenção e o respetivo âmbito/evento inicial, identidade empresarial, backups, metas de escala/disponibilidade, segurança e obrigações legais de produção continuam pendentes. Documentar resultados reais em [verification.md](verification.md).
+Sem notificações, @mentions, Defcon/Goal, sprints, integrações/serviços externos, registo público ou relatórios avançados. Capacidade do PostgreSQL BYTEA, crescimento de anexos/histórico e backups exigem avaliação; não há autosweep ou decisão de retenção adicional. Validação de formatos não é antivírus, parsing completo de média ou certificação PDF. A policy de retenção e o respetivo âmbito/evento inicial, identidade empresarial, backups, metas de escala/disponibilidade, segurança e obrigações legais de produção continuam pendentes. Documentar resultados reais em [verification.md](verification.md).
 
 <details>
 <summary>Histórico da ficha 01 — levantamento inicial e exercício de prompts; âmbito substituído acima</summary>
