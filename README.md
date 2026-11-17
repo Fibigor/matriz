@@ -69,21 +69,98 @@ Leitura recomendada: requisitos, restrições e User Stories. Os agentes devem c
 
 ## Utilizar o fluxo de agentes
 
-Para alterações não triviais, comece pelo agente **Planeador Matriz** no seletor de agentes do Copilot. Descreva o resultado pretendido e peça uma proposta com âmbito, critérios de aceitação, ficheiros afetados, dependências e validações. Responda às perguntas de clarificação e reveja o plano antes de o aprovar. O planeador não deve alterar ficheiros nesta fase.
+Para alterações não triviais, comece pelo agente **Planeador Matriz** no seletor de agentes do Copilot. Descreva o resultado pretendido e peça uma proposta com âmbito, critérios de aceitação, ficheiros afetados, dependências e validações. Responda às perguntas de clarificação e reveja a proposta antes de aprovar a escrita dos artefactos. O planeador não altera ficheiros na análise inicial.
+
+Para incrementos novos, o planeador usa as skills `speckit-specify`, `speckit-clarify`, `speckit-plan`, `speckit-tasks` e `speckit-analyze`, com `speckit-checklist` quando útil. Depois de aprovados os caminhos concretos, pode criar/editar apenas os artefactos em `specs/<identificador>-<nome>/` e o estado `.specify/feature.json` necessário. Não implementa código, executa testes nem altera documentação canónica. A aprovação destes artefactos **não autoriza a implementação**. Para tarefas pequenas ou manutenção, pode propor um plano mínimo em chat, sem criar uma feature artificial.
 
 Pode fornecer documentos PDF e apresentações PPT/PPTX como contexto. O planeador usa leitura nativa ou extração local com ferramentas já disponíveis, identifica as páginas/slides usados e assinala conteúdo que não conseguiu ler. Não instala dependências nem envia os documentos para serviços externos; se faltar suporte, pede uma exportação ou o conteúdo relevante. A extração textual não garante a leitura de imagens ou diagramas.
 
-No final da análise, recebe uma **descrição para o utilizador** e um **prompt de handover para o Orquestrador Matriz**, pronto a copiar, com o plano, critérios, caminhos, dependências, validação e estado real da aprovação. O prompt não substitui a aprovação humana nem inicia a implementação automaticamente.
+No final do planeamento, recebe uma **descrição para o utilizador** e um **prompt de handover para o Orquestrador Matriz**, pronto a copiar, com o plano, critérios, caminhos dos artefactos, IDs das tarefas, dependências, validação e estado real da aprovação. O handover referencia a mesma especificação/plano/tarefas, sem criar cópias concorrentes. O prompt não substitui a aprovação humana nem inicia a implementação automaticamente.
 
 Depois da aprovação:
 
 1. Para trabalho com várias tarefas, entregue o prompt de handover e a aprovação explícita do plano ao **Orquestrador Matriz**. Ele coordena as tarefas e só paraleliza até três quando não há conflitos de ficheiros, dependências ou validação; caso contrário, segue sequencialmente.
 2. Para uma tarefa isolada, ou quando o orquestrador a encaminhar, escolha o agente adequado: **Engenheiro Backend Matriz** para Java/Spring e persistência; **Engenheiro Frontend Matriz** para React/TypeScript e interface; **Engenheiro de Documentação e Configuração Matriz** para documentação, CI e configuração.
-3. Dê a cada tarefa um âmbito e critérios aprovados. Confirme os ficheiros novos/removidos e qualquer mudança fora do plano antes de permitir que avance.
-4. Peça ao **Revisor Matriz** uma revisão independente depois da implementação. O revisor não altera ficheiros; verifica critérios e evidências e assinala o que não conseguiu validar.
+3. Dê a cada tarefa um âmbito e critérios aprovados. Os engenheiros usam `speckit-implement` apenas nos IDs e caminhos atribuídos, nunca no backlog inteiro por omissão. O orquestrador designa um único escritor de `tasks.md`, normalmente o engenheiro de documentação/configuração, para evitar alterações concorrentes. Confirme os ficheiros novos/removidos e qualquer mudança fora do plano antes de permitir que avance.
+4. Peça ao **Revisor Matriz** uma revisão independente depois da implementação. O revisor usa `speckit-analyze` quando existem os artefactos necessários, sem hooks nem persistência de estado, e revê também o diff e as evidências. Não altera ficheiros nem executa `speckit-converge`, que pode escrever tarefas/relatórios.
 5. Inspecione as alterações e os resultados. A pessoa responsável decide os próximos passos e executa commit, push ou publicação apenas com a aprovação necessária.
 
 As skills `contexto-matriz` e `validacao-matriz` complementam o fluxo: a primeira orienta a leitura das regras atuais e fontes de verdade; a segunda ajuda a selecionar verificações existentes e a relatar resultados reais. Todos os agentes devem respeitar `AGENTS.md`: usar dados fictícios, preservar `.env` e volumes, não inventar resultados e pedir autorização para operações sensíveis. Para uma tarefa pequena, o planeador pode propor um único passo, sem necessidade de criar um plano extenso.
+
+Se o cliente não disponibilizar invocação de skills ao agente, este lê o respetivo `SKILL.md`, segue as instruções compatíveis com o seu papel e declara a limitação; mencionar um comando não comprova a sua execução. `speckit-converge` fica reservado a uma tarefa de avaliação separada e aprovada para o engenheiro de documentação/configuração, sem iniciar automaticamente o trabalho identificado. Alterar a constituição também exige aprovação própria.
+
+## Spec Kit — incrementos novos
+
+Integração [GitHub Spec Kit v1.4.2](https://github.com/github/spec-kit/releases/tag/v1.4.2)
+para Copilot, com scripts PowerShell. A [constituição](.specify/memory/constitution.md)
+adapta o processo ao [AGENTS.md](AGENTS.md); não substitui os agentes Matriz.
+`docs/` e `openapi.yaml` continuam fontes canónicas. Não houve migração retroativa:
+`specs/` será criado apenas para um incremento novo aprovado.
+
+As nove skills estão em `.github/skills/speckit-*/SKILL.md`. No chat do Copilot,
+use-as **uma de cada vez**, revendo os resultados:
+
+```text
+/speckit-specify <descrever o incremento novo>
+/speckit-clarify
+/speckit-plan
+/speckit-tasks
+/speckit-analyze
+/speckit-implement
+/speckit-converge
+```
+
+`/speckit-checklist` apoia a revisão dos requisitos; `/speckit-constitution`
+propõe alterações aos princípios já preenchidos. As skills complementam o
+planeador/orquestrador/engenheiros/revisor Matriz, sem executar ambos os fluxos
+em duplicado. Se as skills não aparecerem, reabra a sessão do Copilot no repositório;
+a descoberta depende do cliente e da versão do Copilot utilizados.
+
+**Aprovações:** antes de qualquer fase que escreva, o agente apresenta os caminhos
+a criar/alterar, incluindo `specs/` e `.specify/feature.json`, e aguarda autorização.
+Invocar uma skill ou passar um checklist não aprova a implementação nem a fase
+seguinte. Não há extensões opcionais nem automatização Git instalada. Os blocos
+“Matriz: local governance” nas nove skills são adaptações locais, não conteúdo
+oficial inalterado; preservá-los nas atualizações.
+
+### CLI e reprodução da instalação
+
+Pré-requisitos da ferramenta: Python 3.11+, Git, PowerShell e `uv`. São ferramentas
+de desenvolvimento, não dependências da aplicação. Para instalar numa máquina
+nova, após autorização:
+
+```powershell
+python -m pip install --user uv
+python -m uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v1.4.2
+& "$env:USERPROFILE\.local\bin\specify.exe" version
+```
+
+O último comando funciona com a localização padrão de executáveis do uv no
+Windows, mesmo sem essa pasta no PATH. Se o uv tiver uma localização personalizada,
+consulte `python -m uv tool dir --bin-dir`. Se já existir outra instalação, não a
+substitua sem rever a versão e obter autorização.
+
+Os ficheiros base foram gerados pelo CLI 1.4.2 com
+`--integration copilot --script ps --non-interactive --ignore-agent-tools`.
+A opção `--ignore-agent-tools` dispensa apenas a verificação do executável do
+assistente; não comprova a descoberta das skills no cliente.
+Para reproduzir o scaffolding, gerar **numa pasta nova**, fora deste repositório:
+
+```powershell
+& "$env:USERPROFILE\.local\bin\specify.exe" init C:\caminho\novo\matriz-speckit-review --integration copilot --script ps --non-interactive --ignore-agent-tools
+```
+
+Rever o diff antes de atualizar. Não repetir `init --here --force` sobre esta
+integração: pode substituir a constituição e as adaptações locais. Os manifests
+em `.specify/` registam a versão; uma atualização do CLI não autoriza nem garante
+a atualização dos ficheiros versionados.
+
+Verificações locais sem criar uma feature ou executar a aplicação:
+
+```powershell
+& "$env:USERPROFILE\.local\bin\specify.exe" version
+.\.specify\scripts\powershell\resolve-template.ps1 spec-template -Json
+```
 
 ## Executar localmente
 

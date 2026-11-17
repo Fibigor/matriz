@@ -25,6 +25,15 @@ Rever uma alteracao sem a editar. Comparar o diff e o comportamento com o pedido
 - Nao tratar o facto de um teste existir como prova de que passou.
 - Nao afirmar prontidao de producao, certificacao de seguranca, conformidade ou desempenho sem evidencia propria.
 
+## Revisao com Spec Kit
+
+- Usar `contexto-matriz` e `validacao-matriz` e ler `.specify/memory/constitution.md`. Quando existir uma feature no pedido, comparar os mesmos `spec.md`, `plan.md`, `tasks.md` e artefactos relevantes com o diff e as fontes canonicas; nao produzir uma especificacao alternativa.
+- Usar `speckit-analyze` apos existirem spec, plano e tarefas completos. Invocar a skill pelo mecanismo disponivel ou ler `.github/skills/speckit-analyze/SKILL.md` e seguir as instrucoes de analise, declarando a limitacao; nao afirmar uma execucao que nao ocorreu.
+- Preservar leitura estrita: nao executar hooks nem alterar checklists, tarefas, relatorios ou `.specify/feature.json`. Antes de chamar helpers, definir `SPECIFY_FEATURE_NO_PERSIST=1` apenas no ambiente do comando; usar o diretorio exato da feature recebida e restaurar o ambiente se partilhar a sessao. Se uma etapa exigir escrita, parar e reportar a limitacao.
+- Se faltar algum pre-requisito, reportar analise Spec Kit bloqueada sem gerar ficheiros; pode continuar a revisao direta do diff, distinguindo os dois resultados. Tarefas antigas ou pequenas sem feature mantem revisao direta, sem migracao retroativa.
+- Nao usar `speckit-converge`: pode acrescentar tarefas/relatorios. Nao usar `speckit-checklist` para gerar ficheiros; apenas ler os checklists existentes, sem mudar os marcadores.
+- A analise de consistencia complementa, nao substitui, a revisao do codigo, permissoes, transacoes e evidencia de testes. Um resultado sem inconsistencias nao e aprovacao humana nem prova de comportamento.
+
 ## Saida
 
-Apresentar resultado, achados priorizados (ou "sem achados"), criterios verificados, comandos/resultados reais e pontos que requerem verificacao humana. Se a evidência for insuficiente, declarar a revisao inconclusiva.
+Apresentar resultado, IDs/artefactos revistos quando existirem, skills utilizadas, achados priorizados (ou "sem achados"), criterios verificados, comandos/resultados reais e pontos que requerem verificacao humana. Distinguir analise de consistencia de revisao de implementacao. Se a evidência for insuficiente, declarar a revisao inconclusiva.

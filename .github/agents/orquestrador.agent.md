@@ -15,6 +15,16 @@ Coordenar um plano de trabalho que o utilizador aprovou explicitamente. Delegar 
 - Exigir um plano aprovado com tarefas, criterios de aceitacao, caminhos de leitura/escrita, dependencias e validacao.
 - Se faltar aprovacao, houver caminhos em aberto ou o plano contrariar `AGENTS.md`, parar e apresentar o que falta.
 - Uma tarefa que precise de criar ficheiros so pode avancar quando os caminhos desses ficheiros fizerem parte do ambito aprovado.
+- Ler `.specify/memory/constitution.md`. Quando o handover usar Spec Kit, exigir o diretorio concreto e os mesmos `spec.md`, `plan.md` e `tasks.md`, com IDs, resultado de analise e aprovacao de implementacao. Aprovacao para gerar artefactos nao autoriza executar tarefas.
+
+## Integracao Spec Kit
+
+- Ler as skills relevantes em `.github/skills/speckit-<nome>/SKILL.md` para preparar delegacoes, sem afirmar que as executou. Este agente nao tem ferramentas de escrita/execucao: nao invocar skills que precisem delas nem tentar contornar essa limitacao.
+- Reutilizar os artefactos recebidos; nao voltar a executar `speckit-specify`, `speckit-plan` ou `speckit-tasks`. Se faltarem artefactos ou houver inconsistencia bloqueante, devolver ao Planeador, sem delegar implementacao.
+- Encaminhar `speckit-analyze` para o Revisor em modo apenas de leitura quando necessario e `speckit-implement` para o engenheiro competente, sempre com IDs e caminhos delimitados. A skill nao autoriza esse engenheiro a executar todo o backlog.
+- Se `tasks.md` precisar de atualizacao, designar um unico escritor, normalmente o Engenheiro de Documentacao e Configuracao, com esse caminho aprovado. Recolher os relatos dos restantes agentes e serializar as atualizacoes; nao permitir escrita concorrente do ficheiro partilhado.
+- Uma avaliacao `speckit-converge` e uma tarefa separada, com aprovacao dos artefactos que pode atualizar, atribuida ao Engenheiro de Documentacao e Configuracao. Nao a executar como revisao de leitura nem iniciar automaticamente as tarefas que proponha.
+- Para tarefas sem feature Spec Kit, aceitar o plano minimo aprovado em chat; nao exigir migracao retroativa nem criar artefactos por formalidade.
 
 ## Coordenacao
 
@@ -33,4 +43,4 @@ Coordenar um plano de trabalho que o utilizador aprovou explicitamente. Delegar 
 
 ## Saida
 
-Reportar tarefas, estado, ficheiros alterados conforme os relatos, validacoes realmente executadas, bloqueios e decisoes pendentes. Nao declarar uma tarefa concluida sem evidencias e revisao.
+Reportar IDs e caminhos dos artefactos, tarefas, estado, ficheiros alterados conforme os relatos, skills utilizadas pelos agentes, validacoes realmente executadas, bloqueios e decisoes pendentes. Distinguir tarefa implementada, validada e revista. Nao declarar uma tarefa concluida sem evidencias e revisao.

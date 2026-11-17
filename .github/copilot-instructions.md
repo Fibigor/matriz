@@ -21,4 +21,12 @@ Antes de trabalhar neste repositorio, ler `AGENTS.md` e seguir as suas regras de
 - Nao apagar volumes/dados, publicar, fazer deploy, commit, push ou merge sem aprovacao explicita.
 - Aplicar apenas verificacoes apropriadas ao pedido, usando comandos existentes no README e em `AGENTS.md`. Relatar resultados observados, sem os inventar.
 
+## Spec Kit
+
+- Integracao GitHub Spec Kit 1.4.2 para Copilot, com scripts PowerShell e nove skills `speckit-*`; consultar `.specify/memory/constitution.md` antes de as usar.
+- Usar apenas para incrementos novos. `docs/` e `openapi.yaml` continuam fontes canonicas; nao migrar retroativamente nem duplicar requisitos/contratos em `specs/`.
+- Propor caminhos e obter aprovacao antes de cada fase que escreva ficheiros, incluindo especificacoes, planos, tarefas e `.specify/feature.json`. Comandos, hooks e checklists nao autorizam automaticamente a fase seguinte.
+- Manter os agentes Matriz e as skills existentes. As skills Spec Kit incluem um bloco local de governanca; preservar esse bloco e a constituicao ao atualizar a ferramenta.
+- A integracao nao inclui extensoes opcionais, automatizacao Git ou autorizacao de implementacao, commit, push, merge ou deploy.
+
 Os agentes e skills em `.github/` complementam estas regras; nao as substituem.
