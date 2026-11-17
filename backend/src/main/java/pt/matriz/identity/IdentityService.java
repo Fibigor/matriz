@@ -1,16 +1,47 @@
 package pt.matriz.identity;
 
 import java.security.Principal;
+import java.util.Locale;
+import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import pt.matriz.common.ApiException;
 import pt.matriz.common.ApiModels.UserView;
+import pt.matriz.common.Inputs;
 
 @Service
 public class IdentityService {
     private final JdbcTemplate db;
+    private final PasswordEncoder passwords;
 
-    public IdentityService(JdbcTemplate db) { this.db = db; }
+    public IdentityService(JdbcTemplate db, PasswordEncoder passwords) {
+        this.db = db;
+        this.passwords = passwords;
+    }
+
+    @Transactional
+    public void register(String displayName, String email, String password) {
+        String name = Inputs.title(displayName, 120, "displayName");
+        String normalizedEmail = email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
+        if (normalizedEmail.isBlank() || normalizedEmail.length() > 254
+                || !normalizedEmail.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            throw Inputs.invalid("email", "Indique um email válido com até 254 caracteres.");
+        }
+        int length = password == null ? 0 : password.codePointCount(0, password.length());
+        if (length < 12 || length > 200) {
+            throw Inputs.invalid("password", "Use entre 12 e 200 caracteres.");
+        }
+        String id = UUID.randomUUID().toString();
+        // Target only V3's email index: other integrity/database failures must propagate.
+        int inserted = db.update("""
+                INSERT INTO app_user (id, username, display_name, email, password_hash, active)
+                VALUES (?, ?, ?, ?, ?, true)
+                ON CONFLICT (lower(email)) WHERE email IS NOT NULL DO NOTHING
+                """, id, "registered-" + id, name, normalizedEmail, passwords.encode(password));
+        if (inserted == 0) throw new ApiException(409, "Já existe uma conta com este email.", "email");
+    }
 
     public UserView current(Principal principal) {
         if (principal == null || principal.getName() == null || principal.getName().isBlank()) {

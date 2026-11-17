@@ -1,6 +1,6 @@
 # Matriz — Histórias e critérios de aceitação
 
-## Backlog em vigor — ficha 03 e extensões de 13-11-2026
+## Backlog em vigor — ficha 03, extensões V4 e registo académico
 
 O autor aprovou o âmbito alargado da ficha 03 em 29-10-2026. As histórias seguintes têm prioridade Must e substituem as regras incompatíveis do histórico da ficha 01. Cenários Given/When/Then são critérios de aceitação; a execução observada é registada separadamente em [verification.md](verification.md).
 
@@ -25,8 +25,22 @@ O autor aprovou o âmbito alargado da ficha 03 em 29-10-2026. As histórias segu
 | US-17 / RF-14 | Como participante, quero descarregar e como autor/gestor remover anexos, para controlar os ficheiros. | Given acesso atual, Then download binário com Content-Disposition attachment, nosniff e no-store. Membro não autor recebe 403 ao eliminar; autor removido/inativo não conserva acesso; tarefa/projeto alheio ou ficheiro não incidente dá 404. Remoção conserva metadados históricos e não muda versão/estado da tarefa. |
 | US-18 / RF-15 | Como participante, quero consultar história atribuída e paginada, para compreender alterações. | Given alteração efetiva, Then ator/data e oldValue/newValue tipados text/number/userIds; título/descrição só flags, comentário só referência e metadados de anexos num evento. Repetição idempotente não emite evento; V4 não inventa backfill; listas vazias/referências null; remoção de tarefa faz cascata da sua história. |
 | US-19 / RF-16 | Como participante, quero Markdown/templates e detalhe acessível, para editar sem perder rascunhos. | Given descrição/comentário ≤2 000 pontos de código, Then pré-visualização básica sem HTML/imagens/GFM, só HTTP/HTTPS; template fixo depende do tipo, substituir texto exige confirmação, mudar tipo não o aplica. Painel desktop da lista (>960 px), hash direto/móvel em página; mesmo detalhe, foco/Escape/inert, adaptação ao resize; cancelar saída/recuperação mantém rascunho. |
+| US-20 / RF-17 | Como visitante da demonstração académica, quero criar uma conta e depois iniciar sessão explicitamente, para criar os meus projetos sem herdar acesso alheio. | Critérios AC-20.1–8 abaixo; RN-20–22. |
 
 US-12–19 foram aprovadas pelo autor em **13-11-2026**; critérios não são prova de execução nem validação do cliente. [Relatórios armazenados e pendências](verification.md#extensões-de-tarefas--13-11-2026) distinguem as duas coisas.
+
+### Registo académico — US-20
+
+**Decisão do autor em 17-11-2026**, prioridade Must, RF-17/RN-20–22; não validação do cliente. [Estado de evidência e T4 pendente](verification.md#registo-académico--17-11-2026).
+
+- **AC-20.1:** Given visitante no login, When escolhe “Criar conta”, Then formulário com nome/email/password/confirmação e foco no nome, rótulos e erros associados; aviso académico/conta ativa sem confirmação email. Voltar ao login devolve foco ao email.
+- **AC-20.2:** Given nome aparado com 1 ou 120 pontos de código, email normalizado válido até 254 unidades UTF-16 e password com 12 ou 200 pontos, Then aceita; nome vazio/121, email inválido/255 ou password 11/201 são recusados sem truncagem. Espaços na password contam e não são aparados, sem composição obrigatória. Confirmação exata é validada só na UI e não integra o JSON.
+- **AC-20.3:** Given CSRF válido, When envia JSON `{displayName,email,password}` válido, Then 201 `application/json` exatamente `{"message":"Conta criada. Inicie sessão."}`, conta ativa com hash scrypt e UUID/username internos únicos gerados. Não responde com perfil/hash/password nem estabelece autenticação; `/api/auth/me` continua 401 para visitante.
+- **AC-20.4:** Given sucesso, Then UI regressa ao login com confirmação, foco no email e password vazia, sem transportar/guardar password nem enviar login automático. When inicia sessão explicitamente, Then lista de projetos inicialmente vazia, sem participações/privilégios herdados; pode criar projeto pelas permissões atuais e terminar sessão.
+- **AC-20.5:** Given email já existente, inclusive duas criações concorrentes ou variantes de caixa/espaços, Then um único registo e 409 explícito com erro `email`, sem alterar conta/hash existente. A divulgação de existência é aceite pelo autor; validações de campos dão 422 e `errors[{field,message}]`.
+- **AC-20.6:** Given pedidos sem CSRF/válido alternados, Then ausente/inválido dá 403 sem consumir quota. Os primeiros cinco pedidos com CSRF válido por endereço remoto observado em 15 minutos contam independentemente do sucesso/erro, incluindo JSON/campos inválidos; seguinte dá 429 com `Retry-After`. Literal e `/api/auth/registe%72` partilham quota; mudar forwarded cliente não a contorna. Outro endereço tem quota própria, login independente; expiração da janela/restart limpa tentativas como descrito em RN-22. Não se promete IP visitante real atrás de proxy.
+- **AC-20.7:** Given erro 422/409/429/indisponibilidade/transporte, Then não anuncia sucesso, conserva formulário para correção e não repete escrita automaticamente; erro de campo foca o campo. Durante submissão bloqueia duplicação e navegação. Falha de transporte avisa resultado incerto.
+- **AC-20.8:** Given email Unicode aceite pela regex do backend, When submete registo e depois login por teclado, Then o mesmo validador da UI permite ambos sem rejeição HTML `type=email`; login continua compatível com passwords antigas curtas e máximo 200 pontos de código. Contas demo, sessão/CSRF e permissões existentes não são substituídas.
 
 ### Exceções transversais
 

@@ -1,5 +1,22 @@
 # Ficha 03 — Plano de implementação
 
+## Registo académico — plano aprovado em 17-11-2026
+
+Decisão do autor («segue o plano anterior»), não validação do cliente, publicação ou produção. Este incremento substitui **apenas** a exclusão anterior de registo público. As secções datadas seguintes conservam o plano, contagens e decisões das fases anteriores: “mais recente”, “atual”, “sem registo público” e 21/29 operações nessas fases não substituem este incremento; o contrato vigente passa a **30 operações**. Candidato mantém `0.4.0-rc.1`.
+
+| Tarefa do plano de registo | Âmbito / estado comunicado | Evidência e limite |
+|---|---|---|
+| T1 — Backend | Implementada e revista segundo handover; findings concretos corrigidos. AuthController, IdentityService, SecurityConfig, RegistrationThrottle e testes. | Leitura T3 confirma contrato e matcher PathPattern partilhado no filtro/autorização após CSRF. Reports Surefire locais: 49 testes, zero falhas/erros/skips, incluindo regressão HTTP literal/codificada; não reexecutados em T3. |
+| T2 — Frontend | Implementada e revista segundo handover; correção Unicode revista nas fontes/testes. App.tsx e App.test.tsx. | npm test 56 OK, build e diffcheck OK **relatados**; revisor conferiu fontes/testes sem rerun, não nova execução T3. Validador partilhado login/registo sem bloqueio HTML type=email, sucesso sem transportar/guardar password. |
+| T3 — Documentação | Só edição de README, AGENTS, .github/copilot-instructions, skill contexto-matriz, OpenAPI e requirements/constraints/user-stories/architecture/database/implementation-plan/verification. | Atualizar contexto, RF-17/RN-20–22, US-20, contrato/arquitetura/dados, rastreabilidade e pendências. Sem criar/remover ficheiros; preservar implementação/worktree/staging/arquivos/configurações e resultados históricos. Verificações estáticas em [verification](verification.md#registo-académico--17-11-2026). |
+| T4 — Revisão/validação seguinte | Pendente após T3. Nenhuma inspeção visual/E2E nova executada até este handover. | Rever coerência e executar, quando autorizado, fluxo integrado/teclado/desktop-móvel: registo → confirmação no login sem auto-login/password → login explícito → projetos vazios/criação permitida → logout; erros/CSRF/quota/Unicode e regressões. Registar execução/ambiente/resultados reais, sem reutilizar 6 E2E/scans de 13-11 como prova do registo. |
+
+Contrato confirmado: POST `/api/auth/register` público com CSRF, JSON displayName/email/password, 201 application/json só `{"message":"Conta criada. Inicie sessão."}`, conta ativa sem confirmação email e sem autenticação. 422 errors por campo, 409 email existente inclusive concorrência (divulgação aceite), 429 Retry-After. Registo independente do login, 5 pedidos/endereço remoto observado/15 min contando sucessos e falhas após CSRF válido, memória por instância limpa no restart; não confia em forwarded cliente, proxy pode agregar visitantes (sem promessa de IP real).
+
+Nome 1–120 pontos após trim; email trim/lowercase máximo 254 unidades UTF-16 normalizadas e regex compatível com login/Unicode; password de registo 12–200 pontos sem trim/composição, espaços permitidos, confirmação só local. Login mantém passwords antigas curtas e até 200 pontos. UUID/username internos únicos gerados, hash scrypt, sem projetos/participações/privilégios herdados; pode criar projetos após login. Schema V3 suficiente, sem migration/deps. Excluídos recuperação/email/integrações externas/produção. Não altera CI/Render nem autoriza commit/push/deploy/instalação.
+
+Fontes: código atual T1/T2 e testes, migrations V1/V3, handover aprovado e reports locais; [RF-17](requirements.md), [US-20](user-stories.md#registo-académico--us-20), [contrato](../openapi.yaml), [evidência e verificações T3](verification.md#registo-académico--17-11-2026). Decisões de cliente/produção, identidade empresarial, capacidade/backups/retenção/p95 e publicação continuam pendentes, sem alterar decisões antigas para aparentar nova validação.
+
 ## Revisão documental T1 → T2 — 17-11-2026
 
 Executada sequencialmente no âmbito aprovado, sem alteração funcional: T1 organizou [arquitetura/dados então V1 e V2](architecture/README.md), manteve [entradas](architecture.md) [canónicas](database.md) e transferiu wireframes históricos sem mudar bytes; T2 acrescentou [rastreabilidade fichas 01–05](coursework-review.md), navegação e suplemento de 13-11 ao changelog/release notes, sem mudar `0.4.0-rc.1`.

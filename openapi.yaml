@@ -1,13 +1,15 @@
 openapi: 3.1.0
 info:
-  title: Matriz — API atual com extensões de tarefas V4
+  title: Matriz — API atual com extensões V4 e registo académico
   version: 0.4.0-rc.1
   description: |
     Contrato da demonstração implementada, não uma API de produção certificada.
     Substitui o contrato parcial/Bearer/responsável único da ficha 02.
     A autenticação usa email e palavra-passe de contas locais ativas; a aplicação
-    mantém sessão no servidor, CSRF e hashes scrypt. Não cria contas públicas.
-    O logout invalida a sessão Matriz.
+    mantém sessão no servidor, CSRF e hashes scrypt. Registo público exclusivamente
+    académico aprovado pelo autor em 17-11-2026: conta ativa imediatamente,
+    sem envio/confirmação de email, recuperação ou auto-login. Não é validação
+    do cliente nem publicação da alteração. O logout invalida a sessão Matriz.
     A retenção anual é apenas um pressuposto provisório, sem eliminação automática;
     âmbito e evento inicial não estão definidos. p95 é uma métrica a observar,
     sem meta nem carga de referência aprovadas. Produção está diferida.
@@ -15,7 +17,8 @@ info:
     IDs são texto opaco; UUID da tarefa é estável e key MAT-n é global sequencial
     com lacunas permitidas. Datas são instantes UTC. Descrição/comentário são strings
     apresentadas em Markdown básico seguro, sem HTML/imagens/GFM, só HTTP/HTTPS.
-    Conta ativa e participação são verificadas no servidor em cada operação.
+    Operações protegidas verificam conta ativa e participação aplicável no servidor;
+    CSRF, login e registo são públicos, mas POST exige CSRF.
     Projeto alheio e inexistente dão 404 com o mesmo detalhe; membro sem gestão dá 403.
     Campos JSON desconhecidos são recusados com 400; formato/tipo inválido dá 400;
     validação semântica 422, versão antiga 409, falha de dados 503.
@@ -23,7 +26,8 @@ info:
     Listas paginadas usam createdAt ascendente e id ascendente como desempate.
     Pagination é baseada em 1; página além do fim é vazia; zero itens implica zero páginas.
     Nomes, títulos e comentários são aparados nas extremidades; descrições e pesquisa
-    conservam espaços. Limites em pontos de código Unicode.
+    conservam espaços. Limites em pontos de código Unicode, exceto email com máximo
+    de 254 unidades UTF-16 após trim/lowercase, como no login.
     Novos campos opcionais de resposta são emitidos como null; listas sem itens são [].
     BLOCKS tem efeito real: todos os bloqueadores diretos DONE antes de concluir;
     início permitido, reabertura de bloqueador recusada com qualquer dependente direto DONE.
@@ -43,7 +47,7 @@ paths:
     get:
       tags: [Identidade]
       operationId: getCsrf
-      summary: Obter token atual de CSRF, incluindo antes do login
+      summary: Obter token atual de CSRF, incluindo antes do login ou registo
       security: []
       responses:
         '200':
@@ -85,6 +89,66 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: '#/components/schemas/Problem' }
+  /auth/register:
+    post:
+      tags: [Identidade]
+      operationId: register
+      summary: Criar conta ativa na demonstração académica sem autenticar
+      description: |
+        Público mas exige CSRF válido. Não envia/confirma email nem inicia sessão.
+        Sucesso deve regressar ao login com confirmação, sem transportar/guardar password.
+        Gera UUID e username internos únicos e hash scrypt; não devolve perfil/credenciais
+        nem cria projetos, participações ou privilégios herdados. Após login explícito,
+        a conta pode criar projetos pelas permissões atuais.
+        Email existente dá 409 explícito, incluindo concorrência: divulgação aceite pelo autor.
+        Limite independente do login: 5 pedidos por endereço remoto observado em janela
+        de 15 minutos, contando sucessos e falhas após CSRF válido, incluindo JSON/campos
+        inválidos. CSRF ausente/inválido dá 403 antes de consumir quota. Matcher PathPattern
+        partilhado no filtro/autorização cobre segmentos codificados do caminho.
+        Memória por instância, limpa no reinício; não confia em headers forwarded do cliente.
+        Proxy pode agregar visitantes; não se promete IP real nem limitação distribuída.
+        Schema V3 suficiente; sem migration/dependência nova.
+      security:
+        - CsrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegistrationRequest' }
+      responses:
+        '201':
+          description: Conta ativa criada; sem autenticação ou dados sensíveis.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RegistrationResult' }
+              example: { message: Conta criada. Inicie sessão. }
+        '400': { $ref: '#/components/responses/Failure' }
+        '403': { $ref: '#/components/responses/Failure' }
+        '409':
+          description: Email existente, incluindo concorrência; divulgação explícita aceite.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                type: about:blank
+                title: Conflict
+                status: 409
+                detail: Já existe uma conta com este email.
+                errors: [{ field: email, message: Já existe uma conta com este email. }]
+        '415': { $ref: '#/components/responses/Failure' }
+        '422':
+          description: Campo ausente/null ou semanticamente inválido; errors identifica displayName, email ou password.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429':
+          description: Quota de registo atingida; aguardar o número de segundos indicado.
+          headers:
+            Retry-After: { schema: { type: integer, minimum: 1 } }
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '503': { $ref: '#/components/responses/Failure' }
   /auth/me:
     get:
       tags: [Identidade]
@@ -745,9 +809,9 @@ components:
     Failure:
       description: |
         400 formato/tipo/campo desconhecido; 401 sessão ausente/inativa;
-        403 CSRF/permissão; 404 recurso indisponível; 409 versão antiga/restrições existentes;
+        403 CSRF/permissão; 404 recurso indisponível; 409 versão antiga/restrições existentes/email de registo existente;
         413 tamanho de upload/pedido; 415 media type de pedido/parte não suportado;
-        429 limite de tentativas de login;
+        429 limite de login ou quota independente de pedidos de registo (Retry-After);
         422 validação; 503 operação de dados falhou. Não expõe SQL ou conteúdo interno.
       content:
         application/problem+json:
@@ -760,8 +824,47 @@ components:
       additionalProperties: false
       required: [email, password]
       properties:
-        email: { type: string, format: email, maxLength: 254 }
-        password: { type: string, minLength: 1, maxLength: 200, writeOnly: true }
+        email: { $ref: '#/components/schemas/LocalEmail' }
+        password:
+          type: string
+          minLength: 1
+          maxLength: 200
+          writeOnly: true
+          description: Pontos de código Unicode, sem trim; conserva compatibilidade com passwords antigas curtas.
+    LocalEmail:
+      type: string
+      description: |
+        Normalização no servidor por String.trim() e lowercase Locale.ROOT;
+        resultado não vazio, até 254 unidades UTF-16 e regex Java
+        ^[^\s@]+@[^\s@]+\.[^\s@]+$ (\s sem flag Unicode, espaços ASCII).
+        Aceita Unicode; não valida posse/existência/entrega. UI partilha validador
+        login/registo, sem bloqueio HTML type=email. Sem format email ou maxLength
+        no valor bruto: não devem rejeitar Unicode ou espaços removidos pelo servidor.
+    RegistrationRequest:
+      type: object
+      additionalProperties: false
+      required: [displayName, email, password]
+      description: Confirmação de password é só local no frontend e não integra o pedido.
+      properties:
+        displayName:
+          type: string
+          description: |
+            1–120 pontos de código Unicode após trim de espaços nas extremidades
+            por Inputs.title (isWhitespace/isSpaceChar/NEL). Limite após normalizar,
+            não no valor bruto; sem truncagem.
+        email: { $ref: '#/components/schemas/LocalEmail' }
+        password:
+          type: string
+          minLength: 12
+          maxLength: 200
+          writeOnly: true
+          description: Pontos de código Unicode, sem trim/composição obrigatória; espaços permitidos e contam.
+    RegistrationResult:
+      type: object
+      additionalProperties: false
+      required: [message]
+      properties:
+        message: { type: string, const: Conta criada. Inicie sessão. }
     VersionInput:
       type: object
       additionalProperties: false

@@ -13,6 +13,14 @@ Confronto estático em **17-11-2026** com [migrations V1–V4](../backend/src/ma
 
 V4 atribui `MAT-n` às tarefas existentes por `(created_at,id)`, prepara a próxima chave global, impõe NOT NULL/UNIQUE; lacunas são permitidas. Mantém UUID gerado pela aplicação (coluna física VARCHAR(80)), datas e versões; sem backfill de eventos. Sequência não é identidade substituta de `id`.
 
+### Registo académico — 17-11-2026
+
+RF-17 reutiliza `app_user` e o índice único parcial `app_user_email_lower_unique` da **V3**; não exige nova migration, tabela, dependência ou alteração V4. [IdentityService](../backend/src/main/java/pt/matriz/identity/IdentityService.java) insere em transação UUID aleatório como id, username interno `registered-<UUID>`, nome aparado, email trim/lowercase, hash scrypt e `active=true`. `id`/username mantêm unicidade por constraints; não são escolhidos pelo visitante. Nome 1–120 pontos de código, email máximo 254 unidades UTF-16 normalizadas/regex compatível com login Unicode, password 12–200 pontos sem trim/composição, espaços permitidos. Só hash é persistido, não confirmação/password em claro.
+
+`ON CONFLICT (lower(email)) WHERE email IS NOT NULL DO NOTHING` usa o índice V3: duplicado, incluindo concorrência, dá 409 explícito sem alterar conta/hash existente; outras falhas de integridade/DB não são mascaradas como email duplicado. Não insere projeto, participação ou privilégio herdado. Depois de login explícito a conta ativa pode criar projetos pelas permissões atuais. Conta ativa não prova posse do email: sem confirmação/envio de email/recuperação. Sucesso devolve só mensagem e não autentica. Decisão académica do autor, não cliente/produção/publicação.
+
+Login conserva hashes existentes/passwords antigas curtas e até 200 pontos de código. Quotas de registo/login são independentes, só em memória por instância, não novas tabelas; registo conta 5 pedidos por endereço remoto observado/15 min após CSRF, sem confiar em forwarded cliente nem prometer IP real atrás de proxy. [Critérios US-20](user-stories.md#registo-académico--us-20) e [evidência/visual-E2E pendentes](verification.md#registo-académico--17-11-2026).
+
 ## Entidades, cardinalidades e integridade
 
 | Tabela | Chaves, atributos e responsabilidade |
@@ -147,7 +155,7 @@ Eliminar projeto remove tarefas/participações; o serviço remove primeiro atri
 
 Contagens/progresso não são colunas duplicadas: agregam todas as tarefas do projeto, todo DONE conta, sem ponderar peso/motivo. Sem tarefas 0%; restantes 100×done/total arredondado com meios para cima (1/8→13%, 2/3→67%). Listagens em `REPEATABLE_READ`, paginação ordenada por `(created_at,id)`; filtros afetam `totalItems`, não agregados.
 
-RF-01→app_user; RF-02/03/04/10→project/participation; RF-05/06/08/09/10/12→task; RF-07→task_assignment; RF-11→task_comment; RF-13→task_link; RF-14→task_attachment; RF-15→task_activity. RF-16 usa strings existentes, sem nova tabela de templates.
+RF-01/17→app_user; RF-02/03/04/10→project/participation; RF-05/06/08/09/10/12→task; RF-07→task_assignment; RF-11→task_comment; RF-13→task_link; RF-14→task_attachment; RF-15→task_activity. RF-16 usa strings existentes, sem nova tabela de templates.
 
 ## Operação e limitações
 

@@ -2,6 +2,8 @@
 
 Aplicação de gestão de projetos e tarefas desenvolvida na ficha 03 de AI-Powered Software Engineering, a partir dos Specification Pack e Architecture Pack das fichas 01 e 02.
 
+**Registo académico — decisão do autor em 17-11-2026:** implementado registo público com conta imediatamente ativa, sem confirmação por email. Sucesso regressa ao login com “Conta criada. Inicie sessão.”, **sem auto-login**. Não é validação do cliente, publicação desta alteração ou autorização de produção; mantém-se `0.4.0-rc.1`. T1/T2 e correções foram reportadas como revistas: backend **49** sem falhas/erros/skips (totais dos reports locais conferidos em T3), frontend **56** e build OK **relatados, não reexecutados em T3**. Inspeção visual/E2E do registo pendentes para T4; os resultados/scans de 13-11 abaixo não cobrem esta alteração. [Contrato, proveniência e pendências do registo](docs/verification.md#registo-académico--17-11-2026).
+
 **Estado funcional documentado — 13-11-2026:** extensões de tarefas aprovadas pelo autor, sobre a referência histórica `640b7e847f385cd69fabf0ff5ffd62dbf7f06cc2`; mantém-se o candidato `0.4.0-rc.1`, sem nova versão ou publicação. O relatório de validação final local regista **41 testes backend, 43 frontend e 6 E2E sem falhas**, imagem final fresca em contentores novos, Trivy **0 HIGH/CRITICAL** com **294/294 pares npm e 63/63 bibliotecas JAR**, Semgrep **135 regras/47 alvos/0 findings** e actionlint **1.7.7 PASS**. Regista também migração populada V3→V4/MAT/defaults, preservação de dados/relações/comentários/bytes após recriação app/db e paragem/retoma da DB própria, com readiness 503 e liveness 200 durante a indisponibilidade. São **resultados documentados**, não reexecutados nem certificados nesta tarefa; os logs externos não foram reabertos. Revisão independente, inspeção/aceitação humana/cliente e prova GitHub Actions no âmbito/branch atual, uploads/retenção reais continuam pendentes. [Contrato e evidências atuais](docs/verification.md#extensões-de-tarefas--13-11-2026).
 
 **Revisão documental — 17-11-2026:** [matriz das fichas 01–05 e inventário pedagógico](docs/coursework-review.md), [proveniência de arquitetura e dados](docs/architecture/README.md) e [referências UI](docs/ui/README.md). V1 conserva os documentos mistos tal como encontrados (não baseline pura da ficha 02); a informação atual está completa nos caminhos canónicos. Após T1/T2, por preferência do utilizador, consolidou-se o conteúdo antes separado como V2 e removeu-se essa cópia documental. Arquivo e rastreabilidade não encerram as pendências.
@@ -18,7 +20,7 @@ A Matriz centraliza o trabalho de cada projeto, os responsáveis e os comentári
 
 O autor aprovou o âmbito alargado da ficha 03 para implementação. Isso não equivale a validação pelo cliente:
 
-- Acesso autenticado com contas previamente disponibilizadas.
+- Acesso autenticado com contas locais previamente disponibilizadas ou criadas pelo registo público académico.
 - Criação, consulta, pesquisa, edição e eliminação de projetos, com gestor e membros por projeto.
 - Adição e remoção de membros de um projeto.
 - Criação, consulta, edição e eliminação de tarefas, com filtros por estado e prioridade.
@@ -31,7 +33,7 @@ O autor aprovou o âmbito alargado da ficha 03 para implementação. Isso não e
 - Até cinco anexos diretos por tarefa e cinco por comentário, 4 MiB cada, guardados no PostgreSQL; download autenticado e eliminação pelo autor ou gestor.
 - Histórico imutável pela API, Markdown básico seguro em descrição/comentários e três templates fixos; detalhe partilhado entre painel desktop e página completa.
 
-Notificações, @mentions, Defcon/Goal, sprints, integrações/serviços externos, registo público, recuperação de palavra-passe e relatórios avançados ficam fora do âmbito. A aprovação de 13-11 é do autor, não validação pelo cliente; capacidade de armazenamento, backups e retenção continuam por decidir, sem purga automática.
+Notificações, @mentions, Defcon/Goal, sprints, integrações/serviços externos, recuperação de palavra-passe e relatórios avançados ficam fora do âmbito. O registo público foi acrescentado apenas para a demonstração académica pela decisão do autor de 17-11; não há envio/confirmação de email. As aprovações de 13/17-11 são do autor, não validação pelo cliente; capacidade de armazenamento, backups e retenção continuam por decidir, sem purga automática.
 
 A interface mantém o tema escuro/azul inspirado no [Black Dashboard React](https://github.com/creativetimofficial/black-dashboard-react), com estrutura de espaço de trabalho ao estilo Jira: barra superior, navegação lateral, breadcrumbs, vistas e tabelas compactas. Em telemóvel, a navegação abre num diálogo modal. O painel usa as contagens reais do projeto selecionado, não métricas fictícias nem somas de uma página de projetos. Não importa o template; a extensão aprovada usa `react-markdown` **10.1.0**, sem HTML, imagens ou GFM.
 
@@ -52,7 +54,7 @@ Para mais informações sobre utilização, funcionalidades, arquitetura e proce
 | [docs/architecture/README.md](docs/architecture/README.md) | Versões documentais, proveniência e hashes de origem; sem renumerar ADRs ou OpenAPI. |
 | [docs/adr/README.md](docs/adr/README.md) | Índice dos Architecture Decision Records (ADRs) e decisões técnicas aceites. |
 | [docs/database.md](docs/database.md) | Schema V1–V4/ER atual completo e ligação ao arquivo integral do modelo misto. |
-| [openapi.yaml](openapi.yaml) | Contrato OpenAPI 3.1 atual: 29 operações, incluindo extensões V4. |
+| [openapi.yaml](openapi.yaml) | Contrato OpenAPI 3.1 atual: 30 operações, incluindo extensões V4 e registo académico. |
 | [docs/ui/README.md](docs/ui/README.md) | [Wireframe atual](docs/ui/wireframe.svg) e referência histórica [PNG](docs/architecture/v1/ui/wireframe.png)/[SVG](docs/architecture/v1/ui/wireframe.svg), transferidos sem mudar bytes. |
 | [docs/coursework-review.md](docs/coursework-review.md) | Rastreabilidade fichas 01–05, 16 PDFs/28 anexos, evidência documentada e pendências. |
 | [docs/implementation-plan.md](docs/implementation-plan.md) | Decisões aprovadas, diferenças face à ficha 02 e incrementos. |
@@ -167,7 +169,11 @@ Para regressar ao perfil base é necessário recriar `app` com apenas `compose.y
 
 ## Autenticação, permissões e testes
 
-Login local por email e palavra-passe; hashes scrypt e sessão Matriz no servidor, cookie `JSESSIONID` HttpOnly/SameSite Strict e timeout inativo de 30 minutos. Credenciais inválidas e contas inativas recebem resposta genérica; cinco falhas por email/endereço em 15 minutos bloqueiam novas tentativas durante 15 minutos. `POST /api/auth/login` exige CSRF; `GET /api/auth/csrf` fornece o token para `X-CSRF-TOKEN`, também exigido nas restantes escritas. O identificador de sessão é renovado no login e invalidado no logout. Não há registo público ou recuperação de palavra-passe; o frontend não guarda credenciais em localStorage. Reiniciar o backend termina sessões, mas não apaga dados.
+Login local por email e palavra-passe; hashes scrypt e sessão Matriz no servidor, cookie `JSESSIONID` HttpOnly/SameSite Strict e timeout inativo de 30 minutos. Credenciais inválidas e contas inativas recebem resposta genérica; cinco falhas por email/endereço em 15 minutos bloqueiam novas tentativas durante 15 minutos. `POST /api/auth/login` exige CSRF; `GET /api/auth/csrf` fornece o token para `X-CSRF-TOKEN`, também exigido nas restantes escritas, incluindo registo. O identificador de sessão é renovado no login e invalidado no logout. Não há recuperação de palavra-passe; o frontend não guarda credenciais em localStorage. Reiniciar o backend termina sessões, mas não apaga dados.
+
+No login, escolher **Criar conta** e indicar nome, email, palavra-passe e confirmação local. Nome: 1–120 pontos de código Unicode após trim; email: trim/lowercase, máximo 254 unidades UTF-16 após normalização e regex partilhada com login, aceitando Unicode (não prova de existência/entrega). Palavra-passe de registo: 12–200 pontos de código, sem trim nem composição obrigatória; espaços são permitidos e contam. Login conserva compatibilidade com palavras-passe antigas curtas e aceita até 200 pontos de código. Sucesso limpa a palavra-passe e regressa ao login sem a transportar nem guardar; é necessário iniciar sessão explicitamente.
+
+`POST /api/auth/register` é público **com CSRF**, JSON `{displayName,email,password}`; responde 201 `application/json` com apenas `{"message":"Conta criada. Inicie sessão."}`. Validação: 422 com `errors[{field,message}]`; email existente, incluindo concorrência: 409 explícito (divulgação de existência aceite pelo autor). Limite independente do login: **5 pedidos por endereço remoto observado em 15 minutos**, contando sucessos e falhas que passam CSRF; excedido dá 429 com `Retry-After`. Estado em memória por instância, limpo no reinício; não confia em headers forwarded do cliente. Um proxy pode agregar visitantes: não se promete o IP real do visitante nem proteção distribuída. Conta nova não herda projetos, participações ou privilégios; depois do login pode criar projetos pelas permissões atuais. UUID/username internos são gerados, hash scrypt; schema V3 já suporta, sem migration/dependência nova.
 
 Só o gestor edita/elimina projetos e gere membros/atribuições. Todos os participantes ativos gerem tarefas e comentam. A API aplica as mesmas restrições a acessos diretos; recursos alheios e inexistentes devolvem 404 indistinguível. A eliminação exige confirmação na interface e remove dependentes numa transação. As edições usam versão otimista; conflitos não sobrepõem dados silenciosamente.
 

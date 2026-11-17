@@ -37,6 +37,120 @@ async function keyboardSignIn(page: import('@playwright/test').Page) {
   await expect(page.getByRole('heading', { name: 'Painel inicial' })).toBeVisible();
 }
 
+test('registo académico: confirmação, login explícito e projetos sem herança demo', async ({ page }) => {
+  const suffix = crypto.randomUUID();
+  const displayName = `Pessoa fictícia ${suffix}`;
+  const email = `nova.é.${suffix}@example.invalid`;
+  const password = '  palavra fictícia 🚀  ';
+  const projectName = `Registo E2E ${suffix}`;
+  let registrations = 0;
+  let logins = 0;
+  page.on('request', request => {
+    if (request.method() !== 'POST') return;
+    const path = new URL(request.url()).pathname;
+    if (path === '/api/auth/register') registrations++;
+    if (path === '/api/auth/login') logins++;
+  });
+
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Entrar na Matriz' })).toBeVisible();
+  await page.getByRole('button', { name: 'Criar conta', exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { name: 'Criar conta', exact: true })).toBeVisible();
+  const nameInput = page.getByLabel('Nome', { exact: true });
+  const emailInput = page.getByLabel('Email', { exact: true });
+  const passwordInput = page.getByLabel('Palavra-passe', { exact: true });
+  const confirmation = page.getByLabel('Confirmar palavra-passe', { exact: true });
+  await expect(nameInput).toBeFocused();
+  await expect(page.getByText('Demonstração académica: a conta fica ativa sem confirmação por email. Não use credenciais reais.')).toBeVisible();
+  await expectNoAccessibilityViolations(page);
+
+  await page.keyboard.insertText(` ${displayName} `);
+  await page.keyboard.press('Tab');
+  await expect(emailInput).toBeFocused();
+  await page.keyboard.insertText(email);
+  await page.keyboard.press('Tab');
+  await expect(passwordInput).toBeFocused();
+  await page.keyboard.insertText(password);
+  await page.keyboard.press('Tab');
+  await expect(confirmation).toBeFocused();
+  await page.keyboard.insertText('confirmação diferente');
+  await page.keyboard.press('Enter');
+  await expect(confirmation).toBeFocused();
+  await expect(confirmation).toHaveAttribute('aria-invalid', 'true');
+  await expect(confirmation).toHaveAccessibleDescription('As palavras-passe não coincidem.');
+  await expect(nameInput).toHaveValue(` ${displayName} `);
+  await expect(emailInput).toHaveValue(email);
+  await expect(passwordInput).toHaveValue(password);
+  expect(registrations).toBe(0);
+  expect(logins).toBe(0);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expectNoAccessibilityViolations(page);
+  await confirmation.fill(password);
+  // Only this corrected submission reaches the real API: one registration per run.
+  const registered = page.waitForResponse(response =>
+    new URL(response.url()).pathname === '/api/auth/register' && response.request().method() === 'POST');
+  await page.keyboard.press('Enter');
+  const registration = await registered;
+  expect(registration.status()).toBe(201);
+  expect(registration.headers()['content-type']).toContain('application/json');
+  expect(await registration.json()).toEqual({ message: 'Conta criada. Inicie sessão.' });
+  expect(registration.request().postDataJSON()).toEqual({ displayName: ` ${displayName} `, email, password });
+  await expect(page.getByRole('heading', { name: 'Entrar na Matriz' })).toBeVisible();
+  await expect(page.getByRole('status')).toHaveText('Conta criada. Inicie sessão.');
+  await expect(emailInput).toBeFocused();
+  await expect(passwordInput).toHaveValue('');
+  await expect(page.getByRole('button', { name: 'Sair', exact: true })).toHaveCount(0);
+  expect(registrations).toBe(1);
+  expect(logins).toBe(0);
+  expect((await page.request.get('/api/auth/me')).status()).toBe(401);
+  await expectNoAccessibilityViolations(page);
+
+  await page.keyboard.insertText(email);
+  await page.keyboard.press('Tab');
+  await expect(passwordInput).toBeFocused();
+  await page.keyboard.insertText(password);
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('button', { name: 'Entrar', exact: true })).toBeFocused();
+  const projectsLoaded = page.waitForResponse(response =>
+    new URL(response.url()).pathname === '/api/projects' && response.request().method() === 'GET');
+  await page.keyboard.press('Enter');
+  const projects = await projectsLoaded;
+  expect(projects.status()).toBe(200);
+  expect(await projects.json()).toMatchObject({ items: [], pagination: { totalItems: 0 } });
+  await expect(page.getByRole('heading', { name: 'Painel inicial' })).toBeVisible();
+  await expect(page.getByLabel(`Utilizador: ${displayName}`, { exact: true })).toBeVisible();
+  await page.getByRole('link', { name: 'Lista de projetos', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Projetos', exact: true })).toBeVisible();
+  await expect(page.getByText('Sem projetos acessíveis.', { exact: true })).toBeVisible();
+  // No project links at all, including Alfa/Beta or other pre-existing demo data.
+  await expect(page.locator('a[href^="#/projects/"]')).toHaveCount(0);
+  await expectNoAccessibilityViolations(page);
+
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.getByLabel('Nome do projeto *').fill(projectName);
+  const projectCreated = page.waitForResponse(response =>
+    new URL(response.url()).pathname === '/api/projects' && response.request().method() === 'POST');
+  await page.getByRole('button', { name: 'Criar projeto', exact: true }).click();
+  const created = await projectCreated;
+  expect(created.status()).toBe(201);
+  expect(await created.json()).toMatchObject({ name: projectName, currentRole: 'MANAGER' });
+  await expect(page.getByRole('link', { name: projectName, exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('link', { name: projectName, exact: true })).toBeVisible();
+  await expect(page.locator('a[href^="#/projects/"]')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Sair', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Entrar na Matriz' })).toBeVisible();
+  await expect(passwordInput).toHaveValue('');
+  expect((await page.request.get('/api/auth/me')).status()).toBe(401);
+  expect(registrations).toBe(1);
+  expect(logins).toBe(1);
+  // Preserve this fictitious account/project; never delete existing data for cleanup.
+});
+
 test('percurso integrado: projeto, tarefas, filtros, atribuições, comentários e eliminação', async ({ page }) => {
   const suffix = Date.now();
   await keyboardSignIn(page);

@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.http.HttpStatus;
 import pt.matriz.common.ApiException;
 import pt.matriz.common.ApiModels.UserView;
 
@@ -52,7 +54,7 @@ public class AuthController {
         String email = input.email() == null ? "" : input.email().trim().toLowerCase(Locale.ROOT);
         String password = input.password() == null ? "" : input.password();
         if (email.isBlank() || email.length() > 254 || !email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")
-                || password.isEmpty() || password.length() > 200) {
+                || password.isEmpty() || password.codePointCount(0, password.length()) > 200) {
             throw new ApiException(400, "Email ou palavra-passe inválidos.");
         }
 
@@ -83,6 +85,15 @@ public class AuthController {
 
     @GetMapping("/me")
     public UserView me(Principal principal) { return identities.current(principal); }
+
+    @PostMapping("/register")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Map<String, String> register(@RequestBody RegistrationInput input) {
+        identities.register(input.displayName(), input.email(), input.password());
+        return Map.of("message", "Conta criada. Inicie sessão.");
+    }
+
+    public record RegistrationInput(String displayName, String email, String password) {}
 
     public record LoginInput(String email, String password) {}
 }

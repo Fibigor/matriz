@@ -1,5 +1,117 @@
 # Matriz — Verificação atual e histórico
 
+## Registo académico — 17-11-2026
+
+**Âmbito vigente:** decisão do autor para demonstração académica, não validação do cliente ou publicação. T1 backend/T2 frontend implementadas e revistas, findings concretos corrigidos, segundo handover do utilizador. T3 é exclusivamente documental, sem delegação. HEAD observado `33dee9bc748126573d52914a86a34861a558b2e4`; implementação T1/T2 já modificada/não rastreada na worktree, preservada. Candidato `0.4.0-rc.1` sem bump/tag. Os registos T1/T2 de **reorganização documental** mais abaixo são de outro plano; não confundir com T1/T2 de registo.
+
+As secções de 12/13-11 e da consolidação anterior permanecem intactas como evidência histórica. “Atual/final” e **29 operações/41–43–6/scans** nesses registos referem-se às respetivas fases, não ao registo público. Contrato vigente: **30 operações**, incluindo POST `/api/auth/register`; Actuator continua fora do contrato de negócio.
+
+### Contrato e rastreabilidade do registo
+
+Fontes lidas em T3: AGENTS/README/requisitos/restrições/histórias, instruções Copilot/skills contexto e validação, arquitetura/dados/plano/verificação/OpenAPI, AuthController, IdentityService, SecurityConfig, RegistrationThrottle, Inputs/ApiErrors, migrations V1/V3, App.tsx/App.test.tsx/api.ts e testes backend. RF-17/RN-20–22 e [US-20/AC-20.1–8](user-stories.md#registo-académico--us-20) definem critérios, **não resultados de execução**.
+
+Confirmado por leitura: POST público **com CSRF**, JSON displayName/email/password; conta ativa imediatamente sem envio/confirmação email; 201 application/json apenas `{"message":"Conta criada. Inicie sessão."}`, sem perfil/credenciais/autenticação. UI confirma e regressa ao login sem auto-login/transporte ou armazenamento de password. Nome 1–120 pontos após trim; email trim/lowercase até 254 unidades UTF-16 normalizadas, regex compatível login/Unicode; password 12–200 pontos sem trim/composição, espaços permitidos; confirmação só local. Login mantém antigas curtas e até 200 pontos; UI partilha validador Unicode sem type=email.
+
+422 usa errors por campo; 409 explícito de email existente inclusive concorrência (divulgação aceite pelo autor), sem alterar conta/hash existente. 429 com Retry-After; limite independente do login de 5 pedidos/endereço remoto observado/15 min, sucessos e falhas após CSRF válido, memória por instância limpa no restart. PathPatternRequestMatcher partilhado filtro/autorização após CSRF cobre segmentos codificados; não confia em forwarded cliente nem promete IP real atrás de proxy. UUID/username internos únicos gerados, hash scrypt, schema V3 suficiente sem migration/deps; sem projetos/participações/privilégios herdados, mas pode criar projetos após login.
+
+### Proveniência e alcance da evidência T1/T2
+
+| Fonte disponível | Resultado observado ou relatado | O que T3 não alega |
+|---|---|---|
+| `backend/target/surefire-reports/TEST-pt.matriz.ApiIntegrationTest.xml`, `TEST-pt.matriz.identity.LoginThrottleTest.xml`, `TEST-pt.matriz.identity.RegistrationThrottleTest.xml`, `TEST-pt.matriz.InputsTest.xml`, `TEST-pt.matriz.ObservabilityIntegrationTest.xml` | Leitura local em T3: **35 + 1 + 3 + 5 + 5 = 49**, zero falhas/erros/skips. Suite API inclui `registrationThrottleSharesLiteralAndEncodedPathsOverHttp`; fonte testa HTTP real `/api/auth/registe%72`, CSRF antes de quota, caminho literal/codificado partilhado e 201/409/422/400/429. | Não é nova execução Maven nem certificação independente de correspondência binária/frescura. Reports são artefactos locais ignorados, não evidência publicada/portável. |
+| Handover do utilizador sobre T1/revisão | Suite backend 49 sem falhas/erros/skips após regressão HTTP real; revisor confirmou reports e correção do bypass pathencoded. | Revisão relatada, não realizada de novo pelo agente documental. |
+| Handover sobre T2/revisão; App.tsx e App.test.tsx lidos | **npm test 56 OK/build OK/diffcheck OK relatados** após correção Unicode. Revisor conferiu fontes/testes sem rerun. Fontes cobrem limites, confirmação local, foco/erros, duplicação, CSRF, Unicode no login/registo, antigas curtas e sucesso sem auto-login/password. | T3 não executou npm/test/build, não consultou report bruto frontend novo nem tratou testes com mocks como E2E/browser real. |
+
+### Verificações documentais T3 e pendências
+
+Edição autorizada apenas nos 12 caminhos: README, AGENTS, .github/copilot-instructions, skill contexto-matriz, OpenAPI, requirements, constraints, user-stories, architecture, database, implementation-plan e verification. Sem criação/remoção, alteração de implementação, migrations, dependências, `.github/workflows/ci.yml`, Render, históricos V1 ou outros caminhos. Sem leitura de `.env`, instalação, serviços/workflows/contas externas, staging/commit/push/deploy.
+
+Verificações estáticas locais e respetivos resultados estão registados abaixo; não são teste funcional, validação integral OpenAPI/JSON Schema, renderização Mermaid, inspeção visual ou E2E.
+
+| Verificação efetivamente executada em T3, scripts efémeros em memória | Resultado observado |
+|---|---|
+| YAML com PyYAML 6.0.3 existente, rejeitando chaves duplicadas | **18 caminhos / 30 operações / 47 schemas / 236 referências** (incluindo mappings discriminator) resolvidas; operationIds únicos, parâmetros de caminho conferidos. Assertions do registo: CSRF sem Session, respostas/campos obrigatórios, password 12–200/writeOnly e sucesso só mensagem; login mantém mínimo 1 e email partilhado. Não validador integral OpenAPI/JSON Schema. |
+| Links/referências e estrutura Markdown nos 11 MD autorizados | **140 ligações locais / 31 âncoras / 15 blocos fenced** conferidos, zero erros; sem caracteres de substituição Unicode. Sem consultas a URLs externos. |
+| Preservação SHA-256 antes/depois | **106 caminhos fora do âmbito**, incluindo código/testes T1/T2 rastreados e não rastreados, CI/configurações e V1, inalterados; ficheiros de ambiente excluídos da leitura. Digest `4b212fd76bf55a6f283df3e318739a6fb702c0c845bfe41172e032043b2c8455`. HEAD e índice inalterados (SHA-256 do índice `b6126ef7072668dc511e200024e146ea3855e8b153914025ecbcef021c7b76ee`). Três históricos dobrados e conteúdo anterior integral de plano/verificação preservados byte a byte; sem caminhos novos/removidos. |
+| Git somente leitura | `git diff --check` passou; diff/status conferidos sem alterar staging. Avisos de conversão LF→CRLF do Git não são execução de conversão nem falhas de whitespace. |
+
+Conferência adicional das 30 operações com annotations dos controllers mais logout da configuração de segurança passou após normalizar **apenas os nomes dos parâmetros de rota**. A primeira sonda literal falhou por comparar `{id}`/`{target}` do Java com `{projectId}`/`{taskId}`/`{userId}` do contrato; corrigido o comparador efémero, sem alteração de código/contrato por esse motivo.
+
+**Referências fora da autorização, não alteradas:** `docs/adr/0002-local-session-authentication.md` conserva a decisão anterior sem registo público/contas previamente disponibilizadas; `docs/coursework-review.md` ainda descreve o contrato como atual com 29 operações. Eventual suplemento/correção exige aprovação própria; V1 e demais históricos permanecem históricos, não devem ser reescritos para aparentar nova decisão.
+
+### Fecho pontual T3 após implementação T4 — 17-11-2026
+
+**Registo histórico anterior ao arranque autorizado:** o bloqueio abaixo descreve apenas este fecho T3. Foi ultrapassado pela execução local posterior, documentada na secção seguinte; não é o estado atual do E2E do registo.
+
+Atualização autorizada apenas neste ficheiro, sem delegação, criação de ficheiros ou reescrita dos históricos abaixo. Segundo handover do utilizador: revisão T1 com P1 de pathencoded reproduzido por HTTP, corrigido e revisto; T2 com P2 de email Unicode corrigido e revisto; T3 documental sem findings; T4 com revisão independente apenas por leitura, sem findings. Não são novas revisões efetuadas neste fecho nem certificação do cliente.
+
+**Nesse fecho, T4 implementada, ainda não executada em E2E:** leitura de [frontend/e2e/matriz.spec.ts](../frontend/e2e/matriz.spec.ts) e `git diff --numstat` confirmam **114 adições/0 remoções**. O novo cenário de registo contém assertions para:
+
+- Confirmação inválida conservar os campos sem POST de registo/login; dados Unicode, teclado/foco e análise Axe em desktop/móvel.
+- Resposta 201 JSON apenas com a mensagem e payload correto sem confirmação; retorno ao login com password vazia, `/api/auth/me` 401 e nenhum auto-login.
+- Login explícito, projetos inicialmente vazios sem herança demo; criação de projeto como `MANAGER`, presença após reload e logout com `/api/auth/me` 401. O cenário não elimina a conta/projeto fictícios.
+
+São verificações **escritas no teste**, não resultados observados num navegador; não demonstram por si só conformidade integral de acessibilidade, persistência após reinício ou todas as regressões das contas demo/permissões/sessão/CSRF.
+
+| Evidência T4 fornecida no handover | Alcance e limitações |
+|---|---|
+| Engenheiro T4 executou testes frontend: **56 OK**; TypeScript do projeto sem emissão e sem incremental: **OK**; build Vite: **OK**. | Revalidação reportada pelo engenheiro T4, não execução deste agente T3. Testes/build usaram configuração externa segura e saída de build na sessão; não são E2E. Os 49 backend permanecem os reports anteriormente conferidos em T3, sem nova execução. |
+| Descoberta Playwright filtrada por “registo académico:”: **1 cenário encontrado**. | Listagem reportada, **não execução do cenário** nem E2E passed. |
+| TypeScript autónomo do ficheiro E2E bloqueado por **3 referências preexistentes a `Buffer`**, sem tipos Node. | Não passou essa verificação autónoma; não foi instalada qualquer dependência. O sucesso do TypeScript do projeto não substitui esta limitação. |
+| Artefactos `t4*` em `C:\Users\CTW03863\.copilot\session-state\3ebaea67-61c5-4f8c-9372-db12b660125d\files`. | Neste fecho foi lido `t4-validation.config.mts`: desativa carregamento de ficheiros de ambiente (`envDir: false`), dirige cache/build para a sessão e não esvazia o destino de build. Existe o diretório `t4-build`, mas não foram encontrados logs brutos `t4*`; configuração/artefactos não certificam execução. Por isso não se transcrevem comandos exatos como conferidos em logs. |
+
+**Bloqueio histórico, entretanto ultrapassado:** segundo T4, não havia listener HTTP local em **5173/8080/18085**, com timeout nas sondas; alvo e versão atual não comprovados. **Até esse fecho, nenhum E2E do registo tinha sido executado, nenhum serviço tinha sido iniciado e não tinha havido inspeção visual em navegador.** A retoma dependia então de autorização separada para arranque local ou de instância atual disponível, versão comprovada e quota de registo livre (5 pedidos/endereço remoto observado/15 minutos). A descoberta do cenário, a revisão estática e os seis E2E históricos de 13-11 não fechavam essa pendência. A autorização posterior «autorizo arranque local» e a execução seguinte ultrapassaram este bloqueio; a autorização não está pendente para essa execução.
+
+Verificações deste fecho limitadas à leitura de contexto/cenário/configuração externa e a verificações documentais locais de links/âncoras/diff; sem rerun de npm, TypeScript, build, Maven, E2E ou sondas HTTP, sem leitura de `.env`, serviços, alteração do índice ou publicação. Prova CI atual, uploads/retenção reais e aceitação humana/cliente continuam pendentes. Recuperação/email/integrações externas excluídos; **produção continua diferida**. Identidade empresarial, capacidade/backups/policy/p95 e publicação exigem decisão própria.
+
+### Execução local autorizada do registo e revisão por leitura — 17-11-2026
+
+**Estado posterior ao bloqueio:** com a autorização do utilizador «autorizo arranque local», o engenheiro executor arrancou o Compose local isolado **`matriz-signup-check`**, com build atual, e relatou a execução real do novo cenário de registo: **1 passou / 0 falhas / 10,7 s**, com **quatro análises Axe sem violações** nos estados cobertos em **1440×1000 e 390×844**. Este registo documental resulta do handover, da leitura dos artefactos locais e da fonte do teste; **não é execução de testes/serviços por este agente documental** nem certificação de revisão completa ou aceitação do cliente.
+
+#### Alvo, comandos executados e dados preservados
+
+Segundo o executor, app e DB ficaram `running/healthy`, publicadas apenas em **`127.0.0.1:18086`** e **`127.0.0.1:55436`**, respetivamente. Imagem da app: **`sha256:0172ab8e5af4af47c00dd3f4284a10b9e2550f8ba6b09afbf89c87e8f53de870`**. Volume próprio **`matriz-signup-check_matriz_data`** preservado. Variáveis desta execução: `APP_HOST_PORT=18086`, `POSTGRES_HOST_PORT=55436`, `DEMO_ENABLED=true`, `COOKIE_SECURE=false`; esta última é configuração da demonstração HTTP local, não recomendação de produção.
+
+Comandos reportados pelo executor e registados em `validation-result.json` (não reexecutados nesta atualização), na raiz e com as quatro variáveis acima:
+
+```powershell
+docker compose -p matriz-signup-check --env-file .env config --quiet
+docker compose -p matriz-signup-check --env-file .env up --build -d --wait --wait-timeout 240 --quiet-build
+```
+
+`.env` foi apenas input opaco do Compose, sem leitura do conteúdo nem apresentação de configuração expandida. Em `frontend`, com `PLAYWRIGHT_BASE_URL=http://localhost:18086` e `PLAYWRIGHT_NO_COPY_PROMPT=1`, o executor reportou:
+
+```powershell
+npm run test:e2e -- --grep 'registo académico:' --reporter=line --output='C:\Users\CTW03863\.copilot\session-state\3ebaea67-61c5-4f8c-9372-db12b660125d\files\registo17-11-local\e2e'
+```
+
+O cenário `registo académico: confirmação, login explícito e projetos sem herança demo` cobre confirmação inválida sem POST de registo/login e com campos conservados; Unicode e teclado/foco; POST real com **201 JSON só mensagem**, sem confirmação no payload; retorno ao login com password vazia, sem auto-login e `/api/auth/me` **401**; login explícito; projetos inicialmente vazios; criação de projeto próprio como **`MANAGER`**, presença após reload e logout com `/api/auth/me` **401**. Estes são resultados **relatados pelo executor**, coerentes com as assertions lidas na fonte e com o resumo, não reconstruídos a partir de log bruto.
+
+Foi adicionada e preservada **uma conta e um projeto fictícios**. O executor reportou seed inicial **3 utilizadores/2 projetos** e estado final **4/3**; o revisor confirmou apenas o estado final, incluindo uma participação da conta nova, **não observou as contagens iniciais**. Migrations **V1–V4** bem-sucedidas segundo resumo e conferência SQL relatada pelo revisor. Reload não equivale a teste de persistência após reinício, que não foi executado nesta validação.
+
+**Instância deixada em execução pelo executor, disponível ao utilizador em [http://localhost:18086](http://localhost:18086).** Não foi parada por esta tarefa; conta/projeto, artefactos, dados e volume não foram eliminados. A disponibilidade é a observação reportada pelo executor/revisor, não uma nova sonda deste agente documental.
+
+#### Artefactos, inspeção visual e alcance da revisão
+
+Base local persistente, fora do repositório: `C:\Users\CTW03863\.copilot\session-state\3ebaea67-61c5-4f8c-9372-db12b660125d\files\registo17-11-local`.
+
+| Evidência lida nesta atualização | Alcance / limitação |
+|---|---|
+| `validation-result.json` | **Resumo da execução, não log bruto.** Regista alvo/imagem/comandos, resultados relatados, fixture, quatro hashes de fontes e serviços deixados em execução. Não prova autonomamente todas as etapas. |
+| `e2e\.last-run.json` | Observado `status: passed` e `failedTests: []`. **Não identifica cenário, contagem, duração ou resultados Axe**; não permite reconstruir por si só 1 teste/10,7 s/quatro análises. |
+| `visual-capture.json` | Metadados de três capturas do registo em Chromium **141.0.7390.37**; sem overflow horizontal. Desktop 1440×1000; móvel 390×844 com documento de 902 px, ou 924 px no erro: scroll vertical normal. Não é uma análise Axe nem registo de todas as quatro imagens. |
+| `login-desktop.png`, `registo-desktop.png`, `registo-mobile.png`, `registo-mobile-confirmacao-invalida.png` | As quatro imagens foram abertas nesta atualização e são coerentes com o relato do executor/revisor: sem sobreposições ou overflow horizontal visíveis, rótulos/ações/foco legíveis, erro textual da confirmação com foco e passwords mascaradas. São capturas headless, não ensaio em dispositivo físico, teclado virtual, leitor de ecrã ou auditoria integral de acessibilidade. |
+
+**Revisão independente relatada no handover, sem findings:** o revisor trabalhou apenas por leitura, consultou os sete artefactos acima, fonte do teste/diff e quatro imagens; confirmou quatro hashes de fontes atuais, app/DB healthy em loopback e mesmo image ID, HTTP `/` **200** e `/api/auth/me` anónimo **401**, SQL final **4 utilizadores/3 projetos**, fixture com uma participação e migrations V1–V4 OK. Reportou ainda `git diff --check` sem erros e índice vazio/inalterado. Estas verificações são do revisor, não novas execuções deste agente documental. Saúde do Compose base verifica HTTP `/`, **não readiness JDBC**; a consulta SQL confirma a DB no momento observado, não um ensaio de indisponibilidade/recuperação.
+
+**Limite de reconstrução independente:** 1 teste/0 falhas/10,7 s e quatro análises Axe são resultados de execução relatados pelo engenheiro e coerentes com os artefactos e a fonte, mas **não autonomamente reconstruíveis pelo revisor** a partir destes ficheiros. O revisor não reexecutou o E2E nem certificou integralmente a execução; não há aqui log bruto do runner.
+
+#### Verificações documentais e pendências remanescentes
+
+Nesta atualização, só `docs/verification.md` foi editado, sem delegação nem criação de ficheiros. Leitura de contexto, fonte E2E, Compose base, dois resumos JSON, `.last-run.json` e quatro PNG; verificações limitadas a links/âncoras locais e diff/preservação do histórico/índice/diff alheio. Sem testes, builds, serviços, sondas HTTP/SQL, leitura de `.env`, mutações Git ou publicação por este agente. Os históricos e evidências anteriores não são substituídos por estes resultados.
+
+**Não reexecutados nesta execução local:** suites **49 backend/56 frontend**, restantes E2E e persistência após restart. Aviso Node **DEP0205** relatado como não bloqueante. Permanecem pendentes prova CI atual/uploads/retenção reais, aceitação humana/cliente, acessibilidade física/assistiva e decisões próprias sobre identidade empresarial, capacidade/backups/policy/p95/publicação. Os estados T4 pendentes noutros documentos não foram atualizados por estarem fora do âmbito autorizado. **Produção continua diferida**; a autorização de arranque foi satisfeita para esta execução local e não alarga autorização para futuras operações sensíveis.
+
 ## Consolidação canónica posterior — 17-11-2026
 
 Preferência expressa do utilizador após T1/T2: manter a informação atual completa em `docs/architecture.md`, `docs/database.md` e `docs/ui/wireframe.svg`, sem cópia documental V2 separada. A aprovação incluiu corrigir navegação e referências em RELEASE_NOTES/CHANGELOG, preservando datas, baseline e resultados históricos. Os registos T1/T2 abaixo descrevem a organização e verificações anteriores à consolidação, não uma cópia ainda existente.

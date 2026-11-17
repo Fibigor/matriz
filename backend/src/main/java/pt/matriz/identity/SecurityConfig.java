@@ -1,6 +1,11 @@
 package pt.matriz.identity;
 
 import tools.jackson.databind.json.JsonMapper;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
 import org.springframework.boot.actuate.endpoint.Access;
 import org.springframework.boot.actuate.endpoint.EndpointAccessResolver;
@@ -21,6 +26,9 @@ import org.springframework.security.web.authentication.session.CompositeSessionA
 import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.csrf.CsrfAuthenticationStrategy;
+import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
@@ -96,13 +104,36 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain security(HttpSecurity http, JsonMapper mapper,
                                  SecurityContextRepository securityContextRepository,
-                                 CsrfTokenRepository csrfTokenRepository) throws Exception {
+                                 CsrfTokenRepository csrfTokenRepository,
+                                 RegistrationThrottle registrationThrottle) throws Exception {
+        RequestMatcher registration = PathPatternRequestMatcher.withDefaults()
+                .matcher(HttpMethod.POST, "/api/auth/register");
         return http
                 .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository)
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
+                .addFilterAfter(new OncePerRequestFilter() {
+                    @Override
+                    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+                                                    FilterChain chain) throws ServletException, IOException {
+                        // Use MVC-compatible decoded segments for both throttling and authorization.
+                        if (registration.matches(request)) {
+                            // Never use client-supplied forwarding headers as a throttle identity.
+                            long retry = registrationThrottle.acquire(
+                                    request.getRemoteAddr() == null ? "unknown" : request.getRemoteAddr());
+                            if (retry > 0) {
+                                response.setHeader("Retry-After", Long.toString(retry));
+                                ApiErrors.write(response, mapper, 429,
+                                        "Demasiados pedidos de registo. Tente novamente mais tarde.");
+                                return;
+                            }
+                        }
+                        chain.doFilter(request, response);
+                    }
+                }, CsrfFilter.class)
                 .securityContext(context -> context.securityContextRepository(securityContextRepository))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/csrf", "/api/auth/login").permitAll()
+                        .requestMatchers(registration).permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/", "/index.html", "/assets/**", "/favicon.ico").permitAll()
                         .anyRequest().denyAll())

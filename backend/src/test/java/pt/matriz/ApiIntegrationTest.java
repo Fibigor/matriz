@@ -48,6 +48,7 @@ class ApiIntegrationTest {
     @Autowired MockMvc api;
     @Autowired JsonMapper json;
     @Autowired JdbcTemplate db;
+    @Autowired org.springframework.security.crypto.password.PasswordEncoder passwords;
     @org.springframework.boot.test.web.server.LocalServerPort int port;
 
     MockHttpSession login(String name) throws Exception {
@@ -59,6 +60,221 @@ class ApiIntegrationTest {
     }
 
     JsonNode body(MvcResult result) throws Exception { return json.readTree(result.getResponse().getContentAsString()); }
+
+    org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder registration(
+            String name, String email, String password) throws Exception {
+        return post("/api/auth/register").with(csrf())
+                .with(request -> { request.setRemoteAddr(java.util.UUID.randomUUID().toString()); return request; })
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(Map.of("displayName", name, "email", email, "password", password)));
+    }
+
+    @Test
+    void registrationPersistsNormalizedAccountWithoutAuthenticationOrMembership() throws Exception {
+        String email = "registration-persist@example.invalid";
+        String password = " " + "🚀".repeat(198) + " ";
+        MvcResult csrfResult = api.perform(get("/api/auth/csrf")).andExpect(status().isOk()).andReturn();
+        MockHttpSession anonymous = (MockHttpSession) csrfResult.getRequest().getSession(false);
+        String token = body(csrfResult).get("token").asText();
+        api.perform(post("/api/auth/register").session(anonymous).header("X-CSRF-TOKEN", token)
+                        .with(request -> { request.setRemoteAddr("192.0.2.121"); return request; })
+                        .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(Map.of(
+                                "displayName", "\u00a0" + "🚀".repeat(120) + "\u0085",
+                                "email", "  REGISTRATION-PERSIST@EXAMPLE.INVALID  ", "password", password))))
+                .andExpect(status().isCreated())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$.message").value("Conta criada. Inicie sessão."));
+        api.perform(get("/api/auth/me").session(anonymous)).andExpect(status().isUnauthorized());
+        api.perform(get("/api/projects").session(anonymous)).andExpect(status().isUnauthorized());
+        var stored = db.queryForMap("SELECT * FROM app_user WHERE email=?", email);
+        String id = stored.get("id").toString();
+        assertThat(java.util.UUID.fromString(id).toString()).isEqualTo(id);
+        assertThat(stored.get("username").toString()).isEqualTo("registered-" + id);
+        assertThat(stored.get("display_name")).isEqualTo("🚀".repeat(120));
+        assertThat(stored.get("active")).isEqualTo(true);
+        String hash = stored.get("password_hash").toString();
+        assertThat(hash).isNotEqualTo(password);
+        assertThat(passwords.matches(password, hash)).isTrue();
+        assertThat(passwords.matches(password.trim(), hash)).isFalse();
+        assertThat(db.queryForObject("SELECT count(*) FROM participation WHERE user_id=?", Integer.class, id)).isZero();
+        assertThat(db.queryForObject("SELECT count(*) FROM project WHERE owner_user_id=?", Integer.class, id)).isZero();
+        MvcResult loggedIn = api.perform(post("/api/auth/login").session(anonymous)
+                        .header("X-CSRF-TOKEN", token).contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(Map.of("email", email, "password", password))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(id))
+                .andExpect(jsonPath("$.username").doesNotExist()).andExpect(jsonPath("$.password_hash").doesNotExist())
+                .andReturn();
+        MockHttpSession session = (MockHttpSession) loggedIn.getRequest().getSession(false);
+        api.perform(get("/api/projects").session(session)).andExpect(jsonPath("$.items").isEmpty());
+        createProject(session);
+        api.perform(post("/api/auth/logout").session(session).with(csrf())).andExpect(status().isNoContent());
+        assertThat(session.isInvalid()).isTrue();
+    }
+
+    @Test
+    void registrationValidatesFieldBoundariesAndPreservesLegacyPasswords() throws Exception {
+        String email = "registration-validation@example.invalid";
+        for (String invalidName : List.of("", " \u00a0\u0085 ", "🚀".repeat(121))) {
+            api.perform(registration(invalidName, email, "a".repeat(12)))
+                    .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.errors[0].field").value("displayName"));
+        }
+        for (String invalidEmail : List.of("", "a@b", "a b@example.invalid", "a".repeat(239) + "@example.invalid")) {
+            api.perform(registration("Valid", invalidEmail, "a".repeat(12)))
+                    .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.errors[0].field").value("email"));
+        }
+        for (String invalidPassword : List.of("", "🚀".repeat(11), "🚀".repeat(201))) {
+            api.perform(registration("Valid", email, invalidPassword))
+                    .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.errors[0].field").value("password"));
+        }
+        for (String field : List.of("displayName", "email", "password")) {
+            var fields = new java.util.HashMap<String, String>(Map.of(
+                    "displayName", "Valid", "email", email, "password", "a".repeat(12)));
+            fields.put(field, null);
+            api.perform(post("/api/auth/register").with(csrf())
+                            .with(request -> { request.setRemoteAddr("missing-" + field); return request; })
+                            .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(fields)))
+                    .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.errors[0].field").value(field));
+        }
+        assertThat(db.queryForObject("SELECT count(*) FROM app_user WHERE email=?", Integer.class, email)).isZero();
+        String maxEmail = "a".repeat(238) + "@example.invalid";
+        assertThat(maxEmail).hasSize(254);
+        api.perform(registration("X", maxEmail, " ".repeat(12))).andExpect(status().isCreated());
+        api.perform(registration("X", "registration-unicode-min@example.invalid", "🚀".repeat(12)))
+                .andExpect(status().isCreated());
+        api.perform(registration("X", email, "a".repeat(200))).andExpect(status().isCreated());
+        api.perform(post("/api/auth/login").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(Map.of("email", maxEmail, "password", " ".repeat(12)))))
+                .andExpect(status().isOk());
+        String legacyId = java.util.UUID.randomUUID().toString();
+        String legacyEmail = "legacy-short@example.invalid";
+        db.update("INSERT INTO app_user(id,username,display_name,email,password_hash) VALUES(?,?,?,?,?)",
+                legacyId, legacyId, "Legacy", legacyEmail, passwords.encode("short"));
+        api.perform(post("/api/auth/login").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(Map.of("email", legacyEmail, "password", "short"))))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void registrationEmailConflictsIncludingConcurrentRequestsAreExplicit() throws Exception {
+        String email = "registration-race@example.invalid";
+        assertThat(race(
+                () -> api.perform(registration("First", email, "a".repeat(12))).andReturn().getResponse().getStatus(),
+                () -> api.perform(registration("Second", email.toUpperCase(java.util.Locale.ROOT), "b".repeat(12)))
+                        .andReturn().getResponse().getStatus())).containsExactlyInAnyOrder(201, 409);
+        api.perform(registration("Third", "  " + email + " ", "c".repeat(12)))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.errors[0].field").value("email"));
+        api.perform(registration("Existing", "ANA@EXAMPLE.INVALID", "d".repeat(12)))
+                .andExpect(status().isConflict());
+        assertThat(db.queryForObject("SELECT count(*) FROM app_user WHERE lower(email)=?", Integer.class, email)).isEqualTo(1);
+        assertThat(db.queryForObject("SELECT password_hash FROM app_user WHERE email=?", String.class, email))
+                .satisfies(hash -> assertThat(passwords.matches("a".repeat(12), hash)
+                        || passwords.matches("b".repeat(12), hash)).isTrue());
+        login("ana");
+    }
+
+    @Test
+    void registrationThrottleSharesLiteralAndEncodedPathsOverHttp() throws Exception {
+        String base = "http://127.0.0.1:" + port;
+        String literal = "/api/auth/register";
+        String encoded = "/api/auth/registe%72";
+        var cookies = new java.net.CookieManager(null, java.net.CookiePolicy.ACCEPT_ALL);
+        try (var client = java.net.http.HttpClient.newBuilder().cookieHandler(cookies)
+                .connectTimeout(java.time.Duration.ofSeconds(10)).build()) {
+            var csrfResponse = client.send(java.net.http.HttpRequest.newBuilder(
+                            java.net.URI.create(base + "/api/auth/csrf")).GET().build(),
+                    java.net.http.HttpResponse.BodyHandlers.ofString());
+            assertThat(csrfResponse.statusCode()).isEqualTo(200);
+            String token = json.readTree(csrfResponse.body()).get("token").asText();
+            for (int i = 0; i < 6; i++) {
+                var rejected = client.send(java.net.http.HttpRequest.newBuilder(
+                                java.net.URI.create(base + (i % 2 == 0 ? encoded : literal)))
+                                .header("Content-Type", "application/json")
+                                .POST(java.net.http.HttpRequest.BodyPublishers.ofString("{}")).build(),
+                        java.net.http.HttpResponse.BodyHandlers.ofString());
+                assertThat(rejected.statusCode()).as("CSRF before throttle, request %s", i).isEqualTo(403);
+            }
+            String email = "registration-encoded-http@example.invalid";
+            String valid = json.writeValueAsString(Map.of(
+                    "displayName", "HTTP", "email", email, "password", "a".repeat(12)));
+            // Both paths must consume the same IP budget, including invalid JSON and fields.
+            String[] paths = {encoded, literal, encoded, literal, encoded, encoded, literal};
+            String[] bodies = {valid, valid, "{}", "{", "{\"unexpected\":true}", "{}", valid};
+            int[] statuses = {201, 409, 422, 400, 400, 429, 429};
+            for (int i = 0; i < paths.length; i++) {
+                var response = client.send(java.net.http.HttpRequest.newBuilder(
+                                java.net.URI.create(base + paths[i]))
+                                .header("Content-Type", "application/json").header("X-CSRF-TOKEN", token)
+                                .POST(java.net.http.HttpRequest.BodyPublishers.ofString(bodies[i])).build(),
+                        java.net.http.HttpResponse.BodyHandlers.ofString());
+                assertThat(response.statusCode()).as("HTTP request %s to %s", i + 1, paths[i])
+                        .isEqualTo(statuses[i]);
+                if (i == 0) {
+                    assertThat(response.headers().firstValue("Content-Type").orElse(""))
+                            .startsWith("application/json");
+                    assertThat(json.readTree(response.body()))
+                            .isEqualTo(json.readTree("{\"message\":\"Conta criada. Inicie sessão.\"}"));
+                    var me = client.send(java.net.http.HttpRequest.newBuilder(
+                                    java.net.URI.create(base + "/api/auth/me")).GET().build(),
+                            java.net.http.HttpResponse.BodyHandlers.ofString());
+                    assertThat(me.statusCode()).isEqualTo(401);
+                }
+                if (statuses[i] == 429) {
+                    assertThat(Long.parseLong(response.headers().firstValue("Retry-After").orElseThrow()))
+                            .isBetween(1L, 900L);
+                    assertThat(json.readTree(response.body()).get("status").asInt()).isEqualTo(429);
+                }
+            }
+            assertThat(db.queryForObject("SELECT count(*) FROM app_user WHERE email=?", Integer.class, email))
+                    .isEqualTo(1);
+        }
+    }
+
+    @Test
+    void registrationThrottleCountsAllCsrfValidRequestsAndIgnoresForwardedHeaders() throws Exception {
+        String address = "192.0.2.117";
+        String email = "registration-throttle@example.invalid";
+        for (int i = 0; i < 6; i++) {
+            api.perform(registration("Valid", email, "a".repeat(12)).with(csrf().useInvalidToken())
+                            .with(request -> { request.setRemoteAddr(address); return request; }))
+                    .andExpect(status().isForbidden());
+        }
+        api.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isForbidden());
+        for (int i = 0; i < 5; i++) {
+            var request = registration("Valid", email, "a".repeat(12))
+                    .with(r -> { r.setRemoteAddr(address); return r; });
+            int expected = i == 0 ? 201 : i == 1 ? 409 : i == 2 ? 422 : 400;
+            if (i == 2) request.content("{\"displayName\":\"Valid\",\"email\":\"bad\",\"password\":\"abcdefghijkl\"}");
+            if (i == 3) request.content("{");
+            if (i == 4) request.content("{\"displayName\":\"Valid\",\"email\":\"bad\",\"password\":\"abcdefghijkl\",\"active\":true}");
+            api.perform(request).andExpect(status().is(expected));
+        }
+        api.perform(registration("Valid", email, "a".repeat(12))
+                        .with(request -> { request.setRemoteAddr(address); return request; })
+                        .header("X-Forwarded-For", "192.0.2.118").header("Forwarded", "for=192.0.2.119"))
+                .andExpect(status().isTooManyRequests()).andExpect(header().exists("Retry-After"));
+        api.perform(registration("Valid", "registration-other-address@example.invalid", "a".repeat(12))
+                        .with(request -> { request.setRemoteAddr("192.0.2.118"); return request; }))
+                .andExpect(status().isCreated());
+        api.perform(post("/api/auth/login").with(csrf())
+                        .with(request -> { request.setRemoteAddr(address); return request; })
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"ana@example.invalid\",\"password\":\"Matriz-Demo-2026!\"}"))
+                .andExpect(status().isOk());
+        String loginLimitedAddress = "192.0.2.120";
+        String loginLimitedEmail = "registration-login-independent@example.invalid";
+        for (int i = 0; i < 5; i++) {
+            api.perform(post("/api/auth/login").with(csrf())
+                            .with(request -> { request.setRemoteAddr(loginLimitedAddress); return request; })
+                            .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(
+                                    Map.of("email", loginLimitedEmail, "password", "wrong"))))
+                    .andExpect(status().isUnauthorized());
+        }
+        api.perform(registration("Valid", loginLimitedEmail, "a".repeat(12))
+                        .with(request -> { request.setRemoteAddr(loginLimitedAddress); return request; }))
+                .andExpect(status().isCreated());
+    }
 
     JsonNode createProject(MockHttpSession session) throws Exception {
         return body(api.perform(post("/api/projects").session(session).with(csrf())
