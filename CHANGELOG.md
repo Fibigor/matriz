@@ -1,5 +1,27 @@
 # Changelog — Matriz
 
+## Extensões — 2026-11-13 — mesmo candidato 0.4.0-rc.1
+
+Âmbito académico aprovado pelo autor, não aceitação do cliente; sem bump, tag ou publicação. Esta secção posterior complementa, **não reescreve**, a baseline de 12-11 abaixo.
+
+### Adicionado / alterado nas extensões
+
+- Migration Flyway V4: MAT-n global sequencial (lacunas permitidas, UUID estável), TASK/BUG/IMPROVEMENT, peso opcional e motivo opcional só DONE; todo DONE conta no progresso.
+- RELATED simétrica/canónica e BLOCKS/DUPLICATES dirigidas; BLOCKS valida ciclos/conclusão/reabertura. Relações explícitas exigem versões atuais de ambos os extremos.
+- Anexos PostgreSQL BYTEA (5 diretos/tarefa, 5/comentário, 4 MiB cada), download autorizado e remoção por autor/gestor participante; validação de formatos limitada, não antivírus.
+- Comentários JSON/multipart atómicos, histórico tipado sem cópias de texto/backfill, Markdown básico por react-markdown 10.1.0, três templates fixos e detalhe partilhado painel desktop/página.
+- Lock de projeto e revalidação de participação/conta ativa após espera nas escritas de tarefas/extensões, mantendo sessão/CSRF e permissões.
+
+### Evidência documentada / pendências
+
+O [relatório de 13-11](docs/verification.md#validação-final-local-das-extensões--execução-de-13-11-2026) regista **41 backend / 43 frontend / 6 E2E**, Trivy **294/294 npm e 63/63 JAR, 0 HIGH/CRITICAL**, Semgrep **135 regras/47 alvos/0 findings**, actionlint **1.7.7 PASS**, migração populada e persistência/outage/recovery próprios. São resultados documentados, não reexecutados nem certificados nesta escrita de 17-11.
+
+Prova CI atual/falha controlada/uploads/retenção reais, revisão independente/humana/cliente, capacidade BYTEA/backups/policy de retenção/p95/produção continuam pendentes. O sucesso remoto da ficha 04 não cobre V4.
+
+### Organização documental — 2026-11-17
+
+[Índice de arquitetura](docs/architecture/README.md): V1 arquiva os dois documentos completos encontrados (mistura 13-11/ficha 02); em T1/T2, V2 documentava código/schema/UI atuais em separado. Bytes históricos SVG/PNG preservados. Na consolidação posterior de 17-11, por preferência do utilizador, o conteúdo atual completo passou para `docs/architecture.md`, `docs/database.md` e `docs/ui/wireframe.svg`, removendo a cópia documental separada. V1, OpenAPI, ADRs e migrations SQL mantidos. [Matriz das fichas e inventário](docs/coursework-review.md) regista evidência e limites, sem nova funcionalidade ou versão.
+
 ## 0.4.0-rc.1 — 2026-11-12 — candidato não publicado
 
 Baseline documental da ficha 05 na worktree, não release/tag/publicação. **T6 LOCAL concluído**: candidato reconstruído com metadados atuais e E2E 5/5 passaram; README e arquitetura alinhados com este estado. Os resultados Boot 4 pré-T5 abaixo antecedem a atualização de metadados frontend/OpenAPI e permanecem históricos. Prova positiva/negativa GitHub Actions, upload em falha/retenção reais não verificados e aprovação humana final pendente; não se declara a ficha 05 integralmente concluída. Não foram inventadas datas de releases anteriores; os registos das fichas 01–04 permanecem nos documentos históricos.

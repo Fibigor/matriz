@@ -1,5 +1,46 @@
 # Matriz — Verificação atual e histórico
 
+## Consolidação canónica posterior — 17-11-2026
+
+Preferência expressa do utilizador após T1/T2: manter a informação atual completa em `docs/architecture.md`, `docs/database.md` e `docs/ui/wireframe.svg`, sem cópia documental V2 separada. A aprovação incluiu corrigir navegação e referências em RELEASE_NOTES/CHANGELOG, preservando datas, baseline e resultados históricos. Os registos T1/T2 abaixo descrevem a organização e verificações anteriores à consolidação, não uma cópia ainda existente.
+
+Fontes: AGENTS, skills contexto/validação, requisitos/restrições/histórias atuais, README, canónicos anteriores, fontes documentais então separadas, índice/proveniência, UI, matriz, plano, verificação, release notes/changelog, OpenAPI e migrations SQL. Consolidação editorial, sem novas decisões de produto ou validação do cliente.
+
+| Verificação local nesta consolidação, scripts efémeros em memória | Resultado observado |
+|---|---|
+| Fidelidade das três fontes | Revertendo apenas títulos, destinos relativos, navegação introdutória e secções de histórico acrescentadas, os canónicos reproduzem os SHA-256 iniciais das duas fontes MD. O SVG reproduz o SHA-256 inicial ao repor “V2” nos dois títulos; restantes bytes, incluindo fins de linha, preservados (12 239 → 12 233 bytes). Regras e diagramas completos mantidos. |
+| Links, âncoras e fences | 25 Markdown na raiz e `docs/`, incluindo V1/ADRs: 245 ligações locais e 35 âncoras resolvidas, 23 blocos fenced fechados; zero erros. Âncora de comparação/DEC-01 preservada. Sem consultas a URLs externos. |
+| SVG e ER | Dois SVG com XML bem formado. ER atual: nove entidades e respetivas colunas iguais às tabelas/migrations V1–V4; semântica preservada pela comparação integral com a fonte. Oito blocos Mermaid textuais presentes; sem renderização Mermaid, inspeção visual ou alegação de validação semântica integral. |
+| Remoções delimitadas | Ausentes apenas os três ficheiros da antiga cópia documental separada; os diretórios exatos `docs/architecture/v2/ui` e `docs/architecture/v2` foram confirmados vazios e removidos sem recursão. Nenhum destino funcional residual para essa cópia nos Markdown da raiz/`docs/`. Menções históricas e à migration SQL V2 mantidas. |
+| Preservação | Os quatro ficheiros V1 ficaram byte a byte iguais ao início. Digest SHA-256 dos 105 caminhos protegidos (incluindo ausências preexistentes, sem ler ficheiros de ambiente) manteve `d231c70565697c5ba38805e3fe158888228bbbb0b225f900c1636604022a2a09`. Inclui código, configurações/CI, OpenAPI, ADRs, requisitos, critérios, testes, guião, revisão de qualidade e agente Planeador. Só navegação/estado aprovados foram ajustados no README preexistente. |
+| Git somente leitura | HEAD `778ffd1ff8cfa366b444edbb0cc21bcc9f9b28d2` e SHA-256 do índice `5b7aa7bfe4354193c983112fbf2350b3cd7493627fb0b594f329822337810a62` inalterados. `git diff --check` passou. Nenhum staging/commit/push/merge/publicação. |
+
+Nenhum teste funcional, build, scan, workflow ou serviço executado; sem instalação, logs externos, `.env`, novos ficheiros de tracking ou outros agentes. Os resultados de 12/13-11 não foram reexecutados. Revisão independente será encaminhada separadamente; inspeção humana/cliente, CI atual positiva/negativa/uploads/retenção reais e decisões de capacidade/backups/policy/p95/produção continuam pendentes.
+
+## Revisão documental T1 e T2 — 17-11-2026
+
+Âmbito aprovado na organização T1/T2: arquivo integral V1 dos dois documentos mistos encontrados, então atual V2 de arquitetura/dados/UI em separado, transferência byte a byte do wireframe histórico, entradas canónicas e rastreabilidade/navegação/histórico nos caminhos T1/T2. [Proveniência e hashes originais](architecture/README.md), [matriz fichas 01–05 e inventário](coursework-review.md).
+
+HEAD observado no início: `778ffd1ff8cfa366b444edbb0cc21bcc9f9b28d2`; índice sem alterações staged. README e `.github/agents/planeador.agent.md` já tinham alterações, preservadas. Não confundir esta observação com os HEADs das execuções históricas abaixo.
+
+**Natureza da evidência:** esta tarefa lê código/contrato/documentos e reutiliza a análise textual pedagógica anterior fornecida no handover. Não reabre logs externos, não reexecuta Maven/npm/E2E/build/scans/CI, não inicia serviços e não valida remotamente Render/GitHub. Os resultados de 12/13-11 abaixo são **resultados documentados**, não certificados novamente. Sem instalação, leitura de `.env`, staging, commit, push ou deploy.
+
+T1: hashes SHA-256 dos originais e dimensões registados no índice; comparação dos MD arquivados com os originais confirmou **apenas rebase de destinos relativos**, mantendo texto/diagramas/histórico; hashes dos SVG/PNG transferidos iguais aos de origem. Parsing XML dos dois SVG passou. A então V2 era representação documental, não screenshot, renderização Mermaid ou prova de acessibilidade.
+
+Verificações finais estáticas observadas em T1/T2, antes da consolidação posterior:
+
+| Verificação local, scripts efémeros em memória | Resultado observado |
+|---|---|
+| Markdown na raiz e `docs/`, incluindo arquivos/ADRs | 27 ficheiros; 253 links locais e 35 âncoras resolvidos; 23 blocos fenced fechados; zero erros. Conferência local, sem consultar URLs externos. |
+| Mermaid textual e SVG XML | 8 blocos Mermaid com tipos/estrutura básica conferidos; ER atual: nove entidades e respetivas colunas iguais ao SQL V1–V4. Dois SVG com XML bem formado. `mmdc` e módulos Mermaid/CLI não disponíveis; sem instalação/renderização. Não é validação semântica integral Mermaid, visual ou de acessibilidade. |
+| Inventário e contrato preservado | 16 linhas PDF + 28 anexos; 712 páginas na análise anterior. OpenAPI lido com parser YAML existente: 29 operações, sem o alterar; não validador integral OpenAPI/JSON Schema. |
+| Arquivo V1 e transferências | MD iguais aos originais após apenas rebase de links. SVG/PNG com SHA-256 de origem preservado. Sem reescrita de texto/diagramas históricos. |
+| Preservação do trabalho e âmbito | Novos caminhos exatamente os dez destinos aprovados (incluem dois ficheiros transferidos); texto anterior de CHANGELOG/RELEASE_NOTES/plano/verificação/revisão de qualidade preservado. Quatro trechos preexistentes do README e hash do agente Planeador conferidos. |
+| Fontes fora do âmbito, HEAD/índice | Digest dos 99 ficheiros rastreados protegidos, sem ler ficheiros de ambiente, igual antes/depois: `0c6636895ba768c995e55b2afd5323480073541a4097d0fc615c0984105a82d9`. HEAD inalterado; SHA-256 do índice `5b7aa7bfe4354193c983112fbf2350b3cd7493627fb0b594f329822337810a62`, inalterado. |
+| Diff e texto | `git diff --check` exit 0; verificação adicional dos novos MD/SVG sem whitespace final ou caracteres de substituição Unicode. |
+
+Não foram criados reports/logs adicionais no repositório. A portabilidade das evidências externas continua pendente. A [revisão de qualidade da ficha 04](quality-security-review.md) permanece histórica (05-11/70e0eca), não revisão das extensões. Arquivar preserva pendências; revisão independente e decisão humana continuam necessárias.
+
 ## Extensões de tarefas — 13-11-2026
 
 **Estado atual:** âmbito académico aprovado pelo autor, não cliente. HEAD de referência `640b7e847f385cd69fabf0ff5ffd62dbf7f06cc2`; candidato mantém `0.4.0-rc.1`, implementação em worktree, sem SHA final publicado/tag ou bump. Esta tarefa **só leu fontes e reports armazenados e validou documentação**; não executou Maven/npm/build/E2E/scans/serviços, instalou dependências, consultou `.env`, escreveu no Git ou publicou.

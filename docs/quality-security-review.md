@@ -1,5 +1,7 @@
 # Matriz — Revisão de qualidade e segurança da ficha 04
 
+> **Arquivo histórico, não revisão atual das extensões.** O corpo abaixo mantém a revisão de **05-11-2026 / `70e0eca`** e a prova CI então documentada (`71d9fd7`, run 42084239819). Não cobre V4 nem certifica o âmbito/branch atual. Estado e resultados posteriores **documentados**, sem reexecução nesta edição de 17-11: [verificação das extensões](verification.md#extensões-de-tarefas--13-11-2026) e [rastreabilidade/pendências](coursework-review.md). Revisão independente/humana das extensões e nova prova CI continuam pendentes. Esta nota editorial não é uma nova Code/Security Review.
+
 ## Âmbito e evidência
 
 Revisão realizada em 05-11-2026 sobre o último incremento disponível antes destas alterações: commit `70e0eca` (`feat: implement local email and password authentication, replacing Keycloak OIDC`), branch `main`, inicialmente sem alterações locais. O Code Review foi limitado a esse incremento; o Security Review cobriu autenticação/sessão/CSRF e autorização de projetos e tarefas. Os critérios de negócio usados foram RN-01/RN-05, US-05/US-10 e o contrato `openapi.yaml`.

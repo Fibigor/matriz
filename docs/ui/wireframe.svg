@@ -1,78 +1,156 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1120" viewBox="0 0 1440 1120" font-family="Arial, sans-serif" role="img" aria-labelledby="title description">
-  <title id="title">Matriz — wireframe do projeto Alfa</title>
-  <desc id="description">Protótipo estático de baixa fidelidade com cinco tarefas, duas concluídas, uma em curso e duas por fazer, progresso de 40 por cento e formulário de criação sem estado ou responsável editáveis. Dados fictícios.</desc>
-  <rect x="0" y="0" width="1440" height="1120" fill="#ffffff"/>
-  <rect x="30" y="25" width="1380" height="70" fill="#eeeeee" stroke="#222222" stroke-width="2"/>
-  <text x="50" y="69" font-size="28" font-weight="bold" fill="#111111">MATRIZ</text>
-  <text x="260" y="67" font-size="18" fill="#111111">Projetos</text>
-  <text x="1020" y="67" font-size="18" fill="#111111">Ana | acesso autenticado</text>
-  <text x="50" y="133" font-size="16" fill="#333333">Projetos &gt; Alfa</text>
-  <text x="50" y="174" font-size="30" font-weight="bold" fill="#111111">Projeto Alfa</text>
-  <text x="50" y="205" font-size="18" fill="#333333">Preparação do MVP da Matriz</text>
-  <text x="1010" y="166" font-size="17" fill="#111111">O teu perfil neste projeto: Gestor</text>
-  <text x="1010" y="200" font-size="17" fill="#111111">Membros: Ana, Bruno, Carla | Gerir membros</text>
-  <rect x="50" y="235" width="910" height="155" fill="#ffffff" stroke="#222222" stroke-width="2"/>
-  <text x="70" y="268" font-size="20" font-weight="bold" fill="#111111">Progresso do projeto: 40% concluído</text>
-  <text x="70" y="302" font-size="17" fill="#111111">Total: 5 | Por fazer: 2 | Em curso: 1 | Concluídas: 2</text>
-  <rect x="70" y="322" width="740" height="24" fill="#eeeeee" stroke="#222222"/>
-  <rect x="70" y="322" width="296" height="24" fill="#888888" stroke="#222222"/>
-  <text x="830" y="341" font-size="18" fill="#111111">2 / 5</text>
-  <text x="70" y="374" font-size="15" fill="#333333">Conta todas as tarefas do projeto, não apenas a página visível.</text>
-  <rect x="980" y="235" width="410" height="600" fill="#f6f6f6" stroke="#222222" stroke-width="2"/>
-  <text x="1000" y="271" font-size="22" font-weight="bold" fill="#111111">Nova tarefa</text>
-  <text x="1000" y="301" font-size="16" fill="#333333">Criação no projeto Alfa</text>
-  <text x="1000" y="340" font-size="17" fill="#111111">Título *</text>
-  <rect x="1000" y="354" width="370" height="48" fill="#ffffff" stroke="#222222"/>
-  <text x="1010" y="385" font-size="16" fill="#666666">Introduzir título</text>
-  <text x="1000" y="427" font-size="14" fill="#333333">1–200 caracteres após retirar espaços.</text>
-  <text x="1000" y="468" font-size="17" fill="#111111">Descrição (opcional)</text>
-  <rect x="1000" y="482" width="370" height="112" fill="#ffffff" stroke="#222222"/>
-  <text x="1010" y="513" font-size="16" fill="#666666">Texto simples, até 2 000 caracteres.</text>
-  <text x="1000" y="630" font-size="16" fill="#111111">Estado inicial: Por fazer</text>
-  <text x="1000" y="660" font-size="16" fill="#111111">Responsável inicial: Sem responsável</text>
-  <text x="1000" y="693" font-size="14" fill="#333333">Estes valores não são editáveis na criação.</text>
-  <rect x="1000" y="721" width="180" height="46" fill="#dddddd" stroke="#222222" stroke-width="2"/>
-  <text x="1021" y="751" font-size="18" font-weight="bold" fill="#111111">Criar tarefa</text>
-  <text x="1000" y="802" font-size="14" fill="#333333">Falha/validação: manter texto e indicar campos.</text>
-  <text x="50" y="432" font-size="24" font-weight="bold" fill="#111111">Tarefas</text>
-  <text x="50" y="463" font-size="15" fill="#333333">Estado é texto, não apenas cor. Zero ou um responsável por tarefa.</text>
-  <rect x="50" y="480" width="910" height="48" fill="#eeeeee" stroke="#222222"/>
-  <text x="70" y="511" font-size="17" font-weight="bold" fill="#111111">Tarefa</text>
-  <text x="460" y="511" font-size="17" font-weight="bold" fill="#111111">Estado</text>
-  <text x="650" y="511" font-size="17" font-weight="bold" fill="#111111">Responsável</text>
-  <text x="865" y="511" font-size="17" font-weight="bold" fill="#111111">Detalhe</text>
-  <rect x="50" y="528" width="910" height="54" fill="#ffffff" stroke="#999999"/>
-  <text x="70" y="562" font-size="18" fill="#111111">Definir âmbito</text>
-  <text x="460" y="562" font-size="17" fill="#111111">Concluída</text>
-  <text x="650" y="562" font-size="17" fill="#111111">Ana</text>
-  <text x="875" y="562" font-size="17" fill="#111111">Ver</text>
-  <rect x="50" y="582" width="910" height="54" fill="#ffffff" stroke="#999999"/>
-  <text x="70" y="616" font-size="18" fill="#111111">Rever requisitos</text>
-  <text x="460" y="616" font-size="17" fill="#111111">Concluída</text>
-  <text x="650" y="616" font-size="17" fill="#111111">Bruno</text>
-  <text x="875" y="616" font-size="17" fill="#111111">Ver</text>
-  <rect x="50" y="636" width="910" height="54" fill="#ffffff" stroke="#999999"/>
-  <text x="70" y="670" font-size="18" fill="#111111">Desenhar modelo</text>
-  <text x="460" y="670" font-size="17" fill="#111111">Em curso</text>
-  <text x="650" y="670" font-size="17" fill="#111111">Ana</text>
-  <text x="875" y="670" font-size="17" fill="#111111">Ver</text>
-  <rect x="50" y="690" width="910" height="54" fill="#ffffff" stroke="#999999"/>
-  <text x="70" y="724" font-size="18" fill="#111111">Preparar contrato</text>
-  <text x="460" y="724" font-size="17" fill="#111111">Por fazer</text>
-  <text x="650" y="724" font-size="17" fill="#111111">Sem responsável</text>
-  <text x="875" y="724" font-size="17" fill="#111111">Ver</text>
-  <rect x="50" y="744" width="910" height="54" fill="#ffffff" stroke="#999999"/>
-  <text x="70" y="778" font-size="18" fill="#111111">Validar protótipo</text>
-  <text x="460" y="778" font-size="17" fill="#111111">Por fazer</text>
-  <text x="650" y="778" font-size="17" fill="#111111">Carla</text>
-  <text x="875" y="778" font-size="17" fill="#111111">Ver</text>
-  <text x="50" y="830" font-size="16" fill="#333333">Página 1 de 1 | 5 tarefas | Até 20 por página</text>
-  <rect x="50" y="860" width="1340" height="145" fill="#f6f6f6" stroke="#222222"/>
-  <text x="70" y="891" font-size="18" font-weight="bold" fill="#111111">Estados alternativos previstos — não apresentados em simultâneo</text>
-  <text x="70" y="923" font-size="16" fill="#111111">Carregamento: “A carregar tarefas…”; não mostrar 0% como se já fosse o valor real.</text>
-  <text x="70" y="952" font-size="16" fill="#111111">Vazio: “Sem tarefas”, contagens 0 e 0%; manter possibilidade de criar a primeira tarefa.</text>
-  <text x="70" y="981" font-size="16" fill="#111111">Erro: mensagem explícita e “Tentar novamente”; não substituir falha por tarefas de exemplo.</text>
-  <text x="50" y="1040" font-size="17" font-weight="bold" fill="#111111">WIREFRAME ESTÁTICO | DADOS FICTÍCIOS | SEM CÓDIGO FUNCIONAL</text>
-  <text x="50" y="1070" font-size="15" fill="#333333">GET e POST de tarefas estão contratados. “Projetos”, “Gerir membros” e “Ver” exigem contratos posteriores.</text>
-  <text x="50" y="1097" font-size="15" fill="#333333">Vista de gestor. Membros não veem ações de gestão; ambos podem criar tarefas. Sem filtros ou funcionalidades futuras.</text>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1720" height="1800" viewBox="0 0 1720 1800" role="img" aria-labelledby="title desc">
+  <title id="title">Matriz — lista e detalhe desktop, página móvel</title>
+  <desc id="desc">Wireframe documental de 17-11-2026 baseado no código atual, com dados fictícios. Desktop acima de 960 px: lista e painel de detalhe; móvel ou acesso hash direto: página. Inclui filtros, vários responsáveis, MAT, tipo, peso, motivo só em DONE, Markdown, templates, relações, anexos, comentários e história. Não é screenshot nem prova de acessibilidade ou renderização.</desc>
+  <defs>
+    <style>
+      text { font-family: system-ui, sans-serif; fill: #e7edf7; font-size: 15px; }
+      .h1 { font-size: 25px; font-weight: 700; }
+      .h2 { font-size: 19px; font-weight: 650; }
+      .small { font-size: 13px; fill: #b6c4d9; }
+      .note { font-size: 14px; fill: #b6c4d9; }
+      .accent { fill: #84beff; }
+      .panel { fill: #192437; stroke: #63748c; }
+      .input { fill: #111b2b; stroke: #75869f; }
+      .button { fill: #244b7d; stroke: #84beff; }
+      .line { stroke: #63748c; }
+    </style>
+  </defs>
+  <rect width="1720" height="1800" fill="#0c1421"/>
+  <text x="30" y="40" class="h1">MATRIZ · UI atual</text>
+  <text x="30" y="68" class="note">17-11-2026 · representação documental · dados fictícios · não é screenshot ou validação visual/a11y</text>
+  <text x="30" y="102" class="h2">A. Desktop &gt;960 px — abrir tarefa da lista apresenta painel</text>
+  <rect x="30" y="120" width="1135" height="1320" rx="8" class="panel"/>
+  <rect x="30" y="120" width="1135" height="52" fill="#223b60"/>
+  <text x="48" y="153" class="h2">M  MATRIZ</text>
+  <text x="940" y="153">Ana · Sair</text>
+  <path d="M200 172V1440" class="line"/>
+  <text x="48" y="210">Painel</text>
+  <text x="48" y="250" class="accent">Projetos</text>
+  <text x="48" y="292" class="small">Espaço de trabalho</text>
+  <text x="220" y="210" class="small">Projetos / Alfa</text>
+  <text x="220" y="246" class="h1">Alfa</text>
+  <text x="220" y="279">5 tarefas · 2 concluídas · 40%</text>
+  <text x="220" y="305" class="small">Agregados globais, independentes de filtros/página</text>
+  <rect x="220" y="330" width="350" height="84" rx="6" class="input"/>
+  <text x="233" y="357">Estado: Todos ▾</text>
+  <text x="233" y="388">Prioridade: Todas ▾</text>
+  <rect x="220" y="430" width="350" height="38" rx="5" class="button"/>
+  <text x="233" y="455">Nova tarefa</text>
+  <text x="220" y="500" class="small">Chave / Título · Estado · Prioridade · Responsáveis</text>
+  <path d="M220 516H580" class="line"/>
+  <text x="220" y="546" class="accent">MAT-21 · Rever guia de demonstração</text>
+  <text x="220" y="574">Concluída · Alta · Ana, Bruno</text>
+  <text x="220" y="600" class="small">Melhoria · Peso 3</text>
+  <path d="M220 618H580" class="line"/>
+  <text x="220" y="649">MAT-22 · Preparar dados fictícios</text>
+  <text x="220" y="677">Em curso · Média · Bruno</text>
+  <path d="M220 699H580" class="line"/>
+  <text x="220" y="730">MAT-23 · Rever textos</text>
+  <text x="220" y="758">Por fazer · Baixa · Sem responsáveis</text>
+  <text x="220" y="800" class="small">Linhas representativas · Anterior / Seguinte</text>
+  <text x="220" y="854" class="small">Pesquisa pelo nome na vista Projetos.</text>
+  <text x="220" y="879" class="small">Filtros de tarefas: estado/prioridade.</text>
+  <text x="220" y="921" class="small">Estados alternativos (não simultâneos):</text>
+  <text x="220" y="948" class="small">A carregar… / Sem tarefas / Erro + retry.</text>
+  <text x="220" y="975" class="small">Sucesso apenas após resposta confirmada.</text>
+  <text x="220" y="1018" class="small">Nova tarefa: TODO, sem responsáveis,</text>
+  <text x="220" y="1044" class="small">prioridade MEDIUM e tipo TASK por omissão.</text>
+  <text x="220" y="1087" class="small">Nome projeto: 1–120 pontos de código.</text>
+  <text x="220" y="1113" class="small">Título tarefa: 1–200; descrição: até 2 000.</text>
+  <text x="220" y="1156" class="small">Lista de fundo inerte com painel modal;</text>
+  <text x="220" y="1182" class="small">foco/Escape/devolução no código.</text>
+  <text x="220" y="1208" class="small">Comportamentos não provados pelo desenho.</text>
+  <!-- Painel: secções empilhadas representam conteúdo com scroll, não viewport literal. -->
+  <rect x="600" y="183" width="550" height="1238" rx="6" fill="#202f46" stroke="#84beff"/>
+  <text x="618" y="213" class="small">Projetos / ← Projeto</text>
+  <text x="907" y="213" class="accent">Página completa · Fechar ×</text>
+  <text x="618" y="244" class="small">MAT-21 · Melhoria · Peso 3</text>
+  <text x="618" y="277" class="h2">Rever guia de demonstração</text>
+  <text x="618" y="305">Concluída · Prioridade Alta · Motivo: Concluído</text>
+  <text x="618" y="341" class="h2">Editar tarefa</text>
+  <rect x="618" y="352" width="512" height="41" rx="4" class="input"/>
+  <text x="630" y="378">Título *: Rever guia de demonstração</text>
+  <text x="618" y="422">Tipo: Melhoria ▾    Peso: 3 ▾    Aplicar template</text>
+  <text x="618" y="447" class="small">Peso: sem peso ou 1 / 2 / 3 / 5 / 8 / 13</text>
+  <rect x="618" y="461" width="512" height="107" rx="4" class="input"/>
+  <text x="630" y="486" class="accent">Descrição · Escrever / Pré-visualizar</text>
+  <text x="630" y="515">## Objetivo</text>
+  <text x="630" y="543">Clarificar o percurso com **dados fictícios**.</text>
+  <text x="618" y="591" class="small">Markdown básico · até 2 000 · sem HTML/imagens/GFM</text>
+  <text x="618" y="617" class="small">Só HTTP/HTTPS; template substitui com confirmação.</text>
+  <text x="618" y="649">Estado: Concluída ▾    Prioridade: Alta ▾</text>
+  <text x="618" y="677">Motivo de fecho: Concluído ▾ (só em DONE)</text>
+  <text x="618" y="703" class="small">Opcional: Cancelado / Duplicado / Não será feito.</text>
+  <rect x="618" y="720" width="165" height="37" rx="4" class="button"/>
+  <text x="632" y="745">Guardar tarefa</text>
+  <text x="818" y="745">Eliminar tarefa (confirmar)</text>
+  <text x="618" y="790" class="h2">Responsáveis · Ana, Bruno</text>
+  <text x="618" y="817" class="small">Gestor adiciona/remove participantes ativos elegíveis.</text>
+  <text x="618" y="859" class="h2">Relações</text>
+  <text x="618" y="887">MAT-20 → BLOCKS → MAT-21 · Remover</text>
+  <text x="618" y="913" class="small">MAT-20 concluída; concluir exige bloqueadores DONE.</text>
+  <text x="618" y="940" class="small">RELATED / BLOCKS / DUPLICATES · candidato + Ligar</text>
+  <text x="618" y="982" class="h2">Anexos diretos</text>
+  <text x="618" y="1010">guia-demo.md · 1 KiB · Descarregar / Remover</text>
+  <text x="618" y="1037" class="small">Escolher ficheiros · Enviar · até 5 diretos, 4 MiB cada</text>
+  <text x="618" y="1079" class="h2">Atividade · Comentários / Histórico</text>
+  <text x="618" y="1107">Ana · 13-11 · “Guia revisto.” · exemplo.txt</text>
+  <text x="618" y="1133" class="small">Comentar: texto obrigatório, 1–2 000 pontos de código</text>
+  <text x="618" y="1159" class="small">Escrever / Pré-visualizar · ficheiros opcionais · Publicar</text>
+  <text x="618" y="1185" class="small">Até 5 por comentário, 4 MiB cada, envio atómico.</text>
+  <text x="618" y="1227">Histórico · Ana · Estado: Em curso → Concluída</text>
+  <text x="618" y="1253" class="small">Ator/data · alterações tipadas · paginação de eventos</text>
+  <text x="618" y="1295" class="small">Secções empilhadas = conteúdo rolável representativo.</text>
+  <text x="618" y="1321" class="small">Erro/409 conserva rascunho; substituir exige confirmar.</text>
+  <text x="618" y="1347" class="small">Reabertura limpa motivo; todo DONE conta no progresso.</text>
+  <text x="618" y="1385" class="small">Sair com rascunhos pede confirmação.</text>
+  <text x="1200" y="102" class="h2">B. Móvel ≤960 px / hash direto</text>
+  <rect x="1200" y="120" width="490" height="1320" rx="20" class="panel"/>
+  <rect x="1215" y="137" width="460" height="48" rx="7" fill="#223b60"/>
+  <text x="1232" y="168">☰  MATRIZ</text>
+  <text x="1550" y="168">Ana · Sair</text>
+  <text x="1225" y="219" class="small">Projetos / ← Projeto</text>
+  <text x="1225" y="252" class="small">MAT-21 · Melhoria · Peso 3</text>
+  <text x="1225" y="288" class="h2">Rever guia de demonstração</text>
+  <text x="1225" y="319">Concluída · Alta · Concluído</text>
+  <text x="1225" y="359" class="h2">Editar tarefa</text>
+  <rect x="1225" y="376" width="435" height="43" rx="4" class="input"/>
+  <text x="1236" y="403">Título * · Rever guia de demonstração</text>
+  <text x="1225" y="452">Tipo: Melhoria ▾</text>
+  <text x="1225" y="488">Peso: 3 ▾</text>
+  <rect x="1225" y="510" width="190" height="35" rx="4" class="button"/>
+  <text x="1236" y="534">Aplicar template</text>
+  <rect x="1225" y="567" width="435" height="120" rx="4" class="input"/>
+  <text x="1236" y="594" class="accent">Descrição · Escrever / Pré-visualizar</text>
+  <text x="1236" y="627">## Objetivo</text>
+  <text x="1236" y="659">Clarificar o percurso.</text>
+  <text x="1225" y="714" class="small">Até 2 000 pontos de código · Markdown básico</text>
+  <text x="1225" y="754">Estado: Concluída ▾</text>
+  <text x="1225" y="793">Prioridade: Alta ▾</text>
+  <text x="1225" y="832">Motivo: Concluído ▾</text>
+  <rect x="1225" y="854" width="180" height="38" rx="4" class="button"/>
+  <text x="1236" y="880">Guardar tarefa</text>
+  <text x="1225" y="931" class="h2">Responsáveis: Ana, Bruno</text>
+  <text x="1225" y="975" class="h2">Relações</text>
+  <text x="1225" y="1005">Bloqueada por MAT-20 (Concluída)</text>
+  <text x="1225" y="1049" class="h2">Anexos diretos</text>
+  <text x="1225" y="1079">guia-demo.md · Descarregar</text>
+  <text x="1225" y="1123" class="h2">Atividade</text>
+  <text x="1225" y="1153">Comentários / Histórico · paginação</text>
+  <text x="1225" y="1181" class="small">Comentário + anexos num único envio</text>
+  <text x="1225" y="1230" class="small">Mesmas secções e permissões do desktop;</text>
+  <text x="1225" y="1257" class="small">página rolável, não painel lateral.</text>
+  <text x="1225" y="1299" class="small">Menu móvel abre diálogo modal.</text>
+  <text x="1225" y="1326" class="small">Resize conserva o mesmo detalhe/rascunho.</text>
+  <text x="1225" y="1385" class="small">Geometria esquemática, não viewport medido.</text>
+  <text x="30" y="1486" class="h2">Regras que o desenho não substitui</text>
+  <text x="30" y="1520">Estados: Por fazer (TODO), Em curso (IN_PROGRESS), Concluída (DONE). Sem responsável obrigatório para concluir.</text>
+  <text x="30" y="1551">BLOCKS: sem ciclos; pode iniciar bloqueada, só conclui com todos os bloqueadores diretos DONE; não reabre bloqueador com dependente direto DONE.</text>
+  <text x="30" y="1582">RELATED simétrica; BLOCKS/DUPLICATES dirigidas, mesmo projeto. Criar/remover relação exige versões atuais de ambos os extremos.</text>
+  <text x="30" y="1613">Anexos: PNG/JPEG/GIF/WebP/PDF/TXT/Markdown; validação limitada, não antivírus. Download autenticado; só autor/gestor participante elimina.</text>
+  <text x="30" y="1644">Comentários não têm edição/eliminação isolada ou anexação posterior. História só leitura, sem cópias de título/descrição/texto de comentário.</text>
+  <text x="30" y="1675">Filtros/pesquisa visual de candidatos/história limitam-se à página indicada; não representam novos filtros globais de API.</text>
+  <text x="30" y="1724" class="note">Fontes: App, Tasks, TaskDetail/Panel, types, MarkdownEditor, TaskLinks, TaskAttachments, TaskActivity; requisitos/contrato atuais.</text>
+  <text x="30" y="1756" class="note">Sem @mentions, notificações, sprints ou novos serviços. Renderização, teclado/resize e inspeção humana continuam a exigir verificação própria.</text>
 </svg>

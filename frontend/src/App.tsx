@@ -77,7 +77,6 @@ function Login({ notice, onLogin }: { notice: string; onLogin: (user: User) => v
         onClick={() => { setEmail(account.email); setPassword(demoPassword); setError(''); }}>
         {account.name}
       </button>)}</div>
-      <p className="login-note">Palavra-passe: <code>{demoPassword}</code></p>
     </div>
     </section>
   </main>;

@@ -2,7 +2,9 @@
 
 Aplicação de gestão de projetos e tarefas desenvolvida na ficha 03 de AI-Powered Software Engineering, a partir dos Specification Pack e Architecture Pack das fichas 01 e 02.
 
-**Estado atual — 13-11-2026:** extensões de tarefas aprovadas pelo autor, sobre HEAD `640b7e847f385cd69fabf0ff5ffd62dbf7f06cc2`; mantém-se o candidato `0.4.0-rc.1`, sem nova versão ou publicação. A validação final local passou: **41 testes backend, 43 frontend e 6 E2E sem falhas**, imagem final fresca em contentores novos, Trivy **0 HIGH/CRITICAL** com **294/294 pares npm e 63/63 bibliotecas JAR**, Semgrep **135 regras/47 alvos/0 findings** e actionlint **1.7.7 PASS**. Migração populada V3→V4/MAT/defaults passou no Maven; dados, relações, comentários e hashes dos bytes sobreviveram à recriação app/db no mesmo volume e à paragem/retoma da DB própria, com readiness 503 e liveness 200 durante a indisponibilidade. Esta atualização só leu evidência guardada, sem repetir execuções. Revisão independente, inspeção/aceitação humana e prova GitHub Actions no âmbito/branch atual, uploads/retenção reais continuam pendentes. [Contrato e evidências atuais](docs/verification.md#extensões-de-tarefas--13-11-2026).
+**Estado funcional documentado — 13-11-2026:** extensões de tarefas aprovadas pelo autor, sobre a referência histórica `640b7e847f385cd69fabf0ff5ffd62dbf7f06cc2`; mantém-se o candidato `0.4.0-rc.1`, sem nova versão ou publicação. O relatório de validação final local regista **41 testes backend, 43 frontend e 6 E2E sem falhas**, imagem final fresca em contentores novos, Trivy **0 HIGH/CRITICAL** com **294/294 pares npm e 63/63 bibliotecas JAR**, Semgrep **135 regras/47 alvos/0 findings** e actionlint **1.7.7 PASS**. Regista também migração populada V3→V4/MAT/defaults, preservação de dados/relações/comentários/bytes após recriação app/db e paragem/retoma da DB própria, com readiness 503 e liveness 200 durante a indisponibilidade. São **resultados documentados**, não reexecutados nem certificados nesta tarefa; os logs externos não foram reabertos. Revisão independente, inspeção/aceitação humana/cliente e prova GitHub Actions no âmbito/branch atual, uploads/retenção reais continuam pendentes. [Contrato e evidências atuais](docs/verification.md#extensões-de-tarefas--13-11-2026).
+
+**Revisão documental — 17-11-2026:** [matriz das fichas 01–05 e inventário pedagógico](docs/coursework-review.md), [proveniência de arquitetura e dados](docs/architecture/README.md) e [referências UI](docs/ui/README.md). V1 conserva os documentos mistos tal como encontrados (não baseline pura da ficha 02); a informação atual está completa nos caminhos canónicos. Após T1/T2, por preferência do utilizador, consolidou-se o conteúdo antes separado como V2 e removeu-se essa cópia documental. Arquivo e rastreabilidade não encerram as pendências.
 
 **Histórico da ficha 05 — 12-11-2026:** migração Spring Boot 4 e T6 local passaram com 19 Maven, 13 frontend e 5 E2E, Semgrep 0 findings e Trivy 0 HIGH/CRITICAL; persistência/readiness também passaram nessa baseline anterior às extensões. Não são prova atual das novas funcionalidades. [CHANGELOG](CHANGELOG.md), [RELEASE_NOTES](RELEASE_NOTES.md) e [registo histórico T6](docs/verification.md#ficha-05--candidato-040-rc1) permanecem fontes históricas. Prova remota GitHub Actions, uploads/retenção e aceitação humana não estão concluídos.
 
@@ -35,6 +37,8 @@ A interface mantém o tema escuro/azul inspirado no [Black Dashboard React](http
 
 ## Documentação
 
+Para mais informações sobre utilização, funcionalidades, arquitetura e processo de desenvolvimento, consulte a [Wiki da Matriz no GitHub](https://github.com/Fibigor/matriz/wiki). A Wiki oferece uma visão geral; os ficheiros abaixo mantêm os requisitos, contratos e evidências de referência.
+
 | Ficheiro | Conteúdo |
 |---|---|
 | [docs/requirements.md](docs/requirements.md) | Visão, utilizadores, requisitos, prioridades, âmbito e exercício de Prompt Engineering. |
@@ -44,17 +48,19 @@ A interface mantém o tema escuro/azul inspirado no [Black Dashboard React](http
 | [.github/copilot-instructions.md](.github/copilot-instructions.md) | Orientação curta do Copilot e ligação às regras do projeto. |
 | [.github/agents/](.github/agents/) | Agentes especializados para planeamento, coordenação, implementação e revisão. |
 | [.github/skills/](.github/skills/) | Skills reutilizáveis de contexto e validação da Matriz. |
-| [docs/architecture.md](docs/architecture.md) | Comparação de arquiteturas, monólito modular escolhido, componentes, fluxos e revisão crítica. |
+| [docs/architecture.md](docs/architecture.md) | Arquitetura atual completa e ligação à comparação/DEC-01 histórica em V1. |
+| [docs/architecture/README.md](docs/architecture/README.md) | Versões documentais, proveniência e hashes de origem; sem renumerar ADRs ou OpenAPI. |
 | [docs/adr/README.md](docs/adr/README.md) | Índice dos Architecture Decision Records (ADRs) e decisões técnicas aceites. |
-| [docs/database.md](docs/database.md) | Entidades, cardinalidades, integridade e diagrama ER em Mermaid. |
+| [docs/database.md](docs/database.md) | Schema V1–V4/ER atual completo e ligação ao arquivo integral do modelo misto. |
 | [openapi.yaml](openapi.yaml) | Contrato OpenAPI 3.1 atual: 29 operações, incluindo extensões V4. |
-| [docs/ui/wireframe.png](docs/ui/wireframe.png) | Referência histórica da ficha 02, com [fonte SVG](docs/ui/wireframe.svg); não representa as extensões da ficha 03. |
+| [docs/ui/README.md](docs/ui/README.md) | [Wireframe atual](docs/ui/wireframe.svg) e referência histórica [PNG](docs/architecture/v1/ui/wireframe.png)/[SVG](docs/architecture/v1/ui/wireframe.svg), transferidos sem mudar bytes. |
+| [docs/coursework-review.md](docs/coursework-review.md) | Rastreabilidade fichas 01–05, 16 PDFs/28 anexos, evidência documentada e pendências. |
 | [docs/implementation-plan.md](docs/implementation-plan.md) | Decisões aprovadas, diferenças face à ficha 02 e incrementos. |
 | [docs/verification.md](docs/verification.md) | Cenários, resultados reais, testes, revisão e limitações. |
-| [CHANGELOG.md](CHANGELOG.md) | Baseline do candidato da ficha 05, sem inventar datas de releases anteriores. |
-| [RELEASE_NOTES.md](RELEASE_NOTES.md) | Compatibilidade, migração, operação local, resultados T6 locais e critérios remotos/revisão final pendentes. |
+| [CHANGELOG.md](CHANGELOG.md) | Extensões de 13-11 sobre o mesmo candidato e baseline histórica de 12-11 preservada. |
+| [RELEASE_NOTES.md](RELEASE_NOTES.md) | Suplemento V4, compatibilidade/migração e baseline T6 histórica; critérios remotos/revisão final pendentes. |
 | [docs/test-plan.md](docs/test-plan.md) | Cenários unitários, de integração, E2E e autorização da ficha 04. |
-| [docs/quality-security-review.md](docs/quality-security-review.md) | Code Review, Security Review, evidência, resultados e limitações da ficha 04. |
+| [docs/quality-security-review.md](docs/quality-security-review.md) | Revisão histórica da ficha 04 (05-11/70e0eca), não auditoria das extensões. |
 | [render.yaml](render.yaml) | Blueprint Render da demonstração temporária, com endereço registado [matriz-demo-h27u.onrender.com](https://matriz-demo-h27u.onrender.com); disponibilidade não revalidada nesta tarefa. |
 
 Leitura recomendada: requisitos, restrições e User Stories. Os agentes devem começar pelo `AGENTS.md`.
@@ -63,9 +69,13 @@ Leitura recomendada: requisitos, restrições e User Stories. Os agentes devem c
 
 Para alterações não triviais, comece pelo agente **Planeador Matriz** no seletor de agentes do Copilot. Descreva o resultado pretendido e peça uma proposta com âmbito, critérios de aceitação, ficheiros afetados, dependências e validações. Responda às perguntas de clarificação e reveja o plano antes de o aprovar. O planeador não deve alterar ficheiros nesta fase.
 
+Pode fornecer documentos PDF e apresentações PPT/PPTX como contexto. O planeador usa leitura nativa ou extração local com ferramentas já disponíveis, identifica as páginas/slides usados e assinala conteúdo que não conseguiu ler. Não instala dependências nem envia os documentos para serviços externos; se faltar suporte, pede uma exportação ou o conteúdo relevante. A extração textual não garante a leitura de imagens ou diagramas.
+
+No final da análise, recebe uma **descrição para o utilizador** e um **prompt de handover para o Orquestrador Matriz**, pronto a copiar, com o plano, critérios, caminhos, dependências, validação e estado real da aprovação. O prompt não substitui a aprovação humana nem inicia a implementação automaticamente.
+
 Depois da aprovação:
 
-1. Para trabalho com várias tarefas, entregue o plano aprovado ao **Orquestrador Matriz**. Ele coordena as tarefas e só paraleliza até três quando não há conflitos de ficheiros, dependências ou validação; caso contrário, segue sequencialmente.
+1. Para trabalho com várias tarefas, entregue o prompt de handover e a aprovação explícita do plano ao **Orquestrador Matriz**. Ele coordena as tarefas e só paraleliza até três quando não há conflitos de ficheiros, dependências ou validação; caso contrário, segue sequencialmente.
 2. Para uma tarefa isolada, ou quando o orquestrador a encaminhar, escolha o agente adequado: **Engenheiro Backend Matriz** para Java/Spring e persistência; **Engenheiro Frontend Matriz** para React/TypeScript e interface; **Engenheiro de Documentação e Configuração Matriz** para documentação, CI e configuração.
 3. Dê a cada tarefa um âmbito e critérios aprovados. Confirme os ficheiros novos/removidos e qualquer mudança fora do plano antes de permitir que avance.
 4. Peça ao **Revisor Matriz** uma revisão independente depois da implementação. O revisor não altera ficheiros; verifica critérios e evidências e assinala o que não conseguiu validar.

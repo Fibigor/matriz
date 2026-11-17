@@ -1,5 +1,29 @@
 # Matriz — Release notes 0.4.0-rc.1
 
+## Suplemento posterior — extensões de 13-11-2026
+
+Mesmo candidato **`0.4.0-rc.1`**, sem bump/tag/publicação. Aprovação do autor para demonstração académica, não do cliente. Esta secção acrescentada em 17-11 não altera a baseline de 12-11 preservada abaixo; menções abaixo a “sem migration nova/V1–V3” pertencem **apenas** à migração Boot 4 dessa baseline.
+
+- **Dados/API:** V4 aditiva, MAT-n global com lacunas, UUIDs/datas/versões preservados, TASK inicial e opcionais null; sem backfill de história. Tipo/peso/motivo, relações, anexos BYTEA e atividade entram no contrato atual (29 operações). [Modelo e migrações](docs/database.md), [OpenAPI](openapi.yaml).
+- **Compatibilidade:** permanecem sessão/scrypt/CSRF, stack e permissões. PUT continua a exigir os campos antigos; type/weight omitidos preservam, type null explícito é inválido, weight null limpa. Motivo omitido preserva em DONE→DONE, entrada sem motivo dá null, reabertura limpa. Todo DONE conta, sem ponderação por peso.
+- **Relações:** ambas as versões atuais em POST/DELETE; RELATED canónica, BLOCKS sem ciclos com bloqueio real de conclusão/reabertura, DUPLICATES dirigida. POST repetido atual é idempotente; remover link/eliminar bloqueador não muda estados.
+- **Ficheiros/comentários:** até cinco diretos/tarefa e cinco/comentário, 4 MiB cada; comentário multipart com texto obrigatório e ficheiros na mesma transação. Não há edição/eliminação isolada ou anexação posterior ao comentário. Download revalida acesso; validação limitada, não antivírus/certificação PDF.
+- **UI:** react-markdown 10.1.0, sem HTML/imagens/GFM, só HTTP/HTTPS; três templates fixos e detalhe painel a partir da lista >960 px/página móvel ou acesso direto. [Wireframe](docs/ui/wireframe.svg) é documental, não screenshot ou teste.
+
+### Resultados registados, não reexecutados nesta escrita
+
+[Verificação de 13-11](docs/verification.md#validação-final-local-das-extensões--execução-de-13-11-2026) documenta 41 backend/43 frontend/6 E2E, Trivy 0 HIGH/CRITICAL (294/294 npm, 63/63 JAR), Semgrep 135 regras/47 alvos/0 findings e actionlint 1.7.7 PASS; migração V3 populada→V4, imagem/contentores frescos, persistência de dados/bytes após recriação e readiness 503/liveness 200 durante outage próprio, recuperação 200. Logs externos não foram reabertos nem certificados nesta tarefa.
+
+**Pendências:** prova GitHub Actions atual positiva/negativa, upload em falha/retenção reais, revisão independente/humana e aceitação do cliente. Resultados locais e revisão histórica da ficha 04 não substituem essas provas. Capacidade BYTEA/história, backups/recuperação, policy de retenção (âmbito/início), alvo/carga p95 e produção por decidir; sem purga.
+
+Operação futura exige aprovação própria: preservar volumes, não editar migrations aplicadas; rollback de imagem não reverte schema/dados V4. Não foi ensaiado rollback nem backup/restore nesta tarefa. Blueprint Render/checksPass preservado, nenhuma ação remota efetuada.
+
+### Rastreabilidade documental — 17-11-2026
+
+[Versões/proveniência](docs/architecture/README.md) e [matriz fichas 01–05](docs/coursework-review.md): V1 guarda documentos mistos integrais; em T1/T2, V2 descrevia o estado atual em separado e os wireframes históricos foram transferidos byte a byte, sem V3 especulativa. Na consolidação posterior de 17-11, por preferência do utilizador, o conteúdo atual completo passou para `docs/architecture.md`, `docs/database.md` e `docs/ui/wireframe.svg`, removendo a cópia documental separada. V1, OpenAPI, ADRs e migrations SQL mantidos. Só verificação estática, sem novos ensaios funcionais nem revisão independente pelo próprio autor desta escrita.
+
+## Baseline histórica de 12-11-2026 — texto preservado
+
 **2026-11-12 — release candidate académico, não publicado. T6 LOCAL passou; critérios remotos e revisão humana final PENDENTES.** HEAD de referência `46694e535333c15769ac14a70d1d3b61010b8216`; alterações do candidato não committed, sem SHA Git final.
 
 Esta ficha 05 prepara documentação e versões após migração autorizada. Não é certificação de produção, segurança, conformidade, desempenho ou aceitação pelo cliente. [Changelog](CHANGELOG.md) e [verificação](docs/verification.md#ficha-05--candidato-040-rc1) distinguem trabalho atual, evidência anterior e histórico.

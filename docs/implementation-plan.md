@@ -1,5 +1,15 @@
 # Ficha 03 — Plano de implementação
 
+## Revisão documental T1 → T2 — 17-11-2026
+
+Executada sequencialmente no âmbito aprovado, sem alteração funcional: T1 organizou [arquitetura/dados então V1 e V2](architecture/README.md), manteve [entradas](architecture.md) [canónicas](database.md) e transferiu wireframes históricos sem mudar bytes; T2 acrescentou [rastreabilidade fichas 01–05](coursework-review.md), navegação e suplemento de 13-11 ao changelog/release notes, sem mudar `0.4.0-rc.1`.
+
+V1 não reconstrói uma baseline pura da ficha 02: arquiva os documentos mistos completos encontrados em 17-11, só com rebase de links. Na organização T1/T2, V2 descrevia código/schema V1–V4/UI atuais em separado. OpenAPI, ADRs, requisitos, critérios, testes, configurações e guião permanecem fora desta edição. Plano anterior e números abaixo conservam a proveniência temporal; “21 operações” no fecho de 29-10 não é o contrato atual de 29.
+
+**Consolidação posterior — 17-11-2026:** por preferência aprovada do utilizador, o conteúdo completo antes separado como V2 passou para [arquitetura](architecture.md), [dados](database.md) e [wireframe atual](ui/wireframe.svg); a cópia documental separada foi removida. Preservados arquivo V1 byte a byte, comparação/DEC-01, histórico, contrato, ADRs e migrations SQL (incluindo V2). Não é novo incremento funcional nem alteração dos resultados anteriores.
+
+As contagens de 13-11 abaixo são **evidência documentada**, não reexecuções/certificação de logs nesta tarefa. Matriz de pendências em [coursework-review](coursework-review.md#pendências-e-decisões-humanas): CI atual positiva/negativa/uploads/retenção reais, revisão independente/humana/cliente, capacidade/backups/policy/p95/produção. Arquivar/documentar não resolve essas pendências nem equivale a revisão de segurança das extensões.
+
 ## Incremento autorizado atual — 13-11-2026
 
 Autor aprovou as extensões, não cliente: V4/MAT global, tipo/peso/motivo, relações BLOCKS reais, anexos PostgreSQL, comentários multipart/histórico, Markdown/templates e detalhe partilhado. Referência HEAD `640b7e847f385cd69fabf0ff5ffd62dbf7f06cc2`, candidato `0.4.0-rc.1` sem bump/tag/publicação. As fases da ficha 03 abaixo são histórico do plano anterior; a exclusão de anexos foi substituída por este incremento.

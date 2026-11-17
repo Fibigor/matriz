@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1120" viewBox="0 0 1440 1120" font-family="Arial, sans-serif" role="img" aria-labelledby="title description">
+  <title id="title">Matriz — wireframe do projeto Alfa</title>
+  <desc id="description">Protótipo estático de baixa fidelidade com cinco tarefas, duas concluídas, uma em curso e duas por fazer, progresso de 40 por cento e formulário de criação sem estado ou responsável editáveis. Dados fictícios.</desc>
+  <rect x="0" y="0" width="1440" height="1120" fill="#ffffff"/>
+  <rect x="30" y="25" width="1380" height="70" fill="#eeeeee" stroke="#222222" stroke-width="2"/>
+  <text x="50" y="69" font-size="28" font-weight="bold" fill="#111111">MATRIZ</text>
+  <text x="260" y="67" font-size="18" fill="#111111">Projetos</text>
+  <text x="1020" y="67" font-size="18" fill="#111111">Ana | acesso autenticado</text>
+  <text x="50" y="133" font-size="16" fill="#333333">Projetos &gt; Alfa</text>
+  <text x="50" y="174" font-size="30" font-weight="bold" fill="#111111">Projeto Alfa</text>
+  <text x="50" y="205" font-size="18" fill="#333333">Preparação do MVP da Matriz</text>
+  <text x="1010" y="166" font-size="17" fill="#111111">O teu perfil neste projeto: Gestor</text>
+  <text x="1010" y="200" font-size="17" fill="#111111">Membros: Ana, Bruno, Carla | Gerir membros</text>
+  <rect x="50" y="235" width="910" height="155" fill="#ffffff" stroke="#222222" stroke-width="2"/>
+  <text x="70" y="268" font-size="20" font-weight="bold" fill="#111111">Progresso do projeto: 40% concluído</text>
+  <text x="70" y="302" font-size="17" fill="#111111">Total: 5 | Por fazer: 2 | Em curso: 1 | Concluídas: 2</text>
+  <rect x="70" y="322" width="740" height="24" fill="#eeeeee" stroke="#222222"/>
+  <rect x="70" y="322" width="296" height="24" fill="#888888" stroke="#222222"/>
+  <text x="830" y="341" font-size="18" fill="#111111">2 / 5</text>
+  <text x="70" y="374" font-size="15" fill="#333333">Conta todas as tarefas do projeto, não apenas a página visível.</text>
+  <rect x="980" y="235" width="410" height="600" fill="#f6f6f6" stroke="#222222" stroke-width="2"/>
+  <text x="1000" y="271" font-size="22" font-weight="bold" fill="#111111">Nova tarefa</text>
+  <text x="1000" y="301" font-size="16" fill="#333333">Criação no projeto Alfa</text>
+  <text x="1000" y="340" font-size="17" fill="#111111">Título *</text>
+  <rect x="1000" y="354" width="370" height="48" fill="#ffffff" stroke="#222222"/>
+  <text x="1010" y="385" font-size="16" fill="#666666">Introduzir título</text>
+  <text x="1000" y="427" font-size="14" fill="#333333">1–200 caracteres após retirar espaços.</text>
+  <text x="1000" y="468" font-size="17" fill="#111111">Descrição (opcional)</text>
+  <rect x="1000" y="482" width="370" height="112" fill="#ffffff" stroke="#222222"/>
+  <text x="1010" y="513" font-size="16" fill="#666666">Texto simples, até 2 000 caracteres.</text>
+  <text x="1000" y="630" font-size="16" fill="#111111">Estado inicial: Por fazer</text>
+  <text x="1000" y="660" font-size="16" fill="#111111">Responsável inicial: Sem responsável</text>
+  <text x="1000" y="693" font-size="14" fill="#333333">Estes valores não são editáveis na criação.</text>
+  <rect x="1000" y="721" width="180" height="46" fill="#dddddd" stroke="#222222" stroke-width="2"/>
+  <text x="1021" y="751" font-size="18" font-weight="bold" fill="#111111">Criar tarefa</text>
+  <text x="1000" y="802" font-size="14" fill="#333333">Falha/validação: manter texto e indicar campos.</text>
+  <text x="50" y="432" font-size="24" font-weight="bold" fill="#111111">Tarefas</text>
+  <text x="50" y="463" font-size="15" fill="#333333">Estado é texto, não apenas cor. Zero ou um responsável por tarefa.</text>
+  <rect x="50" y="480" width="910" height="48" fill="#eeeeee" stroke="#222222"/>
+  <text x="70" y="511" font-size="17" font-weight="bold" fill="#111111">Tarefa</text>
+  <text x="460" y="511" font-size="17" font-weight="bold" fill="#111111">Estado</text>
+  <text x="650" y="511" font-size="17" font-weight="bold" fill="#111111">Responsável</text>
+  <text x="865" y="511" font-size="17" font-weight="bold" fill="#111111">Detalhe</text>
+  <rect x="50" y="528" width="910" height="54" fill="#ffffff" stroke="#999999"/>
+  <text x="70" y="562" font-size="18" fill="#111111">Definir âmbito</text>
+  <text x="460" y="562" font-size="17" fill="#111111">Concluída</text>
+  <text x="650" y="562" font-size="17" fill="#111111">Ana</text>
+  <text x="875" y="562" font-size="17" fill="#111111">Ver</text>
+  <rect x="50" y="582" width="910" height="54" fill="#ffffff" stroke="#999999"/>
+  <text x="70" y="616" font-size="18" fill="#111111">Rever requisitos</text>
+  <text x="460" y="616" font-size="17" fill="#111111">Concluída</text>
+  <text x="650" y="616" font-size="17" fill="#111111">Bruno</text>
+  <text x="875" y="616" font-size="17" fill="#111111">Ver</text>
+  <rect x="50" y="636" width="910" height="54" fill="#ffffff" stroke="#999999"/>
+  <text x="70" y="670" font-size="18" fill="#111111">Desenhar modelo</text>
+  <text x="460" y="670" font-size="17" fill="#111111">Em curso</text>
+  <text x="650" y="670" font-size="17" fill="#111111">Ana</text>
+  <text x="875" y="670" font-size="17" fill="#111111">Ver</text>
+  <rect x="50" y="690" width="910" height="54" fill="#ffffff" stroke="#999999"/>
+  <text x="70" y="724" font-size="18" fill="#111111">Preparar contrato</text>
+  <text x="460" y="724" font-size="17" fill="#111111">Por fazer</text>
+  <text x="650" y="724" font-size="17" fill="#111111">Sem responsável</text>
+  <text x="875" y="724" font-size="17" fill="#111111">Ver</text>
+  <rect x="50" y="744" width="910" height="54" fill="#ffffff" stroke="#999999"/>
+  <text x="70" y="778" font-size="18" fill="#111111">Validar protótipo</text>
+  <text x="460" y="778" font-size="17" fill="#111111">Por fazer</text>
+  <text x="650" y="778" font-size="17" fill="#111111">Carla</text>
+  <text x="875" y="778" font-size="17" fill="#111111">Ver</text>
+  <text x="50" y="830" font-size="16" fill="#333333">Página 1 de 1 | 5 tarefas | Até 20 por página</text>
+  <rect x="50" y="860" width="1340" height="145" fill="#f6f6f6" stroke="#222222"/>
+  <text x="70" y="891" font-size="18" font-weight="bold" fill="#111111">Estados alternativos previstos — não apresentados em simultâneo</text>
+  <text x="70" y="923" font-size="16" fill="#111111">Carregamento: “A carregar tarefas…”; não mostrar 0% como se já fosse o valor real.</text>
+  <text x="70" y="952" font-size="16" fill="#111111">Vazio: “Sem tarefas”, contagens 0 e 0%; manter possibilidade de criar a primeira tarefa.</text>
+  <text x="70" y="981" font-size="16" fill="#111111">Erro: mensagem explícita e “Tentar novamente”; não substituir falha por tarefas de exemplo.</text>
+  <text x="50" y="1040" font-size="17" font-weight="bold" fill="#111111">WIREFRAME ESTÁTICO | DADOS FICTÍCIOS | SEM CÓDIGO FUNCIONAL</text>
+  <text x="50" y="1070" font-size="15" fill="#333333">GET e POST de tarefas estão contratados. “Projetos”, “Gerir membros” e “Ver” exigem contratos posteriores.</text>
+  <text x="50" y="1097" font-size="15" fill="#333333">Vista de gestor. Membros não veem ações de gestão; ambos podem criar tarefas. Sem filtros ou funcionalidades futuras.</text>
+</svg>
