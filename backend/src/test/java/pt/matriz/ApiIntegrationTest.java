@@ -123,7 +123,7 @@ class ApiIntegrationTest {
             api.perform(registration("Valid", invalidEmail, "a".repeat(12)))
                     .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.errors[0].field").value("email"));
         }
-        for (String invalidPassword : List.of("", "🚀".repeat(11), "🚀".repeat(201))) {
+        for (String invalidPassword : List.of("", "🚀".repeat(5), "🚀".repeat(201))) {
             api.perform(registration("Valid", email, invalidPassword))
                     .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.errors[0].field").value("password"));
         }
@@ -153,6 +153,81 @@ class ApiIntegrationTest {
         api.perform(post("/api/auth/login").with(csrf()).contentType(MediaType.APPLICATION_JSON)
                         .content(json.writeValueAsString(Map.of("email", legacyEmail, "password", "short"))))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void registrationPasswordDeltaCountsRawUnicodeAndKeepsErrorsSafe() throws Exception {
+        for (String unit : List.of("a", "🚀", " ")) {
+            for (int length : List.of(5, 6, 200, 201)) {
+                String password = unit.repeat(length);
+                String email = java.util.UUID.randomUUID() + "@example.invalid";
+                var result = api.perform(registration("Boundary", email, password));
+                if (length == 5 || length == 201) {
+                    String message = length == 5 ? "Mínimo de 6 caracteres" : "Palavra-passe demasiado longa";
+                    result.andExpect(status().isUnprocessableEntity())
+                            .andExpect(jsonPath("$.detail").value(message))
+                            .andExpect(jsonPath("$.errors[0].field").value("password"))
+                            .andExpect(jsonPath("$.errors[0].message").value(message));
+                    assertThat(db.queryForObject("SELECT count(*) FROM app_user WHERE email=?", Integer.class, email)).isZero();
+                    if (length == 201) {
+                        api.perform(post("/api/auth/login").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                                        .content(json.writeValueAsString(Map.of("email", email, "password", password))))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.detail").value("Email ou palavra-passe inválidos."));
+                    }
+                } else {
+                    result.andExpect(status().isCreated()).andExpect(jsonPath("$.length()").value(1))
+                            .andExpect(jsonPath("$.message").value("Conta criada. Inicie sessão."));
+                    String hash = db.queryForObject("SELECT password_hash FROM app_user WHERE email=?", String.class, email);
+                    assertThat(passwords.matches(password, hash)).isTrue();
+                    api.perform(post("/api/auth/login").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                                    .content(json.writeValueAsString(Map.of("email", email, "password", password))))
+                            .andExpect(status().isOk());
+                }
+            }
+        }
+        for (String password : java.util.Arrays.asList(null, "")) {
+            var input = new java.util.HashMap<String, String>();
+            input.put("displayName", "Boundary");
+            input.put("email", "null-password@example.invalid");
+            input.put("password", password);
+            api.perform(registration("Boundary", "unused@example.invalid", "unused")
+                            .content(json.writeValueAsString(input)))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.detail").value("Mínimo de 6 caracteres"))
+                    .andExpect(jsonPath("$.errors[0].message").value("Mínimo de 6 caracteres"));
+        }
+        // Six raw points, including edges and decomposed text: no trim/composition rules.
+        for (String password : List.of(" abcd ", "e\u0301abcd")) {
+            String email = java.util.UUID.randomUUID() + "@example.invalid";
+            api.perform(registration("Raw", email, password)).andExpect(status().isCreated());
+            String hash = db.queryForObject("SELECT password_hash FROM app_user WHERE email=?", String.class, email);
+            assertThat(passwords.matches(password, hash)).isTrue();
+            assertThat(passwords.matches(password.trim().replace("e\u0301", "é"), hash)).isFalse();
+        }
+    }
+
+    @Test
+    void registrationEmailExtractionPreservesJavaNormalizationAndUtf16Limit() throws Exception {
+        for (String email : List.of("Á🚀@EXAMPLE.INVALID", "b".repeat(238) + "@example.invalid",
+                "🚀".repeat(119) + "@example.invalid", "\u00a0x@example.invalid", "e\u0301@example.invalid")) {
+            String normalized = email.toLowerCase(java.util.Locale.ROOT);
+            api.perform(registration("Email", "\u0000 \t" + email + "\r ", "abcdef"))
+                    .andExpect(status().isCreated());
+            assertThat(db.queryForObject("SELECT email FROM app_user WHERE email=?", String.class, normalized))
+                    .isEqualTo(normalized);
+            api.perform(post("/api/auth/login").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                            .content(json.writeValueAsString(Map.of("email", " " + email + " ", "password", "abcdef"))))
+                    .andExpect(status().isOk());
+        }
+        for (String email : List.of("a".repeat(239) + "@example.invalid",
+                "🚀".repeat(119) + "a@example.invalid", "a b@example.invalid", "partial")) {
+            api.perform(registration("Email", email, "abcdef")).andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.errors[0].field").value("email"));
+            api.perform(post("/api/auth/login").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                            .content(json.writeValueAsString(Map.of("email", email, "password", "abcdef"))))
+                    .andExpect(status().isBadRequest());
+        }
     }
 
     @Test
@@ -280,6 +355,275 @@ class ApiIntegrationTest {
         return body(api.perform(post("/api/projects").session(session).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Integration\",\"description\":\"Persisted\"}"))
                 .andExpect(status().isCreated()).andReturn());
+    }
+
+    MockHttpSession loginEmail(String email, String password) throws Exception {
+        return (MockHttpSession) api.perform(post("/api/auth/login").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(Map.of("email", email, "password", password))))
+                .andExpect(status().isOk()).andReturn().getRequest().getSession(false);
+    }
+
+    String registerMemberAccount(String email) throws Exception {
+        api.perform(registration("New member", email, "abcdef")).andExpect(status().isCreated());
+        return db.queryForObject("SELECT id FROM app_user WHERE email=?", String.class,
+                email.trim().toLowerCase(java.util.Locale.ROOT));
+    }
+
+    org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder memberRequest(
+            String projectId, MockHttpSession session, String payload) {
+        return post("/api/projects/" + projectId + "/members").session(session).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content(payload);
+    }
+
+    @Test
+    void memberEmailAddsRealRegisteredAccountWithOnlyIntendedAccessAndNoPromotion() throws Exception {
+        MockHttpSession ana = login("ana");
+        String id = createProject(ana).get("id").asText();
+        String foreign = createProject(ana).get("id").asText();
+        String email = "new-member-Á🚀@example.invalid";
+        String target = registerMemberAccount(email);
+        MockHttpSession member = loginEmail(email, "abcdef");
+        api.perform(get("/api/projects").session(member)).andExpect(jsonPath("$.items").isEmpty());
+        api.perform(memberRequest(id, ana, json.writeValueAsString(Map.of("email", " NEW-MEMBER-Á🚀@EXAMPLE.INVALID "))))
+                .andExpect(status().isNoContent()).andExpect(content().string(""));
+        var joined = db.queryForMap("SELECT * FROM participation WHERE project_id=? AND user_id=?", id, target);
+        for (String payload : List.of(json.writeValueAsString(Map.of("email", email)),
+                json.writeValueAsString(Map.of("userId", target)))) {
+            api.perform(memberRequest(id, ana, payload)).andExpect(status().isNoContent());
+            assertThat(db.queryForMap("SELECT * FROM participation WHERE project_id=? AND user_id=?", id, target))
+                    .isEqualTo(joined);
+        }
+        api.perform(memberRequest(id, ana, "{\"email\":\" ANA@EXAMPLE.INVALID \"}")).andExpect(status().isNoContent());
+        api.perform(get("/api/projects/" + id).session(member)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentRole").value("MEMBER")).andExpect(jsonPath("$.version").value(1));
+        api.perform(get("/api/projects/" + foreign).session(member)).andExpect(status().isNotFound());
+        api.perform(get("/api/projects/proj-alfa").session(member)).andExpect(status().isNotFound());
+        api.perform(get("/api/projects").session(member)).andExpect(jsonPath("$.items.length()").value(1));
+        createProject(member);
+        api.perform(get("/api/projects").session(member)).andExpect(jsonPath("$.items.length()").value(2));
+        api.perform(memberRequest(id, member, "{\"email\":\"carla@example.invalid\"}")).andExpect(status().isForbidden());
+        api.perform(delete("/api/projects/" + id + "/members/" + target).session(ana).with(csrf()))
+                .andExpect(status().isNoContent());
+        api.perform(get("/api/projects/" + id).session(member)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void memberInputUsesPresenceXorAndStrictJsonAfterAuthorization() throws Exception {
+        MockHttpSession ana = login("ana"), bruno = login("bruno"), carla = login("carla");
+        String id = createProject(ana).get("id").asText();
+        for (String payload : List.of("{}", "{\"email\":null,\"userId\":null}",
+                "{\"email\":\"carla@example.invalid\",\"userId\":null}",
+                "{\"email\":null,\"userId\":\"user-carla\"}",
+                "{\"email\":\"carla@example.invalid\",\"userId\":\"user-carla\"}")) {
+            api.perform(memberRequest(id, ana, payload)).andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.errors[0].field").value("email"));
+        }
+        for (String field : List.of("email", "userId")) {
+            for (String value : List.of("null", "\"\"", "\" \"", "\"missing\"", "\" user-carla \"")) {
+                api.perform(memberRequest(id, ana, "{\"" + field + "\":" + value + "}"))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.errors[0].field").value(field));
+            }
+        }
+        for (String payload : List.of("{", "null", "[]", "{\"unknown\":true}", "{\"email\":{}}",
+                "{\"email\":[]}", "{\"userId\":42}", "{\"email\":42}", "{\"userId\":true}",
+                "{\"email\":true}", "{\"emailPresent\":true}", "{\"userIdPresent\":true}")) {
+            api.perform(memberRequest(id, ana, payload)).andExpect(status().isBadRequest());
+        }
+        api.perform(post("/api/projects/" + id + "/members").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"email\":\"carla@example.invalid\"}"))
+                .andExpect(status().isUnauthorized());
+        api.perform(memberRequest(id, ana, "{\"email\":\"carla@example.invalid\"}").with(csrf().useInvalidToken()))
+                .andExpect(status().isForbidden());
+        api.perform(memberRequest(id, ana, "{\"userId\":\"user-bruno\"}")).andExpect(status().isNoContent());
+        for (String payload : List.of("{}", "{\"email\":\"carla@example.invalid\"}", "{\"email\":\"missing@example.invalid\"}")) {
+            api.perform(memberRequest(id, bruno, payload)).andExpect(status().isForbidden());
+            api.perform(memberRequest(id, carla, payload)).andExpect(status().isNotFound());
+            api.perform(memberRequest("not-present", ana, payload)).andExpect(status().isNotFound());
+        }
+        assertThat(db.queryForObject("SELECT count(*) FROM participation WHERE project_id=?", Integer.class, id)).isEqualTo(2);
+        api.perform(memberRequest(id, ana, "{\"userId\":\"user-carla\"}")).andExpect(status().isNoContent());
+    }
+
+    @Test
+    void memberEmailEligibilityNormalizationAndUtf16BoundariesMatchRegistration() throws Exception {
+        MockHttpSession ana = login("ana");
+        String id = createProject(ana).get("id").asText();
+        for (String email : List.of("member-unicode-é🚀@example.invalid", "c".repeat(238) + "@example.invalid",
+                "🚀".repeat(118) + "ab@example.invalid", "\u00a0member@example.invalid", "member-e\u0301@example.invalid")) {
+            String target = registerMemberAccount(email);
+            api.perform(memberRequest(id, ana, json.writeValueAsString(Map.of(
+                            "email", "\u0000 \t" + email.toUpperCase(java.util.Locale.ROOT) + "\r "))))
+                    .andExpect(status().isNoContent());
+            assertThat(db.queryForObject("SELECT count(*) FROM participation WHERE project_id=? AND user_id=?",
+                    Integer.class, id, target)).isEqualTo(1);
+        }
+        for (String email : List.of("d".repeat(239) + "@example.invalid",
+                "🚀".repeat(119) + "a@example.invalid", "partial", "%@example.invalid", "a b@example.invalid",
+                "member-unicode-é🚀@example.invalid' OR true --")) {
+            api.perform(memberRequest(id, ana, json.writeValueAsString(Map.of("email", email))))
+                    .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.errors[0].field").value("email"));
+        }
+        String inactiveEmail = "member-inactive@example.invalid";
+        String inactive = registerMemberAccount(inactiveEmail);
+        db.update("UPDATE app_user SET active=false WHERE id=?", inactive);
+        JsonNode missing = body(api.perform(memberRequest(id, ana, "{\"email\":\"absent@example.invalid\"}"))
+                .andExpect(status().isUnprocessableEntity()).andReturn());
+        JsonNode disabled = body(api.perform(memberRequest(id, ana, json.writeValueAsString(Map.of("email", inactiveEmail))))
+                .andExpect(status().isUnprocessableEntity()).andReturn());
+        assertThat(disabled).isEqualTo(missing);
+        assertThat(missing.get("detail").asText()).isEqualTo("Conta não elegível.");
+        assertThat(missing.get("errors").get(0).get("message").asText()).isEqualTo("Conta não elegível.");
+        for (String target : List.of(inactive, "not-present")) {
+            api.perform(memberRequest(id, ana, json.writeValueAsString(Map.of("userId", target))))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.detail").value("Conta não elegível."))
+                    .andExpect(jsonPath("$.errors[0].field").value("userId"));
+        }
+        assertThat(db.queryForObject("SELECT count(*) FROM participation WHERE project_id=?", Integer.class, id)).isEqualTo(6);
+    }
+
+    @Test
+    void memberConcurrentEmailAndLegacyRequestsAreIdempotentWithoutChangingDatesOrVersion() throws Exception {
+        MockHttpSession ana = login("ana");
+        String id = createProject(ana).get("id").asText();
+        for (boolean legacy : List.of(false, true)) {
+            String email = "member-race-" + legacy + "@example.invalid";
+            String target = registerMemberAccount(email);
+            String byEmail = json.writeValueAsString(Map.of("email", email));
+            String other = json.writeValueAsString(legacy ? Map.of("userId", target) : Map.of("email", " " + email.toUpperCase(java.util.Locale.ROOT) + " "));
+            assertThat(race(
+                    () -> api.perform(memberRequest(id, ana, byEmail)).andReturn().getResponse().getStatus(),
+                    () -> api.perform(memberRequest(id, ana, other)).andReturn().getResponse().getStatus()))
+                    .containsExactly(204, 204);
+            var before = db.queryForMap("SELECT * FROM participation WHERE project_id=? AND user_id=?", id, target);
+            assertThat(race(
+                    () -> api.perform(memberRequest(id, ana, byEmail)).andReturn().getResponse().getStatus(),
+                    () -> api.perform(memberRequest(id, ana, other)).andReturn().getResponse().getStatus()))
+                    .containsExactly(204, 204);
+            assertThat(db.queryForMap("SELECT * FROM participation WHERE project_id=? AND user_id=?", id, target)).isEqualTo(before);
+            assertThat(db.queryForObject("SELECT count(*) FROM participation WHERE project_id=? AND user_id=?", Integer.class, id, target)).isEqualTo(1);
+        }
+        assertThat(db.queryForObject("SELECT version FROM project WHERE id=?", Long.class, id)).isEqualTo(1);
+        assertThat(db.queryForObject("SELECT owner_user_id FROM project WHERE id=?", String.class, id)).isEqualTo("user-ana");
+    }
+
+    org.springframework.transaction.support.TransactionTemplate memberTransaction() {
+        return new org.springframework.transaction.support.TransactionTemplate(
+                new org.springframework.jdbc.datasource.DataSourceTransactionManager(db.getDataSource()));
+    }
+
+    // Observe the database wait graph, not timing alone; the gate transaction owns blockerPid.
+    void awaitMemberLock(int blockerPid, String queryPattern) {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        while (System.nanoTime() < deadline) {
+            db.execute("SELECT pg_stat_clear_snapshot()");
+            if (Boolean.TRUE.equals(db.queryForObject("""
+                    SELECT EXISTS(SELECT 1 FROM pg_stat_activity
+                    WHERE datname=current_database() AND wait_event_type='Lock'
+                    AND query LIKE ? AND ? = ANY(pg_blocking_pids(pid)))
+                    """, Boolean.class, queryPattern, blockerPid))) return;
+            try { Thread.sleep(20); }
+            catch (InterruptedException error) { Thread.currentThread().interrupt(); throw new IllegalStateException(error); }
+        }
+        fail("Expected a PostgreSQL lock wait for " + queryPattern);
+    }
+
+    @Test
+    void memberWaitingForProjectLockRechecksActiveParticipationAndManager() throws Exception {
+        for (String change : List.of("inactive", "revoked", "manager")) {
+            String email = "member-actor-" + change + "@example.invalid";
+            String actor = registerMemberAccount(email);
+            MockHttpSession session = loginEmail(email, "abcdef");
+            String id = createProject(session).get("id").asText();
+            db.update("INSERT INTO participation(project_id,user_id) VALUES (?,'user-ana')", id);
+            try (var pool = Executors.newSingleThreadExecutor()) {
+                var write = memberTransaction().execute(tx -> {
+                    db.queryForObject("SELECT id FROM project WHERE id=? FOR UPDATE", String.class, id);
+                    int pid = db.queryForObject("SELECT pg_backend_pid()", Integer.class);
+                    var future = pool.submit(() -> api.perform(memberRequest(id, session, "{\"email\":\"carla@example.invalid\"}"))
+                            .andReturn().getResponse().getStatus());
+                    awaitMemberLock(pid, "%FOR UPDATE OF p%");
+                    if (change.equals("inactive")) db.update("UPDATE app_user SET active=false WHERE id=?", actor);
+                    else {
+                        db.update("UPDATE project SET owner_user_id='user-ana' WHERE id=?", id);
+                        if (change.equals("revoked")) db.update("DELETE FROM participation WHERE project_id=? AND user_id=?", id, actor);
+                    }
+                    return future;
+                });
+                assertThat(write.get(15, TimeUnit.SECONDS)).isEqualTo(change.equals("inactive") ? 401 : change.equals("revoked") ? 404 : 403);
+            }
+            assertThat(db.queryForObject("SELECT count(*) FROM participation WHERE project_id=? AND user_id='user-carla'",
+                    Integer.class, id)).isZero();
+        }
+    }
+
+    @Test
+    void memberWaitsForTargetDeactivationAndRejectsItForBothCriteria() throws Exception {
+        MockHttpSession ana = login("ana");
+        String id = createProject(ana).get("id").asText();
+        for (String field : List.of("email", "userId")) {
+            String email = "member-target-deactivate-" + field.toLowerCase(java.util.Locale.ROOT) + "@example.invalid";
+            String target = registerMemberAccount(email);
+            String payload = json.writeValueAsString(Map.of(field, field.equals("email") ? email : target));
+            try (var pool = Executors.newSingleThreadExecutor()) {
+                var write = memberTransaction().execute(tx -> {
+                    db.update("UPDATE app_user SET active=false WHERE id=?", target);
+                    int pid = db.queryForObject("SELECT pg_backend_pid()", Integer.class);
+                    var future = pool.submit(() -> api.perform(memberRequest(id, ana, payload))
+                            .andExpect(jsonPath("$.errors[0].field").value(field))
+                            .andExpect(jsonPath("$.detail").value("Conta não elegível."))
+                            .andReturn().getResponse().getStatus());
+                    awaitMemberLock(pid, "%FOR SHARE%");
+                    return future;
+                });
+                assertThat(write.get(15, TimeUnit.SECONDS)).isEqualTo(422);
+            }
+            assertThat(db.queryForObject("SELECT count(*) FROM participation WHERE project_id=? AND user_id=?",
+                    Integer.class, id, target)).isZero();
+        }
+    }
+
+    @Test
+    void memberHoldsTargetShareLockUntilParticipationInsertCommits() throws Exception {
+        MockHttpSession ana = login("ana");
+        String id = createProject(ana).get("id").asText();
+        String email = "member-target-share@example.invalid";
+        String target = registerMemberAccount(email);
+        CountDownLatch deactivationStarted = new CountDownLatch(1);
+        try (var pool = Executors.newFixedThreadPool(2)) {
+            var writes = memberTransaction().execute(tx -> {
+                // Pause only the insert, after target eligibility: an unprotected SELECT
+                // would allow the concurrent UPDATE to finish while this gate is held.
+                db.execute("LOCK TABLE participation IN SHARE MODE");
+                int pid = db.queryForObject("SELECT pg_backend_pid()", Integer.class);
+                var add = pool.submit(() -> api.perform(memberRequest(id, ana, json.writeValueAsString(Map.of("email", email))))
+                        .andReturn().getResponse().getStatus());
+                awaitMemberLock(pid, "%INSERT INTO participation%");
+                int addingPid = db.queryForObject("""
+                        SELECT pid FROM pg_stat_activity WHERE datname=current_database()
+                        AND wait_event_type='Lock' AND query LIKE '%INSERT INTO participation%'
+                        AND ? = ANY(pg_blocking_pids(pid))
+                        """, Integer.class, pid);
+                var deactivate = pool.submit(() -> {
+                    deactivationStarted.countDown();
+                    return db.update("UPDATE app_user SET active=false WHERE id=?", target);
+                });
+                try { assertThat(deactivationStarted.await(10, TimeUnit.SECONDS)).isTrue(); }
+                catch (InterruptedException error) { Thread.currentThread().interrupt(); throw new IllegalStateException(error); }
+                awaitMemberLock(addingPid, "%UPDATE app_user SET active=false%");
+                assertThat(deactivate.isDone()).isFalse();
+                return List.of(add, deactivate);
+            });
+            assertThat(writes.get(0).get(15, TimeUnit.SECONDS)).isEqualTo(204);
+            assertThat(writes.get(1).get(15, TimeUnit.SECONDS)).isEqualTo(1);
+        }
+        assertThat(db.queryForObject("SELECT count(*) FROM participation WHERE project_id=? AND user_id=?",
+                Integer.class, id, target)).isEqualTo(1);
+        assertThat(db.queryForObject("SELECT active FROM app_user WHERE id=?", Boolean.class, target)).isFalse();
+        api.perform(memberRequest(id, ana, json.writeValueAsString(Map.of("email", email))))
+                .andExpect(status().isUnprocessableEntity());
     }
 
     @Test

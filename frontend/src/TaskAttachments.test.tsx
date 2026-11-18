@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { api, ApiError, write } from './api';
@@ -10,6 +10,93 @@ const file = new File(['texto'], 'teste.txt', { type: 'text/plain' });
 const attachment: TaskAttachment = { id: 'a', taskId: 't', commentId: null, filename: 'teste.txt', contentType: 'text/plain', sizeBytes: 5, author: { id: 'u', displayName: 'Ana' }, createdAt: '2026-11-13T00:00:00Z', canDelete: false };
 describe('Anexos', () => {
   beforeEach(() => vi.resetAllMocks());
+  afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.useRealTimers(); });
+  it('seleção mostra só X após metadados, por ficheiro; retirar não faz DELETE nem upload', async () => {
+    const long = new File(['exemplo'], 'nome-ficticio-'.repeat(15) + '.txt', { type: 'text/plain' });
+    function Picker() { const [files, change] = useState<File[]>([file, long]); return <FilePicker files={files} change={change} />; }
+    render(<Picker />);
+    for (const selected of [file, long]) {
+      const remove = screen.getByRole('button', { name: `Retirar ${selected.name}` });
+      expect(remove.textContent).toBe('');
+      expect(remove).toHaveAttribute('type', 'button');
+      expect(remove.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+      expect(remove.querySelector('svg')).toHaveAttribute('focusable', 'false');
+      const row = remove.closest('li')!;
+      expect(row.firstElementChild).toHaveTextContent(`${selected.name} (${selected.size} bytes)`);
+      expect(row.firstElementChild!.compareDocumentPosition(remove) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+    const remove = screen.getByRole('button', { name: 'Retirar teste.txt' });
+    remove.focus();
+    await userEvent.keyboard('{Enter}');
+    expect(screen.queryByRole('button', { name: 'Retirar teste.txt' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: `Retirar ${long.name}` })).toBeInTheDocument();
+    expect(api).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
+  });
+  it('anexos guardados mostram metadados → download → X autorizado, sem texto visível das ações', () => {
+    render(<AttachmentList base="/task" items={[{ ...attachment, canDelete: true }, { ...attachment, id: 'b', filename: 'outro.md' }]} changed={vi.fn()} />);
+    const download = screen.getByRole('button', { name: 'Descarregar teste.txt' });
+    const remove = screen.getByRole('button', { name: 'Eliminar teste.txt' });
+    const row = download.closest('li')!;
+    expect(row.firstElementChild).toHaveTextContent('teste.txt · 5 bytes · Ana');
+    expect(within(row).getByText(/teste.txt · 5 bytes · Ana/).compareDocumentPosition(download) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(row).getAllByRole('button')).toEqual([download, remove]);
+    for (const action of [download, remove, screen.getByRole('button', { name: 'Descarregar outro.md' })]) {
+      expect(action.textContent).toBe('');
+      expect(action).toHaveAttribute('type', 'button');
+      expect(action.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+      expect(action.querySelector('svg')).toHaveAttribute('focusable', 'false');
+    }
+    expect(screen.queryByRole('button', { name: 'Eliminar outro.md' })).not.toBeInTheDocument();
+  });
+  it('eliminar cancela sem pedido, bloqueia duplicação e mantém erro/sucesso explícitos', async () => {
+    const confirmation = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const changed = vi.fn();
+    let reject!: (reason: unknown) => void;
+    vi.mocked(write).mockImplementationOnce(() => new Promise((_resolve, fail) => { reject = fail; })).mockResolvedValue(undefined);
+    render(<AttachmentList base="/task" items={[{ ...attachment, canDelete: true }]} changed={changed} />);
+    const remove = screen.getByRole('button', { name: 'Eliminar teste.txt' });
+    await userEvent.click(remove);
+    expect(write).not.toHaveBeenCalled();
+    confirmation.mockReturnValue(true);
+    await userEvent.dblClick(remove);
+    expect(write).toHaveBeenCalledExactlyOnceWith('/task/attachments/a', 'DELETE');
+    expect(remove).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Descarregar teste.txt' })).toBeDisabled();
+    await act(async () => reject(new ApiError('Eliminação recusada.', 403)));
+    expect(screen.getByRole('alert')).toHaveTextContent('Eliminação recusada.');
+    expect(remove).toBeEnabled();
+    expect(changed).not.toHaveBeenCalled();
+    await userEvent.click(remove);
+    await screen.findByText('Ficheiro eliminado.');
+    expect(changed).toHaveBeenCalledTimes(1);
+    expect(write).toHaveBeenCalledTimes(2);
+  });
+  it('download bloqueia duplicação, usa blob/filename e revoga URL ao fim do prazo', async () => {
+    vi.useFakeTimers();
+    const create = vi.fn(() => 'blob:ficheiro');
+    const revoke = vi.fn();
+    vi.stubGlobal('URL', class extends URL { static createObjectURL = create; static revokeObjectURL = revoke; });
+    const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      expect(this.download).toBe('teste.txt');
+      expect(this.href).toBe('blob:ficheiro');
+    });
+    let finish!: (value: unknown) => void;
+    vi.mocked(api).mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+    render(<AttachmentList base="/task" items={[attachment]} changed={vi.fn()} />);
+    const download = screen.getByRole('button', { name: 'Descarregar teste.txt' });
+    fireEvent.click(download);
+    fireEvent.click(download);
+    expect(api).toHaveBeenCalledExactlyOnceWith('/task/attachments/a', {}, 'blob');
+    expect(download).toBeDisabled();
+    await act(async () => finish(new Blob(['texto'])));
+    expect(screen.getByRole('status')).toHaveTextContent('Download solicitado.');
+    expect(anchorClick).toHaveBeenCalledTimes(1);
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(download).toBeEnabled();
+    act(() => vi.advanceTimersByTime(1000));
+    expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:ficheiro');
+  });
   it('valida quantidade, extensão e tamanho sem alegar validação do conteúdo', () => {
     expect(validateFiles([file])).toBe('');
     expect(validateFiles(Array(6).fill(file))).toContain('5');

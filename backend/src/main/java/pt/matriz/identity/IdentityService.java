@@ -1,7 +1,6 @@
 package pt.matriz.identity;
 
 import java.security.Principal;
-import java.util.Locale;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -10,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import pt.matriz.common.ApiException;
 import pt.matriz.common.ApiModels.UserView;
 import pt.matriz.common.Inputs;
+import pt.matriz.common.Emails;
 
 @Service
 public class IdentityService {
@@ -24,15 +24,13 @@ public class IdentityService {
     @Transactional
     public void register(String displayName, String email, String password) {
         String name = Inputs.title(displayName, 120, "displayName");
-        String normalizedEmail = email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
-        if (normalizedEmail.isBlank() || normalizedEmail.length() > 254
-                || !normalizedEmail.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+        String normalizedEmail = Emails.normalize(email);
+        if (!Emails.valid(normalizedEmail)) {
             throw Inputs.invalid("email", "Indique um email válido com até 254 caracteres.");
         }
         int length = password == null ? 0 : password.codePointCount(0, password.length());
-        if (length < 12 || length > 200) {
-            throw Inputs.invalid("password", "Use entre 12 e 200 caracteres.");
-        }
+        if (length < 6) throw Inputs.invalid("password", "Mínimo de 6 caracteres");
+        if (length > 200) throw Inputs.invalid("password", "Palavra-passe demasiado longa");
         String id = UUID.randomUUID().toString();
         // Target only V3's email index: other integrity/database failures must propagate.
         int inserted = db.update("""

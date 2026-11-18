@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import pt.matriz.common.ApiException;
+import pt.matriz.common.Emails;
 import pt.matriz.common.Inputs;
 import static pt.matriz.common.ApiModels.*;
 
@@ -91,12 +92,37 @@ public class ProjectService {
     }
 
     @Transactional
-    public void addMember(String id, String userId, String target) {
-        access(id, userId, true, true);
-        boolean eligible = target != null && Boolean.TRUE.equals(db.queryForObject(
-                "SELECT EXISTS(SELECT 1 FROM app_user WHERE id=? AND active)", Boolean.class, target));
-        if (!eligible) throw Inputs.invalid("userId", "Conta não elegível.");
-        db.update("INSERT INTO participation(project_id,user_id) VALUES (?,?) ON CONFLICT DO NOTHING", id, target);
+    public void addMember(String id, String userId, MemberInput input) {
+        access(id, userId, false, true);
+        // The locking join may have seen participation before waiting. Use fresh
+        // READ_COMMITTED snapshots after the project lock, only for this operation.
+        access(id, userId, true, false);
+        if (!Boolean.TRUE.equals(db.queryForObject(
+                "SELECT EXISTS(SELECT 1 FROM app_user WHERE id=? AND active)", Boolean.class, userId))) {
+            throw new ApiException(401, "É necessário acesso válido.");
+        }
+        if (input == null || input.emailPresent() == input.userIdPresent()) {
+            throw Inputs.invalid("email", "Indique exatamente um critério: email ou userId.");
+        }
+        boolean byEmail = input.emailPresent();
+        String field = byEmail ? "email" : "userId";
+        String criterion = byEmail ? Emails.normalize(input.email()) : input.userId();
+        if (byEmail && !Emails.valid(criterion)) {
+            throw Inputs.invalid("email", "Indique um email válido com até 254 caracteres.");
+        }
+        if (!byEmail && (criterion == null || criterion.isBlank())) {
+            throw Inputs.invalid("userId", "Conta não elegível.");
+        }
+        // FOR SHARE (not KEY SHARE) serializes active-state updates through the
+        // insert/commit. Equality and the legacy ID remain exact, never a search.
+        String target = db.query("SELECT id FROM app_user WHERE "
+                        + (byEmail ? "lower(email)=?" : "id=?") + " AND active FOR SHARE",
+                (rs, row) -> rs.getString("id"), criterion)
+                .stream().findFirst().orElseThrow(() -> Inputs.invalid(field, "Conta não elegível."));
+        db.update("""
+                INSERT INTO participation(project_id,user_id) VALUES (?,?)
+                ON CONFLICT (project_id,user_id) DO NOTHING
+                """, id, target);
     }
 
     @Transactional

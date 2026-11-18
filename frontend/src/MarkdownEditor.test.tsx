@@ -15,13 +15,24 @@ describe('Markdown seguro', () => {
     expect(screen.getByRole('link')).toHaveAttribute('rel', 'noopener noreferrer');
     for (const url of ['javascript:alert(1)', 'data:text/html,test', 'mailto:a@b', '/projects', '//evil.invalid']) expect(safeMarkdownUrl(url)).toBe('');
   });
-  it('alterna escrever/pré-visualizar sem perder texto', async () => {
+  it('alterna editar/pré-visualizar por teclado sem perder texto e mantém pressed/type nativos', async () => {
     function Editor() { const [value, setValue] = useState(''); return <MarkdownEditor label="Texto" value={value} onChange={setValue} />; }
     render(<Editor />);
     await userEvent.type(screen.getByLabelText('Texto'), '**Rascunho**');
-    await userEvent.click(screen.getByRole('button', { name: 'Pré-visualizar' }));
+    const edit = screen.getByRole('button', { name: 'Editar' });
+    const preview = screen.getByRole('button', { name: 'Pré-visualizar' });
+    expect(screen.queryByRole('button', { name: 'Escrever' })).not.toBeInTheDocument();
+    expect(edit).toHaveAttribute('type', 'button');
+    expect(edit).toHaveAttribute('aria-pressed', 'true');
+    expect(preview).toHaveAttribute('type', 'button');
+    preview.focus();
+    await userEvent.keyboard('{Enter}');
+    expect(preview).toHaveAttribute('aria-pressed', 'true');
+    expect(edit).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByText('Rascunho')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Escrever' }));
+    edit.focus();
+    await userEvent.keyboard(' ');
+    expect(edit).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByLabelText('Texto')).toHaveValue('**Rascunho**');
   });
 });

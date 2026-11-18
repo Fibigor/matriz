@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react';
-import { write, query } from './api';
+import { useEffect, useRef, useState } from 'react';
+import { ApiError, write, query } from './api';
+import { validEmail } from './email';
 import type { Project, ProjectPage, Member } from './types';
 import { Feedback, FieldError, LoadState, Pager, submit, useMutation, useResource } from './ui';
 
@@ -147,22 +148,35 @@ export function ProjectSettings({ project, changed }: { project: Project; change
 
 export function Members({ project, revision = 0 }: { project: Project; revision?: number }) {
   const [target, setTarget] = useState('');
+  const emailInput = useRef<HTMLInputElement>(null);
   const members = useResource<Member[]>('/projects/' + project.id + '/members', revision);
   const mutation = useMutation();
   const manager = project.currentRole === 'MANAGER';
+  const emailErrorId = `member-email-${project.id}-error`;
+  useEffect(() => {
+    if (!mutation.busy && mutation.fields.email) emailInput.current?.focus();
+  }, [mutation.busy, mutation.fields]);
   return <details className="card management-card"><summary>Participantes do projeto</summary><Feedback {...mutation} />
     <LoadState {...members}><ul>{members.data?.map(member => <li key={member.id}>
-      {member.displayName} · {member.id} · {member.role === 'MANAGER' ? 'Gestor' : 'Membro'}{!member.active && ' · Inativo'}{' '}
+      {member.displayName} · {member.role === 'MANAGER' ? 'Gestor' : 'Membro'}{!member.active && ' · Inativo'}{' '}
       {manager && member.role !== 'MANAGER' && <button disabled={mutation.busy} onClick={() => {
         if (window.confirm('Remover o acesso deste membro ao projeto?')) void mutation.run(async () => {
           await write('/projects/' + project.id + '/members/' + member.id, 'DELETE'); members.reload();
         });
       }}>Remover {member.displayName}</button>}
     </li>)}</ul></LoadState>
-    {manager && <form onSubmit={submit(() => void mutation.run(async () => {
-      await write('/projects/' + project.id + '/members', 'POST', { userId: target }); setTarget(''); members.reload();
+    {manager && <form noValidate aria-busy={mutation.busy} onSubmit={submit(() => void mutation.run(async () => {
+      if (!validEmail(target)) {
+        const message = 'Indique um email válido com até 254 caracteres.';
+        throw new ApiError(message, 422, { email: message });
+      }
+      await write('/projects/' + project.id + '/members', 'POST', { email: target }); setTarget(''); members.reload();
     }, 'Participação confirmada. Adicionar novamente não cria duplicados.'))}>
-      <label>Identificador exato do membro<input required value={target} onChange={event => setTarget(event.target.value)} placeholder="user-bruno" /></label>
+      <label>Email completo do membro<input ref={emailInput} type="text" inputMode="email" autoComplete="off" autoCapitalize="none"
+        required disabled={mutation.busy} aria-invalid={!!mutation.fields.email}
+        aria-describedby={mutation.fields.email ? emailErrorId : undefined}
+        value={target} onChange={event => setTarget(event.target.value)} placeholder="pessoa@example.invalid" /></label>
+      {mutation.fields.email && <span id={emailErrorId} className="field-error" role="alert">{mutation.fields.email}</span>}
       <button disabled={mutation.busy}>Adicionar membro</button>
     </form>}
   </details>;

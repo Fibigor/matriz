@@ -52,7 +52,7 @@ export function TaskActivity({ base, revision, changed, draft }: { base: string;
   const events = activity.data?.items.filter(event => tab !== 'Histórico' || event.type !== 'COMMENT_ADDED') ?? [];
   return <section className="card comments-card"><h2>Atividade</h2>
     <div className="editor-toolbar" aria-label="Vistas da atividade">{['Comentários', 'Histórico', 'Toda a atividade'].map(name =>
-      <button key={name} aria-pressed={tab === name} onClick={() => setTab(name)}>{name}</button>)}</div>
+      <button type="button" key={name} aria-pressed={tab === name} onClick={() => setTab(name)}>{name}</button>)}</div>
     {tab === 'Comentários' ? <LoadState {...comments}>
       {!comments.data?.items.length && <p>Sem comentários.</p>}
       {comments.data?.items.map(comment => <CommentBody key={comment.id} comment={comment} base={base} changed={changed} />)}

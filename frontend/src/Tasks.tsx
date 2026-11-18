@@ -25,12 +25,13 @@ export function NewTask({ projectId, changed }: { projectId: string; changed: (t
   const [priority, setPriority] = useState<Priority>('MEDIUM');
   const [type, setType] = useState<TaskType>('TASK');
   const [weight, setWeight] = useState<Weight | null>(null);
+  const [appliedTypes, setAppliedTypes] = useState<Set<TaskType>>(() => new Set());
   const mutation = useMutation();
   return <section className="card new-task-card"><p className="eyebrow">O próximo passo</p><h2>Nova tarefa</h2><Feedback {...mutation} />
     <form onSubmit={submit(() => void mutation.run(async () => {
       if (codePoints(description) > 2000) throw new Error('Descrição: máximo 2000 caracteres Unicode.');
       const task = await write<Task>(`/projects/${projectId}/tasks`, 'POST', { title, description, priority, type, weight });
-      setTitle(''); setDescription(''); changed(task);
+      setTitle(''); setDescription(''); setAppliedTypes(new Set()); changed(task);
     }, 'Tarefa criada. A listagem e o progresso serão atualizados; os filtros mantêm-se.'))}>
       <fieldset className="form-fields" disabled={mutation.busy}>
       <label>Título *<input required value={title} onChange={event => setTitle(event.target.value)} /></label><FieldError field="title" errors={mutation.fields} />
@@ -40,8 +41,12 @@ export function NewTask({ projectId, changed }: { projectId: string; changed: (t
       <label>Peso<select value={weight ?? ''} onChange={event => setWeight(event.target.value ? Number(event.target.value) as Weight : null)}>
         <option value="">Sem peso</option>{weights.map(value => <option key={value}>{value}</option>)}
       </select></label><FieldError field="weight" errors={mutation.fields} />
-      <button type="button" onClick={() => {
-        if (!description.trim() || window.confirm('Substituir a descrição pelo template?')) setDescription(taskTemplates[type]);
+      <button type="button" className="apply-template" disabled={appliedTypes.has(type)} onClick={() => {
+        if (mutation.busy || appliedTypes.has(type)) return;
+        if (!description.trim() || window.confirm('Substituir a descrição pelo template?')) {
+          setDescription(taskTemplates[type]);
+          setAppliedTypes(current => new Set(current).add(type));
+        }
       }}>Aplicar template</button>
       <MarkdownEditor label="Descrição" value={description} onChange={setDescription} /><FieldError field="description" errors={mutation.fields} />
       <label>Prioridade<select value={priority} onChange={event => setPriority(event.target.value as Priority)}>
@@ -90,7 +95,7 @@ export function ProjectDetail({ id }: { id: string }) {
       </section>
     </>}</LoadState>
     </div><div className="project-side">
-    {resource.data && !resource.error && <NewTask projectId={id} changed={task => {
+    {resource.data?.project.id === id && <NewTask key={id} projectId={id} changed={task => {
       const pagination = resource.data?.pagination;
       if (pagination && (!status || task.status === status) && (!priority || task.priority === priority)) {
         setPage(Math.ceil((pagination.totalItems + 1) / pagination.pageSize));

@@ -1,5 +1,26 @@
 # Ficha 03 — Plano de implementação
 
+## Suplemento de usabilidade — 18-11-2026
+
+Implementação aprovada pelo autor («aprovo» ao arranque pelos caminhos do plano, incluindo dois helpers de email, testes e documentação); não cliente, produção ou publicação. P1/P2 e speckit-analyze readonly anteriores sem findings, 28 tarefas, segundo handover. Os estados de aprovação, limites e totais das secções datadas seguintes são históricos, não falta atual de aprovação B5. Mesmos [spec](../specs/001-usabilidade-contas-tarefas/spec.md), [plan](../specs/001-usabilidade-contas-tarefas/plan.md) e [tasks](../specs/001-usabilidade-contas-tarefas/tasks.md), sem regeneração.
+
+| Lote / IDs | Estado atual e proveniência |
+|---|---|
+| Contexto T001 | Orquestrador confirmou artefactos, aprovação e inventário, incluindo as duas criações. |
+| B1 T002–T007 | Implementados sete caminhos, novo Emails.java, registo 6–200/mensagens seguras, membros email/userId XOR/presença/locks/idempotência. Gate independente PASS relatado. Maven 58 sem falhas/erros/skips relatado; cinco reports locais conferidos por leitura também nesta B5 (44+1+3+5+5). |
+| B2 T008–T012 | Implementados cinco caminhos, novo email.ts, UI registo/membros. Gate independente PASS relatado; seleção 90, suite 124 em duas execuções finais/build PASS relatados. |
+| B3 T013–T022 | Implementados catorze caminhos, templates por ciclo, ícones/seletores/anexos. P2/B3-01 dupla confirmação X standalone corrigida; re-review PASS relatado. Seleção 74, suite final 141/10 ficheiros/build PASS relatados; falha temporal pontual de foco B2 na primeira seleção, repetição/full passaram sem alteração B2. |
+| B4 T023 | Só frontend/e2e/matriz.spec.ts preparado/revisto estaticamente: 11 cenários por AST, não discovery/execução. HIGH B4-01 corrigido para aguardar DELETE 204 e GET 200 sem anexo/id/filename/erro, uma eliminação; gate readonly da correção PASS e B5 liberado com T024 bloqueado, segundo handover. |
+| B4 T024 | **BLOQUEADO/NÃO EXECUTADO**: falta alvo/versão/uso/quota livre e destinos de artefactos expressamente autorizados. Sem sondar/iniciar serviços, discovery Playwright, E2E, capturas, visual ou teclado browser deste delta. A instância 18086 anterior não foi assumida disponível/atualizada/autorizada. B4 não é PASS runtime. |
+| B5 T025–T027 | Alinhamento dos treze caminhos canónicos/instruções autorizados, conferência documental própria e progresso serializado em tasks.md; **gate B5 independente readonly PASS, sem findings**, segundo evidência final do revisor transmitida pelo utilizador. Sem alterar outros artefactos da feature ou estado. |
+| B6 T028 | **Executado/PASS [x]**, revisão independente final readonly concluída e sem findings, segundo a mesma evidência; não executada pelo autor B5. Sem testes/builds/probes pelo revisor nem inferência de E2E/UX runtime/cliente/produção. |
+
+**Fecho administrativo atual: 27/28 tarefas concluídas no alcance indicado; única pendência T024 [ ] BLOQUEADO/NÃO EXECUTADO.** Gates independentes B5/B6 concluídos; dados de execução anteriores preservados, sem novas execuções nesta atualização.
+
+O mínimo vigente é 6 pontos brutos (máximo técnico 200 oculto na UI/erros de registo); login/segurança preservados. Participantes por email completo sem diretório, mantendo userId exato; templates transitórios por ciclo e apresentação compacta sem novo contrato de tarefas/schema DB. [Rastreabilidade e resultados](verification.md#usabilidade-de-contas-tarefas-e-participantes--18-11-2026) distinguem relatos dos executores/revisores e verificações desta B5. O T4 anterior já teve 1 E2E/quatro Axe relatados em 17-11; não valida o novo delta, nem é apagado pelo bloqueio T024.
+
+Esta B5 não executa testes/builds/serviços/instalações/hooks ou operações Git de escrita, nem propõe novo plano/backlog. Cliente/servidor devem ser entregues coordenadamente; sem autorização de arranque, commit/push/deploy. Próxima decisão humana: alvo/versão/uso/quota e saídas para T024; revisões B5/B6 concluídas conforme fecho acima.
+
 ## Registo académico — plano aprovado em 17-11-2026
 
 Decisão do autor («segue o plano anterior»), não validação do cliente, publicação ou produção. Este incremento substitui **apenas** a exclusão anterior de registo público. As secções datadas seguintes conservam o plano, contagens e decisões das fases anteriores: “mais recente”, “atual”, “sem registo público” e 21/29 operações nessas fases não substituem este incremento; o contrato vigente passa a **30 operações**. Candidato mantém `0.4.0-rc.1`.

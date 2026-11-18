@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { api, ApiError, write } from './api';
 import { TaskDetail } from './TaskDetail';
+import App from './App';
 import type { Task, TaskLink } from './types';
 import { taskTemplates } from './taskTemplates';
 vi.mock('./api', async () => ({ ...await vi.importActual<typeof import('./api')>('./api'), api: vi.fn(), write: vi.fn() }));
@@ -20,6 +21,98 @@ describe('Detalhe partilhado', () => {
       throw new Error('Rota não prevista: ' + path);
     });
   });
+    it('isola tipos e ciclos; aplicação efetiva bloqueia mesmo após apagar e nova tarefa/reabertura reinicia', async () => {
+      const confirmation = vi.spyOn(window, 'confirm').mockReturnValue(false);
+      const { rerender, unmount } = render(<TaskDetail projectId="p" id="t" />);
+      await screen.findByRole('heading', { name: 'Teste' });
+      const description = screen.getByLabelText('Descrição');
+      const apply = screen.getByRole('button', { name: 'Aplicar template' });
+      for (const type of ['TASK', 'BUG', 'IMPROVEMENT'] as const) {
+        await userEvent.selectOptions(screen.getByLabelText('Tipo'), type);
+        expect(description).toHaveValue('Texto original');
+        await userEvent.click(apply);
+        expect(description).toHaveValue('Texto original');
+        expect(apply).toBeEnabled();
+        confirmation.mockReturnValueOnce(true);
+        await userEvent.click(apply);
+        expect(description).toHaveValue(taskTemplates[type]);
+        expect(apply).toBeDisabled();
+        fireEvent.change(description, { target: { value: '' } });
+        fireEvent.click(apply);
+        expect(description).toHaveValue('');
+        expect(apply).toBeDisabled();
+        fireEvent.change(description, { target: { value: 'Texto original' } });
+      }
+      await userEvent.selectOptions(screen.getByLabelText('Tipo'), 'TASK');
+      expect(apply).toBeDisabled();
+      const fallback = vi.mocked(api).getMockImplementation()!;
+      vi.mocked(api).mockImplementation(async (path, init) => path.endsWith('/tasks/other') ? { ...task, id: 'other' } : fallback(path, init));
+      rerender(<TaskDetail projectId="p" id="other" />);
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Aplicar template' })).toBeEnabled());
+      unmount();
+      render(<TaskDetail projectId="p" id="t" />);
+      await screen.findByRole('heading', { name: 'Teste' });
+      expect(screen.getByRole('button', { name: 'Aplicar template' })).toBeEnabled();
+      confirmation.mockRestore();
+    });
+
+    it.each([false, true])('preserva conjunto no PUT, refetch limpo/sujo, erro GET e recuperação (sujo=%s)', async dirty => {
+      let current = { ...task, description: '' };
+      let failGet = false;
+      const fallback = vi.mocked(api).getMockImplementation()!;
+      vi.mocked(api).mockImplementation(async (path, init) => {
+        if (path.endsWith('/tasks/t')) {
+          if (failGet) throw new Error('GET indisponível.');
+          return current;
+        }
+        return fallback(path, init);
+      });
+      vi.mocked(write).mockImplementation(async (_path, method, body) => {
+        if (method === 'PUT') { current = { ...current, ...body as Partial<Task>, version: current.version + 1 }; return current; }
+        return {};
+      });
+      render(<TaskDetail projectId="p" id="t" />);
+      await screen.findByRole('heading', { name: 'Teste' });
+      const description = screen.getByLabelText('Descrição');
+      await userEvent.click(screen.getByRole('button', { name: 'Aplicar template' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Guardar tarefa' }));
+      await screen.findByText('Alteração guardada.');
+      await waitFor(() => expect(screen.queryByText('A atualizar detalhe… Os rascunhos mantêm-se.')).not.toBeInTheDocument());
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar tarefa' })).toBeEnabled());
+      expect(screen.getByRole('button', { name: 'Aplicar template' })).toBeDisabled();
+      if (dirty) fireEvent.change(description, { target: { value: 'Local' } });
+      current = { ...current, description: 'Externa', version: 8 };
+      async function comment() {
+        fireEvent.change(screen.getByLabelText('Novo comentário'), { target: { value: 'Atualizar' } });
+        await userEvent.click(screen.getByRole('button', { name: 'Adicionar comentário' }));
+        await screen.findByText('Comentário adicionado.');
+      }
+      await comment();
+      await waitFor(() => expect(description).toHaveValue(dirty ? 'Local' : 'Externa'));
+      expect(screen.getByLabelText('Descrição')).toBe(description);
+      expect(screen.getByRole('button', { name: 'Aplicar template' })).toBeDisabled();
+      failGet = true;
+      await comment();
+      await screen.findByText('GET indisponível.');
+      expect(screen.getByLabelText('Descrição')).toBe(description);
+      expect(screen.getByRole('button', { name: 'Aplicar template' })).toBeDisabled();
+      failGet = false;
+      await userEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
+      await waitFor(() => expect(screen.queryByText('GET indisponível.')).not.toBeInTheDocument());
+      vi.mocked(write).mockRejectedValueOnce(new ApiError('Conflito.', 409));
+      await userEvent.click(screen.getByRole('button', { name: 'Guardar tarefa' }));
+      await screen.findByText('Conflito.');
+      expect(screen.getByRole('button', { name: 'Aplicar template' })).toBeDisabled();
+      const confirmation = vi.spyOn(window, 'confirm').mockReturnValue(false);
+      await userEvent.click(screen.getByRole('button', { name: 'Consultar versão atual (substitui o rascunho)' }));
+      expect(description).toHaveValue(dirty ? 'Local' : 'Externa');
+      confirmation.mockReturnValue(true);
+      await userEvent.click(screen.getByRole('button', { name: 'Consultar versão atual (substitui o rascunho)' }));
+      await screen.findByText('Versão atual consultada.');
+      expect(description).toHaveValue('Externa');
+      expect(screen.getByRole('button', { name: 'Aplicar template' })).toBeDisabled();
+      confirmation.mockRestore();
+    });
   it('não aplica template ao mudar tipo; substituição exige confirmação', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(false);
     render(<TaskDetail projectId="p" id="t" />);
@@ -33,6 +126,79 @@ describe('Detalhe partilhado', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Aplicar template' }));
     expect(screen.getByLabelText('Descrição')).toHaveValue(taskTemplates.BUG);
     expect(screen.queryByRole('button', { name: 'Atribuir responsável' })).not.toBeInTheDocument();
+  });
+  it('X standalone confirma uma vez por ação no routing real; cancelar conserva o rascunho e aceitar volta ao projeto', async () => {
+    window.history.replaceState(null, '', '#/projects/p/tasks/t');
+    const confirmation = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const navigation = vi.fn();
+    window.addEventListener('hashchange', navigation);
+    const project = { id: 'p', name: 'Projeto', description: '', currentRole: 'MEMBER' };
+    const progress = { total: 0, todo: 0, inProgress: 0, done: 0, completedPercent: 0 };
+    const fallback = vi.mocked(api).getMockImplementation()!;
+    vi.mocked(api).mockImplementation(async (path, init) => {
+      if (path === '/auth/me') return { id: 'u', displayName: 'Ana' };
+      if (path === '/projects/p') return project;
+      if (path.includes('/tasks?')) return { ...empty, project, progress };
+      return fallback(path, init);
+    });
+    const { unmount } = render(<App />);
+    try {
+      await screen.findByRole('heading', { name: 'Teste' });
+      const close = screen.getByRole('button', { name: 'Fechar detalhe' });
+      expect(close).toHaveTextContent('');
+      expect(close).toHaveAttribute('type', 'button');
+      expect(close.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+      expect(close.querySelector('svg')).toHaveAttribute('focusable', 'false');
+      expect(screen.queryByRole('link', { name: 'Abrir em página completa' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      fireEvent.change(screen.getByLabelText('Descrição'), { target: { value: 'Rascunho' } });
+      const description = screen.getByLabelText('Descrição');
+      await userEvent.click(close);
+      await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+      expect(confirmation).toHaveBeenCalledTimes(1);
+      expect(window.location.hash).toBe('#/projects/p/tasks/t');
+      expect(screen.getByLabelText('Descrição')).toBe(description);
+      expect(description).toHaveValue('Rascunho');
+      const navigationsBeforeAccepting = navigation.mock.calls.length;
+      confirmation.mockReturnValueOnce(true);
+      await userEvent.click(close);
+      await waitFor(() => expect(navigation).toHaveBeenCalledTimes(navigationsBeforeAccepting + 1));
+      expect(confirmation).toHaveBeenCalledTimes(2);
+      expect(window.location.hash).toBe('#/projects/p');
+      await screen.findByRole('heading', { name: 'Projeto' });
+      expect(screen.queryByRole('button', { name: 'Fechar detalhe' })).not.toBeInTheDocument();
+    } finally {
+      unmount();
+      window.removeEventListener('hashchange', navigation);
+      confirmation.mockRestore();
+      window.history.replaceState(null, '', '#/');
+    }
+  });
+
+  it('mantém Guardar submit e Eliminar button na mesma linha lógica, confirmação, busy e erro sem submissão acidental', async () => {
+    const confirmation = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    let reject!: (reason: unknown) => void;
+    vi.mocked(write).mockImplementation(() => new Promise((_resolve, fail) => { reject = fail; }));
+    render(<TaskDetail projectId="p" id="t" />);
+    await screen.findByRole('heading', { name: 'Teste' });
+    const save = screen.getByRole('button', { name: 'Guardar tarefa' });
+    const remove = screen.getByRole('button', { name: 'Eliminar tarefa' });
+    expect(save).toHaveAttribute('type', 'submit');
+    expect(remove).toHaveAttribute('type', 'button');
+    expect(remove.parentElement).toBe(save.parentElement);
+    expect(remove.closest('form')).toBe(save.closest('form'));
+    await userEvent.click(remove);
+    expect(write).not.toHaveBeenCalled();
+    confirmation.mockReturnValue(true);
+    await userEvent.dblClick(remove);
+    expect(write).toHaveBeenCalledExactlyOnceWith('/projects/p/tasks/t?version=3', 'DELETE');
+    expect(save).toBeDisabled();
+    expect(remove).toBeDisabled();
+    reject(new ApiError('Eliminação recusada.', 409));
+    await screen.findByText('Eliminação recusada.');
+    expect(screen.getByLabelText('Descrição')).toHaveValue('Texto original');
+    expect(save).toBeEnabled();
+    confirmation.mockRestore();
   });
   it('conserva rascunho e status no 422 com bloqueadores identificados pelo servidor', async () => {
     vi.mocked(write).mockRejectedValue(new ApiError('Bloqueadores pendentes: MAT-1, MAT-2.', 422, { status: 'Conclua MAT-1, MAT-2.' }));
@@ -115,6 +281,9 @@ describe('Detalhe partilhado', () => {
       await userEvent.selectOptions(screen.getByLabelText('Peso'), '8');
     }
     await edit();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    await userEvent.click(screen.getByRole('button', { name: 'Aplicar template' }));
+    fireEvent.change(screen.getByLabelText('Descrição'), { target: { value: 'Descrição em rascunho' } });
     if (kind === 'responsáveis') {
       await screen.findByRole('option', { name: 'Ana' });
       await userEvent.selectOptions(screen.getByLabelText('Participante elegível'), 'u');
@@ -128,6 +297,7 @@ describe('Detalhe partilhado', () => {
     }
     await userEvent.click(screen.getByRole('button', { name: 'Guardar tarefa' }));
     await waitFor(() => expect(current.version).toBe(5));
+    expect(screen.getByRole('button', { name: 'Aplicar template' })).toBeDisabled();
     await screen.findByRole('heading', { name: 'Título em rascunho' });
     await waitFor(() => expect(screen.queryByText('A atualizar detalhe… Os rascunhos mantêm-se.')).not.toBeInTheDocument());
     await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar tarefa' })).toBeEnabled());
@@ -137,6 +307,7 @@ describe('Detalhe partilhado', () => {
     await waitFor(() => expect(screen.queryByRole('button', { name: kind === 'responsáveis' ? 'Retirar Ana' : 'Remover relação MAT-10' })).not.toBeInTheDocument());
     await userEvent.click(screen.getByRole('button', { name: 'Guardar tarefa' }));
     await waitFor(() => expect(current.version).toBe(7));
+    expect(screen.getByRole('button', { name: 'Aplicar template' })).toBeDisabled();
     expect(write).toHaveBeenCalledTimes(4);
   });
   it('não adota versão externa no preflight/refetch nem no 409; só descarta com confirmação explícita', async () => {

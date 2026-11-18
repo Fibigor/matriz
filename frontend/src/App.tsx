@@ -7,11 +7,14 @@ import { ProjectDetail, TaskDetail } from './Tasks';
 import { Feedback, useMutation } from './ui';
 import { Layout } from './Layout';
 import { TaskDetailPanel, requestTaskClose } from './TaskDetailPanel';
+import { validEmail } from './email';
 
-function subscribe(callback: () => void) {
+function subscribe(callback: () => void, confirmedClose: { current: string | undefined }) {
   let previous = window.location.hash;
   const navigate = () => {
-    if (!requestTaskClose()) window.history.replaceState(null, '', previous || '#/');
+    const confirmed = confirmedClose.current === window.location.hash;
+    confirmedClose.current = undefined;
+    if (!confirmed && !requestTaskClose()) window.history.replaceState(null, '', previous || '#/');
     else previous = window.location.hash;
     callback();
   };
@@ -26,12 +29,6 @@ const demoAccounts = [
   { name: 'Carla', email: 'carla@example.invalid' },
 ];
 const demoPassword = 'Matriz-Demo-2026!';
-
-function validEmail(email: string) {
-  // IdentityService and AuthController use String.trim(), UTF-16 length and Java's ASCII \s.
-  const normalized = email.replace(/^[\u0000-\u0020]+|[\u0000-\u0020]+$/g, '').toLowerCase();
-  return normalized.length <= 254 && /^[^\t\n\v\f\r @]+@[^\t\n\v\f\r @]+\.[^\t\n\v\f\r @]+$/.test(normalized);
-}
 
 function Register({ onBack, onRegistered }: { onBack: () => void; onRegistered: (message: string) => void }) {
   const [displayName, setDisplayName] = useState('');
@@ -57,7 +54,9 @@ function Register({ onBack, onRegistered }: { onBack: () => void; onRegistered: 
     if (!validEmail(email)) {
       invalid.email = 'Indique um email válido com até 254 caracteres.';
     }
-    if ([...password].length < 12 || [...password].length > 200) invalid.password = 'Use entre 12 e 200 caracteres.';
+    const passwordLength = [...password].length;
+    if (passwordLength < 6) invalid.password = 'Mínimo de 6 caracteres';
+    if (passwordLength > 200) invalid.password = 'Palavra-passe demasiado longa';
     if (confirmation !== password) invalid.confirmation = 'As palavras-passe não coincidem.';
     setFields(invalid); setError('');
     if (Object.keys(invalid).length) return;
@@ -96,10 +95,10 @@ function Register({ onBack, onRegistered }: { onBack: () => void; onRegistered: 
         {...accessibility('email')} value={email} onChange={event => setEmail(event.target.value)} />
       {fieldError('email')}
       <label htmlFor="register-password">Palavra-passe</label>
-      <input id="register-password" type="password" autoComplete="new-password" required disabled={busy}
+      <input id="register-password" type="password" autoComplete="new-password" minLength={6} required disabled={busy}
         {...accessibility('password')} value={password} onChange={event => setPassword(event.target.value)} />
       {fieldError('password')}
-      <p className="muted">12–200 caracteres Unicode. Espaços são permitidos e contam; não é exigida composição específica.</p>
+      <p className="muted">Mínimo de 6 caracteres</p>
       <label htmlFor="register-confirmation">Confirmar palavra-passe</label>
       <input id="register-confirmation" type="password" autoComplete="new-password" required disabled={busy}
         {...accessibility('confirmation')} value={confirmation} onChange={event => setConfirmation(event.target.value)} />
@@ -194,7 +193,9 @@ function Login({ notice, onLogin }: { notice: string; onLogin: (user: User) => v
 }
 
 export default function App() {
-  const path = useSyncExternalStore(subscribe, hash).replace(/^#\/?/, '');
+  const confirmedClose = useRef<string | undefined>(undefined);
+  const subscribeToHash = useCallback((callback: () => void) => subscribe(callback, confirmedClose), []);
+  const path = useSyncExternalStore(subscribeToHash, hash).replace(/^#\/?/, '');
   const route = path.split('/');
   const [user, setUser] = useState<User>();
   const [starting, setStarting] = useState(true);
@@ -203,7 +204,14 @@ export default function App() {
   const [background, setBackground] = useState<string>();
   const [full, setFull] = useState(false);
   const closePanel = useCallback(() => {
-    setBackground(previous => { if (previous) window.location.hash = '/' + previous; return undefined; });
+    // Keep the project mounted until the hash route commits the close.
+    setBackground(previous => {
+      if (previous) {
+        confirmedClose.current = '#/' + previous;
+        window.location.hash = confirmedClose.current;
+      }
+      return previous;
+    });
   }, []);
   useEffect(() => {
     const click = (event: MouseEvent) => {
@@ -250,6 +258,6 @@ export default function App() {
       }, '');
     }}>
     <Feedback error={logout.error} /><div hidden={panel && full}>{content}</div>
-    {panel && <TaskDetailPanel key={route[3]} close={closePanel} full={full}><TaskDetail key={route[3]} projectId={route[1]} id={route[3]} /></TaskDetailPanel>}
+    {panel && <TaskDetailPanel key={route[3]} close={closePanel} full={full}><TaskDetail key={route[3]} projectId={route[1]} id={route[3]} standalone={false} /></TaskDetailPanel>}
   </Layout>;
 }

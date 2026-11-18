@@ -3,7 +3,6 @@ package pt.matriz.identity;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import java.security.Principal;
-import java.util.Locale;
 import java.util.Map;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.http.HttpStatus;
 import pt.matriz.common.ApiException;
+import pt.matriz.common.Emails;
 import pt.matriz.common.ApiModels.UserView;
 
 @RestController
@@ -51,9 +51,9 @@ public class AuthController {
     @PostMapping("/login")
     public UserView login(@RequestBody LoginInput input, HttpServletRequest request, HttpServletResponse response) {
         if (input == null) throw new ApiException(400, "Email ou palavra-passe inválidos.");
-        String email = input.email() == null ? "" : input.email().trim().toLowerCase(Locale.ROOT);
+        String email = Emails.normalize(input.email());
         String password = input.password() == null ? "" : input.password();
-        if (email.isBlank() || email.length() > 254 || !email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")
+        if (!Emails.valid(email)
                 || password.isEmpty() || password.codePointCount(0, password.length()) > 200) {
             throw new ApiException(400, "Email ou palavra-passe inválidos.");
         }

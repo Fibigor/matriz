@@ -87,6 +87,20 @@ public final class ApiModels {
                                    List<AttachmentActivity> attachments) {}
     public record ActivityPage(List<TaskActivityView> items, Pagination pagination) {}
     public record VersionInput(Long version) {}
-    public record MemberInput(String userId) {}
+    public static final class MemberInput {
+        private String email, userId;
+        private boolean emailPresent, userIdPresent;
+        @JsonSetter("email") public void setEmail(Object value) { emailPresent = true; email = criterion(value); }
+        @JsonSetter("userId") public void setUserId(Object value) { userIdPresent = true; userId = criterion(value); }
+        // Do not let the compatibility mapper coerce JSON numbers/booleans to IDs/emails.
+        private static String criterion(Object value) {
+            if (value == null || value instanceof String) return (String) value;
+            throw new IllegalArgumentException("Expected a string or null.");
+        }
+        public String email() { return email; }
+        public String userId() { return userId; }
+        public boolean emailPresent() { return emailPresent; }
+        public boolean userIdPresent() { return userIdPresent; }
+    }
     public record CommentInput(String content) {}
 }

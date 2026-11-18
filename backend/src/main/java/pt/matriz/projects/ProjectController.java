@@ -52,7 +52,7 @@ public class ProjectController {
     @PostMapping("/{id}/members")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void add(Principal principal, @PathVariable String id, @RequestBody MemberInput input) {
-        projects.addMember(id, user(principal), input.userId());
+        projects.addMember(id, user(principal), input);
     }
 
     @DeleteMapping("/{id}/members/{target}")

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App';
+import { validEmail } from './email';
 
 vi.mock('./Projects', () => ({ Projects: () => <h1>Projetos acessíveis</h1> }));
 
@@ -45,11 +46,11 @@ describe('Registo na Matriz', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
   });
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
   it.each([
     ['máximos Unicode', '\u00a0\u001c' + '🚀'.repeat(120) + '\u0085', ' ' + '🚀'.repeat(198) + ' '],
-    ['mínimo sem composição', 'Nome', ' '.repeat(12)],
+    ['mínimo sem composição', 'Nome', ' '.repeat(6)],
   ])('cria com %s via CSRF e exige login explícito sem transportar a password', async (_case, name, password) => {
     await openRegistration();
     // Backend normalizes the email before applying its 254 UTF-16-unit limit.
@@ -141,7 +142,7 @@ describe('Registo na Matriz', () => {
       { name: '🚀'.repeat(121), field: 'Nome' },
       { email: 'a@b', field: 'Email' },
       { email: 'a'.repeat(239) + '@example.invalid', field: 'Email' },
-      { password: '🚀'.repeat(11), field: 'Palavra-passe' },
+      { password: '🚀'.repeat(5), field: 'Palavra-passe' },
       { password: '🚀'.repeat(201), field: 'Palavra-passe' },
       { password: ' password fictícia ', confirmation: 'password fictícia', field: 'Confirmar palavra-passe' },
     ];
@@ -154,6 +155,120 @@ describe('Registo na Matriz', () => {
       expect(input).toHaveFocus();
     }
     expect(registrationCalls()).toHaveLength(0);
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual(['/api/auth/me']);
+  });
+
+  it.each(([
+    ['ASCII', (length: number) => 'x'.repeat(length)],
+    ['astral', (length: number) => '🚀'.repeat(length)],
+    ['só espaços', (length: number) => ' '.repeat(length)],
+    ['espaços nas extremidades', (length: number) => ' ' + '🚀'.repeat(length - 2) + ' '],
+  ] as const).flatMap(([kind, make]) => [5, 6, 200, 201].map(length =>
+    [kind, length, make(length)] as const)))(
+    'conta %s: %i pontos de código brutos, sem trim/truncagem ou divulgação do máximo',
+    async (_kind, length, password) => {
+      const store = vi.spyOn(Storage.prototype, 'setItem');
+      await openRegistration();
+      expect(screen.getByText('Mínimo de 6 caracteres', { exact: true })).toBeInTheDocument();
+      const input = screen.getByLabelText('Palavra-passe', { exact: true });
+      expect(input).toHaveAttribute('minlength', '6');
+      expect(input).not.toHaveAttribute('maxlength');
+      expect(screen.getByLabelText('Confirmar palavra-passe')).not.toHaveAttribute('maxlength');
+      expect(document.body).not.toHaveTextContent('200');
+      fill('Utilizador fictício', 'nova@example.invalid', password);
+      submitRegistration();
+      if (length === 5 || length === 201) {
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+        expect(input).toHaveAccessibleDescription(length === 5 ? 'Mínimo de 6 caracteres' : 'Palavra-passe demasiado longa');
+        expect(input).toHaveFocus();
+        expect(input).toHaveValue(password);
+        expect(screen.getByLabelText('Confirmar palavra-passe')).toHaveValue(password);
+        expect(document.body).not.toHaveTextContent('200');
+        expect(registrationCalls()).toHaveLength(0);
+        expect(fetchMock.mock.calls.map(([url]) => url)).toEqual(['/api/auth/me']);
+      } else {
+        expect(await screen.findByRole('status')).toHaveTextContent('Conta criada. Inicie sessão.');
+        expect(registrationCalls()).toHaveLength(1);
+        const request = registrationCalls()[0][1]!;
+        expect(JSON.parse(request.body as string)).toEqual({
+          displayName: 'Utilizador fictício', email: 'nova@example.invalid', password,
+        });
+        expect(new Headers(request.headers).get('X-CSRF-TOKEN')).toBe('csrf-ficticio');
+        expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+          '/api/auth/me', '/api/auth/csrf', '/api/auth/register',
+        ]);
+        expect(screen.getByLabelText('Palavra-passe')).toHaveValue('');
+        expect(screen.getByLabelText('Email')).toHaveFocus();
+      }
+      expect(store).not.toHaveBeenCalled();
+    },
+  );
+
+  it('apresenta 422 seguro do servidor no resumo e campo, sem esconder erros e conservando formulário/foco', async () => {
+    const message = 'Palavra-passe demasiado longa';
+    register = async () => problem(message, 422, [{ field: 'password', message }]);
+    await openRegistration();
+    fill('Nome fictício', 'nova@example.invalid', '🚀'.repeat(6));
+    submitRegistration(); // Locally valid input still exercises the server rejection path.
+    await waitFor(() => expect(screen.getAllByRole('alert')).toHaveLength(2));
+    for (const alert of screen.getAllByRole('alert')) expect(alert).toHaveTextContent(message);
+    const password = screen.getByLabelText('Palavra-passe', { exact: true });
+    expect(password).toHaveAccessibleDescription(message);
+    expect(password).toHaveAttribute('aria-invalid', 'true');
+    expect(password).toHaveFocus();
+    expect(password).toHaveValue('🚀'.repeat(6));
+    expect(screen.getByLabelText('Confirmar palavra-passe')).toHaveValue('🚀'.repeat(6));
+    expect(screen.getByLabelText('Nome')).toHaveValue('Nome fictício');
+    expect(screen.getByLabelText('Email')).toHaveValue('nova@example.invalid');
+    expect(document.body).not.toHaveTextContent('200');
+    expect(screen.getByRole('button', { name: 'Criar conta' })).toBeEnabled();
+    expect(registrationCalls()).toHaveLength(1);
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['  JOSÉ@EXAMPLE.INVALID  ', true],
+    ['\u0000\u001fJOSÉ@EXAMPLE.INVALID\u0020', true],
+    ['nome@exemplo.inválido', true], ['🚀@example.invalid', true], ['e\u0301@example.invalid', true],
+    ['  ' + 'A'.repeat(238) + '@EXAMPLE.INVALID  ', true],
+    ['🚀'.repeat(119) + '@example.invalid', true],
+    ['\u00a0' + 'a'.repeat(237) + '@example.invalid', true],
+    ['\ufeff' + 'a'.repeat(237) + '@example.invalid', true],
+    ['\u00a0' + 'a'.repeat(238) + '@example.invalid', false],
+    ['a'.repeat(238) + '@example.invalid\ufeff', false],
+    ['İ' + 'a'.repeat(237) + '@example.invalid', false], // Lowercase expansion precedes UTF-16 limit.
+    ['a'.repeat(239) + '@example.invalid', false],
+    ['🚀'.repeat(119) + 'a@example.invalid', false],
+    ['', false], ['nome', false], ['nome@exemplo', false],
+    ...[' ', '\t', '\n', '\v', '\f', '\r'].map(space => [`a${space}b@example.invalid`, false] as const),
+  ] as const)('preserva validação partilhada Java trim/lowercase/ASCII whitespace e UTF-16: %j → %s', (email, valid) => {
+    expect(validEmail(email)).toBe(valid);
+  });
+
+  it.each(['x', '🚀'.repeat(200), ' '.repeat(200)])(
+    'mantém login antigo curto/até ao máximo sem alterar o valor bruto (%j)', async password => {
+      render(<App />);
+      await screen.findByRole('heading', { name: 'Entrar na Matriz' });
+      const email = '  JOSÉ@EXAMPLE.INVALID  ';
+      fireEvent.change(screen.getByLabelText('Email'), { target: { value: email } });
+      fireEvent.change(screen.getByLabelText('Palavra-passe'), { target: { value: password } });
+      await userEvent.click(screen.getByRole('button', { name: 'Entrar' }));
+      await screen.findByRole('heading', { name: 'Projetos acessíveis' });
+      const login = fetchMock.mock.calls.find(([url]) => url === '/api/auth/login')!;
+      expect(JSON.parse(login[1]!.body as string)).toEqual({ email, password });
+      expect(registrationCalls()).toHaveLength(0);
+    },
+  );
+
+  it('mantém a mensagem específica do máximo no login e não submete 201 pontos', async () => {
+    render(<App />);
+    await screen.findByRole('heading', { name: 'Entrar na Matriz' });
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'ana@example.invalid' } });
+    const password = '🚀'.repeat(201);
+    fireEvent.change(screen.getByLabelText('Palavra-passe'), { target: { value: password } });
+    fireEvent.submit(screen.getByLabelText('Email').closest('form')!);
+    expect(await screen.findByRole('alert')).toHaveTextContent('A palavra-passe admite até 200 caracteres Unicode.');
+    expect(screen.getByLabelText('Palavra-passe')).toHaveValue(password);
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual(['/api/auth/me']);
   });
 

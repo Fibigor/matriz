@@ -10,10 +10,12 @@ import { codePoints, taskTemplates } from './taskTemplates';
 import { TaskLinks } from './TaskLinks';
 import { TaskAttachments } from './TaskAttachments';
 import { TaskActivity } from './TaskActivity';
+import { TaskDetailToolbar } from './TaskDetailPanel';
 
 function TaskEditor({ task, base, changed, draft, localUpdate }: { task: Task; base: string; changed: () => void; draft: (dirty: boolean) => void; localUpdate?: LocalTaskUpdate }) {
   const [values, setValues] = useState(task);
   const [dirty, setDirty] = useState(false);
+  const [appliedTypes, setAppliedTypes] = useState<Set<TaskType>>(() => new Set());
   const mutation = useMutation();
   const received = useRef(task);
   useEffect(() => {
@@ -53,8 +55,12 @@ function TaskEditor({ task, base, changed, draft, localUpdate }: { task: Task; b
       <label>Peso<select value={values.weight ?? ''} onChange={event => change('weight', event.target.value ? Number(event.target.value) as Weight : null)}>
         <option value="">Sem peso</option>{weights.map(value => <option key={value}>{value}</option>)}
       </select></label>
-      <button type="button" onClick={() => {
-        if (!values.description.trim() || window.confirm('Substituir a descrição pelo template?')) change('description', taskTemplates[values.type]);
+      <button type="button" className="apply-template" disabled={appliedTypes.has(values.type)} onClick={() => {
+        if (mutation.busy || appliedTypes.has(values.type)) return;
+        if (!values.description.trim() || window.confirm('Substituir a descrição pelo template?')) {
+          change('description', taskTemplates[values.type]);
+          setAppliedTypes(current => new Set(current).add(values.type));
+        }
       }}>Aplicar template</button>
       <MarkdownEditor label="Descrição" value={values.description} onChange={value => change('description', value)} />
       <label>Estado<select value={values.status} onChange={event => change('status', event.target.value as Status)}>
@@ -67,7 +73,16 @@ function TaskEditor({ task, base, changed, draft, localUpdate }: { task: Task; b
         <option value="">Sem motivo</option>{Object.entries(closeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
       </select></label>}
       {fields.map(field => <FieldError key={field} field={field} errors={mutation.fields} />)}
-      <button disabled={mutation.busy}>Guardar tarefa</button>
+      <div className="task-editor-actions">
+        <button type="submit" disabled={mutation.busy}>Guardar tarefa</button>
+        <button type="button" className="danger" disabled={mutation.busy} onClick={() => {
+          if (window.confirm('Eliminar a tarefa, relações, anexos, comentários e atribuições?')) void mutation.run(async () => {
+            await write(base + '?version=' + task.version, 'DELETE'); draft(false);
+            window.dispatchEvent(new Event('tasks-changed'));
+            window.dispatchEvent(new Event('task-deleted')); window.location.hash = '/projects/' + task.projectId;
+          }, '');
+        }}>Eliminar tarefa</button>
+      </div>
       </fieldset>
     </form>
     {mutation.error && <><p>O rascunho foi mantido. Pode copiá-lo antes de consultar a versão atual; substituir exige confirmação.</p><button disabled={mutation.busy} onClick={() => {
@@ -75,17 +90,10 @@ function TaskEditor({ task, base, changed, draft, localUpdate }: { task: Task; b
         setValues(await api<Task>(base)); setDirty(false); draft(false); changed();
       }, 'Versão atual consultada.');
     }}>Consultar versão atual (substitui o rascunho)</button></>}
-    <button className="danger" disabled={mutation.busy} onClick={() => {
-      if (window.confirm('Eliminar a tarefa, relações, anexos, comentários e atribuições?')) void mutation.run(async () => {
-        await write(base + '?version=' + task.version, 'DELETE'); draft(false);
-        window.dispatchEvent(new Event('tasks-changed'));
-        window.dispatchEvent(new Event('task-deleted')); window.location.hash = '/projects/' + task.projectId;
-      }, '');
-    }}>Eliminar tarefa</button>
   </section>;
 }
 
-export function TaskDetail({ projectId, id }: { projectId: string; id: string }) {
+export function TaskDetail({ projectId, id, standalone = true }: { projectId: string; id: string; standalone?: boolean }) {
   const [revision, setRevision] = useState(0);
   const [localUpdate, setLocalUpdate] = useState<LocalTaskUpdate>();
   const base = `/projects/${projectId}/tasks/${id}`;
@@ -110,7 +118,8 @@ export function TaskDetail({ projectId, id }: { projectId: string; id: string })
       window.removeEventListener('beforeunload', unload); window.removeEventListener('task-deleted', deleted);
     };
   }, []);
-  return <><nav className="breadcrumbs" aria-label="Localização"><a href="#/projects">Projetos</a><span>/</span><a href={'#/projects/' + projectId}>← Projeto</a></nav>
+  return <>{standalone && <TaskDetailToolbar close={() => { window.location.hash = '/projects/' + projectId; }} />}
+    <nav className="breadcrumbs" aria-label="Localização"><a href="#/projects">Projetos</a><span>/</span><a href={'#/projects/' + projectId}>← Projeto</a></nav>
     <Feedback error={task.error || project.error} />
     {task.data && task.loading && <p role="status">A atualizar detalhe… Os rascunhos mantêm-se.</p>}
     {(!task.data || !project.data) && <p role="status">{task.loading || project.loading ? 'A carregar…' : 'Detalhe indisponível.'}</p>}
@@ -122,7 +131,7 @@ export function TaskDetail({ projectId, id }: { projectId: string; id: string })
         <MarkdownBody content={task.data.description} />
       </div></div>
       <div className="task-detail-layout"><div>
-        <TaskEditor task={task.data} base={base} changed={changed} draft={draft('editor')} localUpdate={localUpdate} />
+        <TaskEditor key={task.data.id} task={task.data} base={base} changed={changed} draft={draft('editor')} localUpdate={localUpdate} />
         <Assignments task={task.data} project={project.data} changed={changed} draft={draft('assignees')} />
         <TaskLinks task={task.data} revision={revision} changed={changed} draft={draft('links')} />
         <TaskAttachments base={base} revision={revision} changed={changed} draft={draft('files')} />

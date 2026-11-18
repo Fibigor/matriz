@@ -2,6 +2,16 @@
 
 Confronto estático em **17-11-2026** com [migrations V1–V4](../backend/src/main/resources/db/migration/), serviços JDBC e [OpenAPI](../openapi.yaml). [Arquitetura](architecture.md) e [índice/proveniência](architecture/README.md). A consolidação documental não altera a migration SQL V2.
 
+## Suplemento atual — 18-11-2026
+
+Delta implementado com aprovação do autor, sem alteração de schema/migrations/seed/IDs: password **de entrada** passa a 6–200 pontos Unicode brutos sem trim/truncagem/composição; só `password_hash` scrypt persiste. Ajuda/erro curto «Mínimo de 6 caracteres»; excesso «Palavra-passe demasiado longa», sem máximo nos erros/UI de registo. Login curto/até 200 preservado. O parágrafo datado de registo de 17-11 abaixo conserva o mínimo histórico, não a regra vigente.
+
+[Emails.java](../backend/src/main/java/pt/matriz/common/Emails.java) reutiliza normalização/validade do email existente (trim Java, lowercase ROOT, regex compatível Unicode e 254 unidades UTF-16). `MemberInput.email/userId` e flags de presença são DTO transitório, não colunas: XOR por presença incluindo null, valor escolhido válido. `ProjectService.addMember` autoriza/bloqueia projeto, revalida ator/gestão após espera e resolve alvo ativo por igualdade parametrizada com `FOR SHARE` até commit. INSERT com `ON CONFLICT (project_id,user_id) DO NOTHING` conserva PK única, joined_at, papel e versão também em repetição/concorrência mista; conta ausente/inativa recebe a mesma recusa. Não atribuir essa revalidação a todos os métodos de projetos.
+
+`NewTask.appliedTypes`/`TaskEditor.appliedTypes` são conjuntos React independentes por ciclo, sem tabela/coluna/JSON/storage. Save/refetch/falha/recuperação/layout conservam; nova criação após sucesso ou fecho/reabertura efetiva/outra tarefa reiniciam. Anexos continuam em BYTEA, canDelete derivado; retirar File da seleção não elimina dados persistidos. Ícones/seletores não alteram modelo, versões nem permissões.
+
+B1–B3 revistos segundo handover; T023 preparado/revisto estaticamente, **T024 integrado/visual bloqueado**, gate B5/T028 pendentes. [Proveniência e limites atuais](verification.md#usabilidade-de-contas-tarefas-e-participantes--18-11-2026); a execução anterior do registo em 17-11 está preservada, não é prova do delta.
+
 ## Evolução física confirmada
 
 | Migration | Efeito persistido |

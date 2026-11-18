@@ -285,8 +285,18 @@ paths:
     post:
       tags: [Projetos]
       operationId: addMember
-      summary: Gestor adiciona conta ativa existente por id exato
-      description: Adição repetida não duplica a participação.
+      summary: Gestor adiciona conta ativa por email completo ou id exato
+      description: |
+        Exatamente uma propriedade fornecida, email ou userId; ambas (mesmo uma null)
+        ou nenhuma dão 422 no field email. O critério escolhido não aceita null/vazio.
+        Email usa LocalEmail e igualdade completa após normalização; userId mantém
+        identidade exata legada. Não é diretório, pesquisa parcial, prova de posse
+        ou convite. Autorizar antes de procurar a conta.
+        Conta inexistente ou inativa dá o mesmo 422, "Conta não elegível.", no field
+        do critério. JSON malformado, tipo incompatível ou campos desconhecidos dão 400.
+        Sem sessão: 401; sem CSRF ou gestão: 403; projeto alheio/inexistente: 404.
+        Repetição e concorrência email/email ou email/userId dão 204 sem duplicar
+        participação nem alterar papel, joined_at ou versão do projeto.
       security:
         - Session: []
           CsrfToken: []
@@ -297,9 +307,12 @@ paths:
             schema:
               type: object
               additionalProperties: false
-              required: [userId]
+              oneOf:
+                - required: [userId]
+                - required: [email]
               properties:
                 userId: { $ref: '#/components/schemas/Id' }
+                email: { $ref: '#/components/schemas/LocalEmail' }
       responses:
         '204': { description: Participação existente ou criada. }
         default: { $ref: '#/components/responses/Failure' }
@@ -838,7 +851,7 @@ components:
         resultado não vazio, até 254 unidades UTF-16 e regex Java
         ^[^\s@]+@[^\s@]+\.[^\s@]+$ (\s sem flag Unicode, espaços ASCII).
         Aceita Unicode; não valida posse/existência/entrega. UI partilha validador
-        login/registo, sem bloqueio HTML type=email. Sem format email ou maxLength
+        login/registo/adição de membros, sem bloqueio HTML type=email. Sem format email ou maxLength
         no valor bruto: não devem rejeitar Unicode ou espaços removidos pelo servidor.
     RegistrationRequest:
       type: object
@@ -855,10 +868,16 @@ components:
         email: { $ref: '#/components/schemas/LocalEmail' }
         password:
           type: string
-          minLength: 12
+          minLength: 6
           maxLength: 200
           writeOnly: true
-          description: Pontos de código Unicode, sem trim/composição obrigatória; espaços permitidos e contam.
+          description: |
+            Pontos de código Unicode brutos, sem trim/truncagem/composição obrigatória;
+            espaços permitidos e contam, inclusive como todo o conteúdo.
+            Null ou menos de 6: 422, field password, "Mínimo de 6 caracteres".
+            Excesso: 422, field password, "Palavra-passe demasiado longa".
+            detail e errors[].message não divulgam o máximo; a UI de registo mostra
+            apenas o mínimo, sem maxLength HTML. O máximo técnico mantém-se neste contrato.
     RegistrationResult:
       type: object
       additionalProperties: false

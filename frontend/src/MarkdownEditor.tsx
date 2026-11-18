@@ -22,7 +22,7 @@ export function MarkdownEditor({ label, value, onChange, required = false }: {
     textarea.current?.setCustomValidity(!preview && codePoints(value) > 2000 ? 'Máximo: 2000 caracteres Unicode.' : '');
   }, [value, preview]);
   return <div className="markdown-editor">
-    <div className="editor-toolbar"><button type="button" aria-pressed={!preview} onClick={() => setPreview(false)}>Escrever</button>
+    <div className="editor-toolbar"><button type="button" aria-pressed={!preview} onClick={() => setPreview(false)}>Editar</button>
       <button type="button" aria-pressed={preview} onClick={() => setPreview(true)}>Pré-visualizar</button></div>
     <label htmlFor={id}>{label}</label>
     <textarea ref={textarea} id={id} hidden={preview} required={required && !preview} value={value}
