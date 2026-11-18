@@ -4,7 +4,15 @@
 
 **Atualização vigente — 18-11-2026:** âmbito académico atual RF-01–17/US-01–20 e **30 operações** OpenAPI, incluindo registo aprovado em 17-11 e usabilidade de 18-11. Candidato `0.4.0-rc.1`, sem nova release/publicação. **T024 fechada, 28/28**, full E2E **11/11 PASS às 11:55–11:56 UTC**, revisão `review-t024-full-closure` PASS; B5/T028 PASS documentados. Visual humano aprovado às 09:42:49Z separadamente. Backend 58/frontend 141/build anteriores e seleção 74/build da correção de foco não foram reexecutados nesta revisão. [Estado e proveniência](verification.md#estado-vigente--18-11-2026).
 
-O log remoto de 18-11 fornecido pelo autor reporta um HIGH picomatch e bloqueio antes dos E2E; a exceção CI temporária posterior está em [constraints](constraints.md#restrições-em-vigor--ficha-03-extensões-v4-e-registo-académico). Não é scan limpo nem confirmação remota da política modificada. A matriz pedagógica e os inventários abaixo preservam a análise de 17-11; as execuções de 12/13-11 não se tornam atuais. Não houve nova leitura dos PDFs/anexos neste lote.
+O log remoto das 14:08 de 18-11 fornecido pelo autor reporta um HIGH picomatch e bloqueio antes dos E2E; a exceção CI temporária posterior está em [constraints](constraints.md#restrições-em-vigor--ficha-03-extensões-v4-e-registo-académico). Não é scan limpo. O relatório final preexistente relata CI SUCCESS às 18:46:03 UTC, mas o URL aponta para outro nome de repositório; proveniência não reconciliada nesta tarefa. [Ressalva e cobertura A/B/C](verification.md#documentacao-abc-20261118). A matriz pedagógica e os inventários abaixo preservam a análise de 17-11; as execuções de 12/13-11 não se tornam atuais. Não houve nova leitura dos PDFs/anexos neste lote.
+
+**Suplemento documental A/B/C — aprovação de 18-11 às 21:06 UTC:** A já integrado,
+com exceção HIGH exata vigente, não remediado; B acrescenta logs JSON ECS nativos
+Boot apenas em `observability`, com **6 testes PASS às 21:09:28Z relatados pelo
+engenheiro**, após duas tentativas falhadas. Não são execução documental nem
+soma aos 58 anteriores. C está **CONFIGURADO e validado localmente por relato**,
+sem build/publicação GHCR comprovados. Revisão independente B/C e desta edição
+pendente; gates anteriores não a substituem.
 
 **17-11-2026 — revisão documental autorizada T1 → T2**, sem mudança funcional, dependência, configuração, versão ou publicação. HEAD observado `778ffd1ff8cfa366b444edbb0cc21bcc9f9b28d2`; não é o SHA das execuções de 12/13-11. Mantém-se `0.4.0-rc.1`. Aprovações do autor para implementação/documentação não equivalem a aceitação pelo cliente ou revisão humana independente.
 
@@ -89,11 +97,26 @@ Fonte: **P13**, pp. 1–6. Desafios opcionais separados dos requisitos base.
 | Docker/Compose/config/volume/healthchecks, p. 2 | [Dockerfile](../Dockerfile), [Compose](../compose.yaml), override observability | Build multi-stage estáticos+API no mesmo JAR; DB/volume; health `/` base; readiness opt-in; resultados locais T6/13-11 documentados. | Health `/` não comprova DB; liveness ≠ readiness. Nenhum serviço iniciado nesta tarefa. |
 | Acesso/comunicação/persistência/recriação/logs, p. 3 | README/verification, configuração e serviços | Relatos de recriação app/db no mesmo volume, SQL/HTTP/bytehashes e outage/recovery em 13-11. | Não é backup/restore, capacidade ou inspeção atual de contentores. Não abrir logs externos sob pretexto de portabilidade. |
 | CI push/PR, permissões mínimas, testes antes de Docker, p. 3 | [.github/workflows/ci.yml](../.github/workflows/ci.yml) | `contents: read`; jobs Semgrep/backend/frontend antes do job integrado; build único e gates antes de E2E na mesma imagem. | Configuração estática ≠ execução remota; preservar workflow. Nenhuma ação remota autorizada. |
-| Prova Actions e falha controlada, p. 3 | Run histórico ficha 04; fixtures locais do gate descritas em verification | Fixtures clean/HIGH/CRITICAL/erro/cobertura são resultados locais documentados. | **Pendente** execução atual positiva/negativa GitHub Actions e prova de artefactos/upload em falha/retenção reais. Run antigo/fixtures/actionlint não a substituem. |
+| Prova Actions e falha controlada, p. 3 | Run histórico ficha 04; fixtures locais do gate descritas em verification; relato remoto preexistente no relatório final | Fixtures clean/HIGH/CRITICAL/erro/cobertura são resultados locais documentados. Relato SUCCESS de 18:46:03 UTC tem ressalva de repositório/proveniência na nota A/B/C. | **Pendente** reconciliar prova positiva para este repositório/commit final, falha controlada e artefactos/upload em falha/retenção reais. Fixtures/lint não substituem prova remota. |
 | README/arquitetura Mermaid/OpenAPI/changelog/candidato SemVer, p. 4 | Canónicos completos de arquitetura/dados/UI, OpenAPI, CHANGELOG, RELEASE_NOTES, ADRs | Candidato `0.4.0-rc.1`; suplementos 13-11 sem apagar baseline 12-11; versões/hashes de arquivo em 17-11. | Sem bump/tag; OpenAPI integral e renderização Mermaid não certificados. Produção/release final não exigidas para declarar os artefactos existentes. |
 | Validação final e revisão, p. 5 | [Final local documentado](verification.md#validação-final-local-das-extensões--execução-de-13-11-2026) | 41/43/6; Trivy 294 npm/63 JAR, 0 HIGH/CRITICAL; Semgrep 135/47/0; actionlint 1.7.7 PASS; migração/persistência/readiness relatadas. | São resultados documentados, não executados nem certificados por esta escrita; revisão independente/humana/cliente pendente. |
 | Relatório breve: alterações/testes/CI/problemas/IA/limites, p. 6 | Verification, release notes, plano e esta matriz | Relatos separam falhas de harness, correções, fontes e limitações; uso de IA e decisão do autor identificados. | Arquivo portável/sanitizado das evidências externas exige decisão própria; não fabricar novos reports. |
-| Desafios opcionais: scan dependências/observabilidade/GHCR | CI/Trivy e perfil observability existentes, documentação | Scan/observabilidade implementados e resultados locais documentados. | Publicação GHCR **não é lacuna obrigatória**, nem autorização para criar destino/deploy. Não exigir ferramenta extra por constar de exemplo. |
+| Desafios opcionais A/B/C: scan dependências/observabilidade/GHCR | CI/Trivy, perfil observability/teste e [release.yml](../.github/workflows/release.yml) existentes | Cobertura e limites separados abaixo. | C configurado não é publicação demonstrada; executar remotamente exige aprovação própria. Desafios continuam opcionais, não lacunas obrigatórias nem autorização de deploy. |
+
+### Cobertura dos desafios opcionais A/B/C — 18-11-2026
+
+| Desafio | Implementação observável / evidência relatada | Limites e estado |
+|---|---|---|
+| **A — scan de dependências** | Trivy já integrado no CI; política da exceção exata picomatch/HIGH preservada. | Implementado, **risco aceite não remediado**, não scan limpo. Exceção só frontend npm `picomatch@4.0.7`/`CVE-2026-112366`, todas as ocorrências dev, sem fix, até `2026-11-25T00:00:00Z` exclusivo; outros findings/erros/cobertura bloqueiam. Nenhum scan novo nesta revisão. |
+| **B — observabilidade e logs JSON** | Consola ECS nativa Boot só no perfil local opt-in. Teste captura evento real com aspas/quebra de linha e valida timestamp/nível/logger/mensagem parseados; contexto default secundário não reconfigura logging global. Engenheiro: Maven selecionado, **6 testes**, zero falhas/erros/skips, exit 0/BUILD SUCCESS às **21:09:28Z**; diff-check PASS. | Implementado/validado localmente por relato, após duas tentativas falhadas de desenvolvimento. Não somar aos 58 nem alegar default isolado validado. Health/CSRF/sessão/autorização preservados; bloqueio do JDBC health indicator, **não paragem real da DB**. Sem dados sensíveis nos exemplos/logging. |
+| **C — imagem GHCR de prerelease** | Release published só prerelease não draft; commit exato; exige último CI push desse commit e quatro jobs existentes SUCCESS. Imagem owner/repo lowercase, tag `test-<release-id>-sha-<commit>`, sem latest; `packages: write` só em `publish`, login com GITHUB_TOKEN e summary digest/commit. | **CONFIGURADO / validado localmente por relato**, não desafio comprovado por publicação. Python YAML/AST/estrutura/permissões/41 casos PASS; bash -n dois blocos, cinco casos digest e UTF-8/whitespace PASS relatados. actionlint/shellcheck indisponíveis. Sem build release/login/rede/CI remoto/release/push/publicação. |
+
+No C, API CI pública sem token: privado/rate limit/erro bloqueiam. CI anterior do
+mesmo commit **não prova scan da imagem reconstruída nem igualdade do digest**.
+Criar prerelease publicada aciona push GHCR e requer aprovação separada; push/CI
+prévio pode ter efeitos Render. Nenhuma revisão independente B/C ou aceitação
+do cliente é declarada. [Fontes e resultados](verification.md#documentacao-abc-20261118);
+[procedimento operacional](development.md#prerelease-de-teste-ghcr).
 
 ## Aulas complementares e interpretação
 
@@ -116,8 +139,9 @@ Exemplos A01–A28 apoiam prompts de desenho, implementação, estados, bugs/ref
 
 | Prioridade/tema | Estado e próximo responsável |
 |---|---|
-| CI atual positiva/negativa | Falta prova no âmbito/branch atual, incluindo falha controlada e artefactos em falha/retenção reais. Autor decide execução autorizada; `checksPass` do Render pode disparar deploy, portanto sem ações remotas nesta tarefa. |
-| Revisão/aceitação | Revisões B5/T028 e `review-t024-full-closure` PASS documentadas para o delta; aprovação visual humana de 09:42:49Z separada. Cliente ainda não validou âmbito/regras. Este lote D1/D2 aguarda eventual revisão própria; não estender os gates anteriores a toda a entrega ou chamar auto-verificação de revisão independente. |
+| CI atual positiva/negativa | Reconciliar a proveniência do SUCCESS preexistente para este repositório e commit final; falha controlada e artefactos em falha/retenção reais não demonstrados. Autor decide execução autorizada; `checksPass` do Render pode disparar deploy, portanto sem ações remotas nesta tarefa. |
+| GHCR C | Configuração/validação local relatada não é publicação. Aprovar separadamente prerelease publicada, push GHCR e efeitos remotos; recolher run/digest/commit reais se executado, sem presumir scan/igualdade da imagem reconstruída. |
+| Revisão/aceitação | Revisões B5/T028 e `review-t024-full-closure` PASS documentadas para o delta; aprovação visual humana de 09:42:49Z separada. Cliente ainda não validou âmbito/regras. Revisão própria D1/D2 e desta edição A/B/C não demonstrada; revisão independente B/C pendente. Não estender gates anteriores a toda a entrega ou chamar auto-verificação de revisão independente. |
 | Evidência portável | Relatórios anteriores apontam para pasta de sessão externa. Autor decide seleção, sanitização, autorização e entrega; não se copiam logs nem se inventam manifests novos aqui. |
 | Capacidade/recuperação/retention | BYTEA e história fazem crescer DB/backups. Definir capacidade, backups/restore, âmbito/evento inicial/policy e base legal antes de dados reais. Um ano é pressuposto; expiração da infraestrutura não é retenção da aplicação. Sem purga automática. |
 | p95/produção/manutenção | Definir alvo/carga e condições operacionais; produção diferida. Confirmar suporte da stack e estado dos serviços antes de operação prolongada, não inferi-los de documentos históricos. |
@@ -208,4 +232,4 @@ Outras imagens/diagramas também **não foram inspecionados**; ausência de text
 
 ## Entrega ao revisor
 
-Ver [estado vigente](verification.md#estado-vigente--18-11-2026), [verification — T1/T2 histórico](verification.md#revisão-documental-t1-e-t2--17-11-2026) e [proveniência do arquivo](architecture/README.md). Na revisão D1/D2, verificar âmbito autorizado, migração dos detalhes operacionais do README para development, preservação do índice, links/âncoras/imagens, fidelidade código↔documentação e distinção histórico/atual. Não foi feita revisão independente pelo próprio agente que escreveu os documentos.
+Ver [estado vigente](verification.md#estado-vigente--18-11-2026), [cobertura A/B/C](verification.md#documentacao-abc-20261118), [verification — T1/T2 histórico](verification.md#revisão-documental-t1-e-t2--17-11-2026) e [proveniência do arquivo](architecture/README.md). Na revisão D1/D2 e desta edição documental A/B/C, verificar âmbito autorizado, migração dos detalhes operacionais do README para development, preservação do índice, links/âncoras/imagens, fidelidade código↔documentação e distinção histórico/atual. Não foi feita revisão independente pelo próprio agente que escreveu os documentos.

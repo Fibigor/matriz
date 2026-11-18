@@ -15,8 +15,7 @@ anexos, relações de bloqueio e acompanhamento do progresso.
 
 ## Estado
 
-Candidato académico **`0.4.0-rc.1`**, sem nova release/publicação ou validação
-do cliente. Registo académico e usabilidade implementados; T024 fechada,
+Candidato académico **`0.4.0-rc.1`**, sem nova release/publicação. Registo académico e usabilidade implementados; T024 fechada,
 28/28 tarefas, full E2E 11/11 PASS documentado em 18-11-2026.
 Aprovação visual humana registada separadamente.
 [Evidência, proveniência e pendências](docs/verification.md).
@@ -103,6 +102,7 @@ anexos e histórico; bloqueadores pendentes podem impedir a conclusão.
 - [Verificação atual e histórico](docs/verification.md),
   [plano de testes](docs/test-plan.md) e [referências UI](docs/ui/README.md).
 - [Rastreabilidade académica](docs/coursework-review.md),
+  [relatório final](docs/relatorio-final.md),
   [guião de apresentação](docs/presentation-script.md),
   [changelog](CHANGELOG.md) e [release notes](RELEASE_NOTES.md).
 
@@ -114,4 +114,8 @@ não é scan limpo nem remediação.
 <a id="observabilidade-local--opt-in"></a>
 
 **Observabilidade local — opt-in:** procedimentos e limites foram movidos para
-[o guia de desenvolvimento](docs/development.md).
+[o guia de desenvolvimento](docs/development.md#observabilidade-local).
+Só o perfil `observability` configura logs de consola JSON ECS nativos do Boot.
+O [workflow de prerelease de teste](docs/development.md#prerelease-de-teste-ghcr)
+está configurado e validado localmente segundo relato do engenheiro, **sem
+publicação GHCR comprovada**; a execução remota exige aprovação separada.

@@ -10,10 +10,13 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.Access;
 import org.springframework.boot.actuate.endpoint.EndpointAccessResolver;
@@ -21,6 +24,9 @@ import org.springframework.boot.actuate.endpoint.EndpointId;
 import org.springframework.boot.jdbc.health.DataSourceHealthIndicator;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointsSupplier;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.context.logging.LoggingApplicationListener;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -43,6 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
                 "logging.level.org.springframework.boot.jdbc.health.DataSourceHealthIndicator=ERROR"})
 @ActiveProfiles("observability")
 @Testcontainers
+@ExtendWith(OutputCaptureExtension.class)
 class ObservabilityIntegrationTest {
     @Container
     static final PostgreSQLContainer DATABASE = new PostgreSQLContainer("postgres:17-alpine");
@@ -162,15 +169,40 @@ class ObservabilityIntegrationTest {
     }
 
     @Test
-    void defaultProfileDisablesOperationalEndpointsEvenIfExposureIsBroadened() throws Exception {
-        try (ConfigurableApplicationContext context = new SpringApplicationBuilder(MatrizApplication.class)
+    void consoleEmitsParseableStructuredJson(CapturedOutput output) {
+        assertStructuredLog(output, "observability-json-fixture");
+    }
+
+    void assertStructuredLog(CapturedOutput output, String marker) {
+        String message = marker + " \"fictitious event\"\nsecond line";
+        LoggerFactory.getLogger("pt.matriz.observability.fixture").info(message);
+        var lines = output.getOut().lines().filter(line -> line.contains(marker)).toList();
+        assertThat(lines).hasSize(1);
+        JsonNode event = json.readTree(lines.getFirst());
+        assertThat(Instant.parse(event.path("@timestamp").asText())).isNotNull();
+        assertThat(event.path("log").path("level").asText()).isEqualTo("INFO");
+        assertThat(event.path("log").path("logger").asText()).isEqualTo("pt.matriz.observability.fixture");
+        assertThat(event.path("message").asText()).isEqualTo(message);
+    }
+
+    @Test
+    void defaultProfileDisablesOperationalEndpointsEvenIfExposureIsBroadened(CapturedOutput output) throws Exception {
+        var defaultApplication = new SpringApplicationBuilder(MatrizApplication.class)
                 .initializers(application -> application.getEnvironment().getPropertySources().addFirst(
                         new MapPropertySource("isolated-test-database", Map.of("spring.datasource.url", DATABASE.getJdbcUrl(),
                         "spring.datasource.username", DATABASE.getUsername(),
                         "spring.datasource.password", DATABASE.getPassword(),
                         "matriz.demo.enabled", "false"))))
-                .run("--spring.profiles.active=default", "--server.port=0",
+                .build();
+        // Logging is JVM-global: this secondary context must neither reconfigure nor
+        // clean up the observability context's console appender, regardless of test order.
+        defaultApplication.setListeners(defaultApplication.getListeners().stream()
+                .filter(listener -> !(listener instanceof LoggingApplicationListener)).toList());
+        try (ConfigurableApplicationContext context = defaultApplication.run(
+                        "--spring.profiles.active=default", "--server.port=0",
                         "--management.endpoints.web.exposure.include=*")) {
+            assertThat(context.getEnvironment().getProperty("logging.structured.format.console")).isNull();
+            assertStructuredLog(output, "observability-default-context-open-fixture");
             int port = context.getEnvironment().getProperty("local.server.port", Integer.class);
             assertThat(context.getEnvironment().getProperty("local.management.port", Integer.class)).isEqualTo(port);
             var access = context.getBean(EndpointAccessResolver.class);
@@ -187,6 +219,7 @@ class ObservabilityIntegrationTest {
             // endpoint from the HTTP supplier, not merely hide it behind Spring Security.
             assertThat(context.getBean(WebEndpointsSupplier.class).getEndpoints()).isEmpty();
         }
+        assertStructuredLog(output, "observability-default-context-closed-fixture");
     }
 
     @Test

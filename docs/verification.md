@@ -13,10 +13,233 @@
 | Visual humano | Aprovação do autor em **18-11-2026T09:42:49Z**, com proveniência própria. Não inferir cobertura específica dessa aprovação nem nova inspeção visual das imagens pelo agente. |
 | Testes/build anteriores | Backend **58** e frontend **141/10 ficheiros/build** pertencem a B1/B3. A correção de foco tem seleção **74/build** próprios. Não foram reexecutados pelo full nem por esta revisão documental; 41/43/6 e scans de 13-11 continuam históricos. |
 | Artefactos do full | `frontend/test-results/t024-20261118-1155-full`: `.last-run.json` passed/failedTests vazio e oito PNG inventariados no relato. A leitura do JSON isolado não prova totais, tempos ou cobertura; estes vêm da execução/console documentada abaixo. Sem HTML/trace. |
-| CI / segurança | Log remoto das **14:08 UTC fornecido pelo autor**, não scan desta tarefa: um HIGH picomatch bloqueou antes dos E2E. Exceção exata aprovada às **14:30:17Z** e implementada no workflow; ver secção seguinte. Não há novo scan limpo nem confirmação remota da política modificada. |
-| Ainda pendente | Prova CI positiva/negativa da política atual e uploads/retenção reais, aceitação do cliente, entrega portável de evidência externa e decisões de capacidade/backups/retenção/p95/produção. O fecho T024 não as encerra nem certifica segurança/WCAG integral. |
+| CI / segurança — A | Trivy já integrado; exceção exata aprovada às **14:30:17Z**, não remediação/scan limpo. O HIGH bloqueante das 14:08 é histórico. O relatório final preexistente relata CI SUCCESS às 18:46:03 UTC; ver ressalva de proveniência na nota A/B/C abaixo, sem consulta remota nesta revisão. |
+| Logs JSON — B | Só `observability`: consola ECS nativa Boot. Engenheiro relatou **6 testes PASS/exit 0 às 21:09:28Z**; não somados aos 58 anteriores nem executados por este agente. Revisão independente local B sem achados, segundo o relato de fecho abaixo; sem novo Maven pelo revisor. |
+| Prerelease GHCR — C | **CONFIGURADO localmente, revisão independente PASS**, segundo relato do Revisor Matriz / `revisão-final-f1`, sem achados após F1. Revalidações não são atómicas com build/push; **sem publicação comprovada** ou garantia de scan/igualdade do digest reconstruído. |
+| Ainda pendente | Prova negativa controlada CI, uploads/retenção reais e reconciliação da proveniência remota; execução/publicação C sob aprovação separada, aceitação do cliente, entrega portável de evidência externa e decisões de capacidade/backups/retenção/p95/produção. O fecho local B/C não encerra essas pendências nem revisões de outros incrementos; o fecho T024 não certifica segurança/WCAG integral. |
 
 **Leitura da cronologia:** estados «bloqueado», «parcial», «27/28» e revisões então pendentes nas notas anteriores ao full descrevem essas fases, não o estado vigente. RED e respetivos diagnósticos não foram apagados nem convertidos retroativamente em PASS. O resumo não autoriza novas execuções ou utilização de serviços.
+
+<a id="documentacao-abc-20261118"></a>
+
+## Cobertura A/B/C — documentação de 18-11-2026
+
+Tarefa documental aprovada pelo autor às **21:06 UTC**, após implementação B/C.
+IDs de trabalho **A/B/C**, não IDs novos de Spec Kit; nenhum `tasks.md`, spec,
+plano ou constituição alterado. Escrita limitada a README, development,
+verification, coursework-review e relatorio-final já existentes, preservando
+alterações anteriores. Sem criação/remoção de ficheiros, testes funcionais,
+serviços, instalações, hooks, rede ou operações Git de escrita nesta tarefa.
+
+### Fontes e alcance
+
+- **Leitura própria:** conteúdo integral atual dos três ficheiros técnicos
+  [perfil](../backend/src/main/resources/application-observability.yaml),
+  [teste](../backend/src/test/java/pt/matriz/ObservabilityIntegrationTest.java) e
+  [workflow](../.github/workflows/release.yml), diff integral dos dois primeiros
+  e workflow novo de 179 linhas na edição inicial, antes da correção F1 abaixo;
+  defaults, override Compose, jobs/política CI e
+  configuração Render consultados apenas em leitura. Presença de código não
+  prova execução.
+- **Evidência relatada pelo utilizador a partir dos engenheiros B/C:** resultados
+  abaixo; não são comandos executados pelo agente documental nem nova revisão
+  independente PASS. A revisão B/C e desta edição documental estava pendente
+  nessa fase; o relato independente pós-F1 abaixo atualiza o fecho local.
+- **Proveniência remota preexistente:** o [relatório final](relatorio-final.md)
+  já registava run `44371108744`, commit
+  `cf0a74102d3061493ee44c5b74261d18bf150342`, SUCCESS às **18:46:03 UTC**.
+  O URL registado aponta para `Fibigor/matriz`, enquanto o repositório desta
+  tarefa é `Fibigor/matriz-ai-powered`; não foi reconciliado nem consultado aqui.
+  Preserva-se o relato, sem o promover a confirmação deste repositório/commit
+  final B/C. A aprovação documental não autoriza nova consulta remota.
+
+### A — scan CI existente, risco aceite não remediado
+
+Trivy já integrado em `ci.yml`, preservado. Continua a exceção exata
+`picomatch@4.0.7` / `CVE-2026-112366` / HIGH / frontend npm, todas as ocorrências
+no lock `dev: true`, sem `FixedVersion`, antes de **2026-11-25T00:00:00Z exclusivo**.
+Outros findings, fix, expiração ou erro de scanner/cobertura bloqueiam.
+Não há novo scan nesta tarefa; resultados limpos de 13-11 não descrevem o finding
+posterior. [Política aprovada](constraints.md#excecao-temporaria-ci).
+
+### B — JSON ECS opt-in e teste real de consola
+
+O perfil `observability` acrescenta apenas
+`logging.structured.format.console: ecs`, nativo Boot, sem dependência/encoder
+novo. O teste emite mensagem fictícia com aspas e quebra de linha via SLF4J,
+captura stdout, exige uma única linha do marcador e faz parsing JSON:
+`@timestamp` parseável por `Instant`, `log.level == INFO`,
+`log.logger == pt.matriz.observability.fixture` e mensagem original preservada.
+O contexto secundário default retira o `LoggingApplicationListener` para não
+reconfigurar/limpar o logging global da JVM; confirma a propriedade ausente nesse
+contexto e conserva eventos ECS durante/depois dele. **Não prova o formato de um
+processo default isolado** nem que toda a saída do processo seja JSON.
+
+Health mínimo sem sessão, liveness independente da DB, readiness JDBC,
+métricas por sessão local real, CSRF e recusas de endpoints/escritas sensíveis
+continuam cobertos no teste. A indisponibilidade é injetada **só na aquisição
+de ligação do `DataSourceHealthIndicator`**; não houve paragem real da DB nem
+interrupção da persistência da aplicação para esta evidência.
+
+**Comando e resultado relatados pelo engenheiro B**, não executados nesta edição:
+
+```powershell
+mvn -f backend\pom.xml test '-Dapi.version=1.44' '-Dtest=ObservabilityIntegrationTest'
+```
+
+Final em **18-11-2026T21:09:28Z**: exit 0, **6 testes, zero falhas/erros/skips,
+BUILD SUCCESS**; `git diff --check` PASS relatado. Houve **duas tentativas
+anteriores falhadas durante o desenvolvimento dos testes**, preservadas como
+histórico; sem diagnóstico/comandos adicionais inventados. Os seis pertencem
+a esta seleção, **não são acrescidos aos 58** do backend B1 nem substituem uma
+reexecução completa. Sem nova confirmação do cliente; a revisão independente
+local B consta do relato de fecho abaixo, sem reexecução Maven pelo revisor.
+
+### C — workflow GHCR configurado, publicação não demonstrada
+
+`release.yml` recebe `release: published` e exige prerelease true/draft false.
+Checkout do SHA exato da release, verificação do ref da tag e `HEAD^{commit}`;
+CI push mais recente desse commit do mesmo repositório/`ci.yml`, concluído
+com sucesso, e quatro jobs existentes da tentativa exigidos com sucesso:
+`Static analysis (Semgrep)`, `Backend tests`, `Frontend tests and build`,
+`End-to-end tests`. API pública **sem token**; privado/rate limit/erro bloqueiam,
+sem dispatch, espera ou retry de CI. Mais de 100 jobs bloqueia.
+
+Após os jobs, o gate reconfirma sucesso/aplicabilidade no run atual e no mais
+recente do commit, comparando (`run_id`, `run_attempt`, `run_number`).
+Mudança detetada bloqueia mesmo se a nova tentativa já estiver `success`.
+O job `publish` repete o gate completo por âncora YAML antes de build/push,
+sem depender apenas do resultado anterior de `prepare`.
+
+Depois da revalidação, publica imagem reconstruída `linux/amd64` para owner/repo
+lowercase em `ghcr.io/<owner>/<repo>:test-<release-id>-sha-<commit>`, sem `latest`.
+`contents: read` global; só publication job `publish` tem `packages: write`.
+Login usa `GITHUB_TOKEN` apenas no passo GHCR, sem PAT/segredo novo, checkout
+sem persistir credenciais e build sem GitHub token. Summary configura digest
+`sha256` validado, commit e run CI revalidado em `publish`;
+**nenhum digest publicado é conhecido aqui**.
+Permanece a janela externa após a última consulta, durante build/push:
+**não há atomicidade GitHub/registry nem eliminação de todas as corridas**.
+CI anterior do mesmo commit **não prova scan da imagem reconstruída nem igualdade
+de digest**; o workflow não repete scan/E2E na imagem que vai publicar.
+
+**Histórico inicial — validações LOCAIS relatadas pelo engenheiro C**, antes de
+F1, não repetidas nesta tarefa:
+Python inline para YAML/AST/estrutura/permissões e **41 casos PASS**;
+`bash -n` de **dois blocos PASS**; **cinco casos de digest PASS** e
+UTF-8/whitespace PASS; hash de `ci.yml` preservado. `actionlint` e `shellcheck`
+indisponíveis, não instalados/executados. Os comandos Python completos não
+foram fornecidos; não se inventam. Fixtures locais não são CI remoto.
+
+#### Suplemento F1 — histórico da correção e revisão então pendente
+
+Ajuste documental estreito pós-F1 dentro do plano B/C aprovado, com escrita
+apenas em `docs/development.md` e `docs/verification.md` existentes.
+Leitura própria do workflow atual: linhas **94–136** reconfirmam
+sucesso/aplicabilidade e identidade após os jobs; linhas **163–171** repetem
+o gate por âncora YAML antes de build/push. O summary usa
+`steps.reverify.outputs.ci-run`. Esta leitura não é execução do workflow nem
+revisão independente PASS.
+
+**Evidência RELATADA pelo utilizador a partir do engenheiro**, não executada pelo
+agente documental:
+
+- Python real extraído do workflow, com mocks: **81/81 casos PASS**, **165 chamadas
+  API em memória**; inclui attempt 2 `in_progress`/`failed`/`success`, novo run do
+  mesmo commit e sucesso estável. Não são chamadas de rede.
+- YAML **1**, AST **1**, estrutura **23/23** e `bash -n` **3/3 PASS** relatados.
+  `actionlint`/`shellcheck` indisponíveis, sem instalação.
+- Checks iniciais do harness de contagem/LF falharam; o estado final preserva
+  **CRLF**, segundo o relato. A evidência inicial acima permanece histórica,
+  não convertida retroativamente em validação da correção.
+- `git diff --no-index --check /dev/null <caminho>` teve exit **1** por conteúdo
+  novo, **sem diagnóstico de whitespace**; esse exit isolado não é erro de
+  whitespace nem prova autónoma de sucesso.
+- Fingerprint de **163 outros ficheiros e índice iguais** relatado pelo
+  engenheiro; não é uma medição deste agente nem um novo PASS independente.
+  Sem rede, Docker, serviços, release ou publicação no relato desta correção.
+
+A correção cobre mudanças detetadas pelas revalidações, incluindo nova tentativa
+já bem-sucedida dentro de uma verificação; não elimina a janela externa descrita
+acima nem garante scan/digest da imagem reconstruída. **Naquela fase, revisão
+independente da correção F1 e desta edição documental pendente**; os resultados
+do engenheiro não encerravam a revisão B/C nem autorizavam execução remota.
+
+**Verificações documentais próprias deste suplemento:** Python inline local
+verificou **57 referências locais e 13 fragmentos Markdown** nos dois documentos,
+UTF-8/ausência de NUL, newline final, blocos fenced e whitespace, sem erros;
+`git diff --check -- docs/development.md docs/verification.md` exit 0.
+Ambos conservam CRLF. Comparação SHA-256 antes/depois: índice idêntico e
+**162 caminhos fora do âmbito** listados por Git idênticos nesta medição
+(inventário distinto dos 163 relatados pelo engenheiro). Conferência documental
+do gate/summary/limites contra o workflow atual; sem reexecutar os mocks,
+YAML/AST, bash, testes, build ou serviços. README/relatório/coursework mantêm
+formulação compatível e não foram alterados.
+
+**Não realizados segundo o handover:** Docker build desta release, autenticação
+GHCR, chamadas de rede/CI remoto/release/push/publicação. Estado C:
+**CONFIGURADO / validado localmente por relato**, não desafio comprovado por
+publicação. Execução remota exige aprovação separada: criar prerelease publicada
+aciona push GHCR; push/CI prévios podem ter efeitos Render por `checksPass`.
+Não há deploy novo autorizado ou aceitação do cliente. A revisão B/C ainda não
+tinha PASS naquela fase; o fecho independente posterior está registado abaixo.
+Procedimento e cuidados: [development](development.md#prerelease-de-teste-ghcr).
+
+#### Fecho local B/C — relato independente pós-F1, 18-11-2026
+
+**Fonte: relato do Revisor Matriz / `revisão-final-f1`, transmitido pelo
+utilizador neste fecho documental: APROVADO, sem achados.** Escopo revisto após
+F1: `.github/workflows/release.yml`, `docs/development.md` e
+`docs/verification.md`. Segundo o mesmo relato, a revisão anterior de B e dos
+oito caminhos não tinha achados exceto F1, agora corrigido. O bloqueio anterior
+por F1 permanece histórico; a revisão local B/C deixa de ser pendência atual.
+Isto não amplia o escopo do revisor a esta escrita de fecho ou a outros incrementos.
+
+**Execuções reais relatadas pelo revisor, não pelo agente documental:**
+
+- Python real via `python -B -`, com mocks: **99/99 casos PASS**, **215 chamadas
+  API simuladas**; sem chamadas de rede.
+- YAML **1**, AST **1**, estrutura **23/23**, `bash -n` **3/3** e digest
+  **5/5 PASS**; **57 referências locais e 13 fragmentos PASS**.
+- UTF-8/ausência de NUL, newline/whitespace e `git diff --check` documental
+  **PASS**. A fixture inicial do harness duplicava artificialmente um run e
+  falhou; corrigida apenas em memória, com rerun integral green. Não é uma
+  falha de produto apagada nem substituição dos resultados anteriores.
+- **Sem Maven reexecutado**: B, **6 testes PASS**, continua a ser o relato do
+  engenheiro com final às **21:09:28Z**, não uma execução do revisor.
+  `actionlint`/`shellcheck` indisponíveis. Sem rede, Docker, serviços,
+  release ou publicação. Skills `contexto-matriz`/`validacao-matriz` lidas e
+  seguidas pelo revisor, sem alegar invocação.
+
+A revisão comprova localmente a correção do gate de identidades/runs/attempts
+antes/depois dos jobs e antes de build/push, **não atomicidade entre API e
+registry, scan da imagem reconstruída ou igualdade de digest**. Estado C:
+**CONFIGURADO localmente com revisão PASS**, não desafio C demonstrado por
+publicação. A publicação efetiva exige aprovação separada; pendências de
+cliente, prova remota e outros incrementos mantêm-se. Esta nota regista
+evidência independente recebida, não testes ou revisão executados pelo agente
+documental; não altera números nem datas das execuções históricas.
+
+As skills `contexto-matriz` e `validacao-matriz` foram lidas e seguidas, sem
+mecanismo nativo de invocação disponível. Esta tarefa não executa
+`speckit-implement`/`speckit-converge` nem atualiza progresso de tarefas.
+**Histórico da edição inicial — verificações documentais próprias, locais,
+sem instalações:** scripts Python
+inline via PowerShell (`python -`) verificaram **138 referências locais e 30
+fragmentos Markdown**, existência de destinos/âncoras, UTF-8/ausência de NUL e
+equilíbrio de blocos fenced nos cinco documentos: PASS/exit 0, sem pedidos
+externos. Conferência integral de whitespace/newline final dos cinco (incluindo
+o relatório final já existente e não rastreado à entrada) PASS. Consistência textual com seis
+`@Test`, ECS só no perfil, workflow de 179 linhas e quatro nomes de jobs
+existentes, data/tag/validade/estado nos quatro documentos detalhados: PASS.
+Não é validador Markdown integral, lint de Actions nem execução dos testes.
+
+`git diff --check` exit 0. `git diff --cached --stat` vazio; comparação SHA-256
+antes/depois: índice idêntico, seis caminhos preservados (três técnicos B/C,
+`ci.yml`, agente revisor e guião preexistentes) idênticos. `git status --short` e
+diff conferidos; só os cinco documentos autorizados editados por esta tarefa,
+sem criar/remover ficheiros. Nenhum `tasks.md` atualizado. Estes checks próprios
+não são os PASS funcionais relatados acima nem revisão independente.
 
 ## Sincronização dos testes de foco após registo — 18-11-2026
 

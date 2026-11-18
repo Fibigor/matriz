@@ -1,88 +1,52 @@
 # Matriz — Guião da apresentação final
 
-**Objetivo:** apresentar a Matriz em **5 minutos**, com demonstração ao vivo de dois fluxos na aplicação. Guião para **4m45**, com **15 segundos de margem**; não são necessários slides.
-
-**Referência atual — 18-11-2026:** candidato académico `0.4.0-rc.1`, sem nova release/publicação. Registo público académico aprovado em 17-11, sem auto-login; usabilidade de 18-11 com T024 fechada e 28/28 tarefas, full 11/11 PASS às 11:55–11:56 UTC e revisão `review-t024-full-closure` PASS documentados. Visual humano aprovado às 09:42:49Z separadamente. Backend 58/frontend 141/build anteriores e seleção 74/build da correção de foco não foram reexecutados nesta revisão. A demonstração ao vivo e o ensaio abaixo continuam por preparar/confirmar pelo autor; [evidência e limites](verification.md#estado-vigente--18-11-2026).
+**Antes de começar:** aplicação aberta, sessão de gestor iniciada, projeto fictício com dois participantes ativos e filtros limpos. Ter uma tarefa de reserva sem bloqueadores e o [repositório GitHub](https://github.com/Fibigor/matriz) aberto noutro separador.
 
 ## 0:00–0:30 — Contexto
 
-*Ação: começar no painel, com sessão já iniciada como gestor e o projeto de demonstração selecionado.*
+**Mostrar:** painel inicial.
 
-> A Matriz é uma aplicação de gestão de projetos e tarefas desenvolvida ao longo desta formação. O objetivo é permitir que uma equipa organize o trabalho, atribua responsáveis e acompanhe o progresso num único local. Vou mostrar dois fluxos representativos: gerir uma tarefa e colaborar sobre essa tarefa.
+**Dizer:** «A Matriz permite organizar projetos, gerir tarefas e acompanhar o progresso da equipa. Vou mostrar a gestão de uma tarefa e a colaboração entre participantes.»
 
 ## 0:30–1:30 — Fluxo 1: gerir uma tarefa
 
-*Ações: abrir o projeto, mostrar brevemente a lista e os filtros por estado e prioridade. Com os filtros limpos, criar «Preparar demonstração», com prioridade «Alta». Confirmar «Por fazer» (TODO), abrir o detalhe pelo título e guardar primeiro «Em curso» e depois «Concluída». Voltar ao projeto e apontar o progresso.*
+**Fazer:**
 
-> Esta lista vem da base de dados real, através da API. Os filtros ajudam a encontrar trabalho por estado e prioridade. Vou criar uma tarefa com prioridade alta; começa em «Por fazer».
->
-> Ao passar para «Em curso» e depois para «Concluída», a equipa acompanha a evolução. O progresso é calculado sobre todas as tarefas do projeto, independentemente dos filtros ou da página apresentada.
+1. Abrir o projeto e apontar os filtros de estado e prioridade.
+2. Criar **«Preparar demonstração»**, com prioridade **Alta**.
+3. Clicar no título para abrir o detalhe.
+4. Guardar como **Em curso** e depois como **Concluída**.
+5. Voltar à lista e apontar o progresso.
 
-*Nota de execução: a criação atualiza a lista e o progresso; não abre automaticamente o detalhe. Clicar no título. Usar um projeto fictício com poucas tarefas e sem bloqueadores pendentes para este percurso: BLOCKS pode recusar a conclusão. No desktop, o detalhe abre em painel; acesso direto/móvel usa página. Não alterar dados alheios para preparar a apresentação.*
+**Dizer enquanto clico:** «A tarefa começa em Por fazer. As alterações ficam guardadas na base de dados e atualizam o progresso global do projeto.»
 
 ## 1:30–2:20 — Fluxo 2: colaborar sobre a tarefa
 
-*Ações: voltar ao detalhe da mesma tarefa. Como gestor, atribuir dois participantes ativos elegíveis, um de cada vez. Adicionar «Pronto para revisão». Mostrar os responsáveis, o autor e a data do comentário; recarregar a página e confirmar que os dados permanecem.*
+**Fazer:**
 
-> Uma tarefa pode ter vários responsáveis, desde que sejam participantes ativos do projeto. Aqui, como gestor, atribuo duas pessoas e acrescento um comentário.
->
-> O servidor define o autor e a data. As permissões são verificadas na API, não apenas nos botões da interface: o gestor gere atribuições e os participantes podem comentar. Ao recarregar, os responsáveis e o comentário mantêm-se. É uma aplicação com persistência, não apenas um protótipo visual.
+1. Reabrir a tarefa e atribuir dois participantes, um de cada vez.
+2. Comentar **«Pronto para revisão»**.
+3. Apontar os responsáveis, o autor e a data do comentário.
+4. Recarregar e mostrar que os dados permanecem.
+
+**Dizer:** «O gestor atribui responsáveis e os participantes podem comentar. O servidor controla as permissões e define o autor e a data. Ao recarregar, os dados mantêm-se.»
 
 ## 2:20–3:05 — Tecnologias e arquitetura
 
-*Ação: manter a aplicação visível; explicar sem abrir código ou configuração.*
-
-> A interface usa React e TypeScript. O backend usa Java 21 e Spring Boot, com PostgreSQL para persistência.
->
-> A arquitetura é um monólito modular, organizado em identidade, projetos e tarefas — não são microserviços. Há uma única unidade de entrega da aplicação: o Docker compila o frontend e inclui os ficheiros estáticos no JAR. O Compose executa a aplicação e a base de dados.
->
-> A autenticação usa sessões no servidor e proteção CSRF nas operações de escrita.
+**Manter a aplicação visível e dizer:** «Usei React e TypeScript na interface, Java 21 e Spring Boot no backend e PostgreSQL com JDBC e Flyway nos dados. Escolhi um monólito modular pela simplicidade de desenvolvimento e operação. O frontend e a API são entregues juntos; o Docker Compose executa a aplicação e a base de dados. A autenticação usa sessão e proteção CSRF.»
 
 ## 3:05–3:50 — Metodologia e utilização de IA
 
-*Ação: manter o foco no processo e na validação, sem abrir conversas com a IA.*
+**Dizer:** «Comecei pelos requisitos e arquitetura, depois implementei por incrementos. Usei o GitHub Copilot e agentes especializados para planear, implementar e rever tarefas. No incremento de usabilidade, usei também o Spec Kit. As decisões ficaram do meu lado e validei o resultado com testes de backend, componentes e percursos completos. A IA apoiou o desenvolvimento; não é uma funcionalidade da aplicação.»
 
-> O trabalho evoluiu de requisitos e arquitetura para implementação, testes e entrega. Usei o GitHub Copilot para análise, propostas e implementação de tarefas delimitadas, com revisão humana e aprovação das decisões.
->
-> Uma resposta da IA não é prova de que a solução funciona. A validação inclui testes de backend, testes de componentes e testes ponta a ponta automatizados. As decisões, os resultados observados e as limitações ficam documentados no repositório.
+## 3:50–4:35 — Desafio: Keycloak no deployment
 
-## 3:50–4:35 — Desafio: dependências e compatibilidade
-
-*Ação: explicar a sequência; não executar scans durante a apresentação.*
-
-> Um desafio foi atualizar dependências sem perder compatibilidade. A análise inicial identificou 38 ocorrências de severidade alta ou crítica. As atualizações compatíveis reduziram esse número para duas, mas o critério de segurança continuava bloqueado.
->
-> Foi então aprovada a migração major para Spring Boot 4, com adaptação ao Jackson e preservação do contrato da API. Depois de reconstruir e repetir os testes e os scans com bases atualizadas, o resultado local documentado foi zero ocorrências altas ou críticas.
->
-> Esse zero é histórico. Em 18 de novembro, um novo log remoto fornecido pelo autor reportou um HIGH em picomatch de desenvolvimento. Foi aprovada uma exceção exata, sem correção disponível reportada e só até 25 de novembro às 00:00 UTC, limite exclusivo; não é scan limpo. A lição é verificar comportamento, cobertura e risco, não apenas procurar um zero.
+**Dizer:** «Inicialmente usei Keycloak para autenticação, mas tive dificuldades na fase de deployment. Para viabilizar a demonstração, decidi retirá-lo e usar autenticação local com Spring Security, mantendo palavras-passe com hash, sessões no servidor e proteção CSRF. A aprendizagem foi perceber que uma solução tem de ser adequada não só ao desenvolvimento, mas também ao ambiente onde vai executar. Neste projeto académico, simplificar a arquitetura permitiu reduzir dependências externas.»
 
 ## 4:35–4:45 — Fecho
 
-*Ação: terminar na aplicação. Só se houver tempo, mostrar os separadores do README e da execução de CI já preparados.*
+**Mostrar:** separador do repositório GitHub.
 
-> A Matriz é uma demonstração académica funcional, com execução reproduzível, testes e CI definidos no repositório, mas não está pronta para produção. A entrega é o URL do repositório GitHub, onde estão o código e a documentação. Obrigado.
+**Dizer:** «Aqui estão o código, os testes, a configuração e a documentação. É uma demonstração académica, não um serviço pronto para produção. Obrigado.»
 
-## 4:45–5:00 — Margem e contingência
-
-- Reservar estes 15 segundos para latência ou transições, não para novas funcionalidades.
-- Se a demonstração falhar: reconhecer brevemente — «Esta operação não respondeu como esperado; vou continuar com a tarefa preparada.» Passar à tarefa de reserva, sem depurar ao vivo nem anunciar sucesso não observado.
-- Se houver atraso, encurtar as explicações; não acelerar os cliques nem ultrapassar os cinco minutos.
-- Evitar eliminações, exploração exaustiva de filtros, execução de testes, arranques Docker ou alterações de configuração durante a demonstração.
-
-## Checklist de preparação e entrega
-
-| Confirmar antes da apresentação | Estado |
-|---|---|
-| Aplicação iniciada e acessível; sessão de gestor já iniciada, sem mostrar palavras-passe. | ☐ |
-| Projeto selecionado, com poucas tarefas e pelo menos dois participantes ativos elegíveis para atribuição, podendo incluir o gestor. | ☐ |
-| Filtros limpos; título «Preparar demonstração» e comentário «Pronto para revisão» prontos a introduzir. | ☐ |
-| Tarefa de reserva preparada para continuar caso a criação ou outra operação falhe. | ☐ |
-| README e execução de CI bem-sucedida indicada pelo utilizador abertos em separadores. Confirmar a versão a que essa execução corresponde; não a apresentar como prova do candidato atual sem confirmação. | ☐ |
-| **URL definitivo do repositório GitHub confirmado pelo utilizador**, pronto a entregar; não substituir pelo endereço da aplicação. | ☐ |
-| Formador com acesso ao repositório, incluindo autorização de leitura se for privado. | ☐ |
-| Código e documentação da versão a entregar versionados pelo responsável, sem `.env` real, segredos ou dados pessoais desnecessários. | ☐ |
-| Ensaio com cronómetro concluído em 4m45; pontos de corte nas explicações identificados. | ☐ |
-
-**Entrega:** segundo as orientações fornecidas pelo utilizador, é obrigatório submeter o URL do repositório GitHub; capturas de ecrã ou ficheiros ZIP não o substituem. Os cinco minutos incluem a demonstração. Não é necessário criar slides nem uma release para entregar o URL.
-
-**Base factual e limites:** fluxos e regras em [requisitos](requirements.md), [User Stories](user-stories.md), [OpenAPI](../openapi.yaml) e fontes frontend; stack/entrega no [README](../README.md) e na [arquitetura](architecture.md). A sequência **38 → 2 → 0** é histórica, temporal e limitada a bibliotecas/imagem/bases usadas. A [exceção atual](constraints.md#restrições-em-vigor--ficha-03-extensões-v4-e-registo-académico) exige todos os critérios do workflow, sem renovação automática; não omitir o finding. Log remoto é evidência fornecida, não execução desta tarefa; confirmação remota da política modificada permanece pendente. Sem certificação de segurança/produção. O URL definitivo, acesso do formador e tempo real do guião exigem confirmação humana.
+**Até aos 5:00:** margem para atrasos. Se algo falhar, dizer «Vou continuar com a tarefa preparada» e usar a reserva. Não depurar nem executar testes ao vivo.

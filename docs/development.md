@@ -136,6 +136,40 @@ endpoints sensíveis ou escritas operacionais. Sessão/CSRF de negócio mantêm-
 Rotas operacionais ficam fora de `/api` e do OpenAPI de negócio. Não recolher
 corpos, credenciais, tokens ou cookies em logs.
 
+### Logs JSON ECS
+
+O [perfil](../backend/src/main/resources/application-observability.yaml) define
+`logging.structured.format.console: ecs`: formato estruturado nativo do Spring
+Boot, só opt-in em `observability`, sem encoder/dependência adicional.
+O perfil base não define essa propriedade; não ativar o perfil em hosts públicos.
+Cada evento de log é JSON numa linha, com `@timestamp`, nível (`log.level`),
+logger (`log.logger`) e `message`; aspas e quebras de linha da mensagem são
+escapadas no JSON, recuperáveis ao fazer parsing. Isto refere-se a eventos de
+logging, não garante que toda a saída do processo (por exemplo, o banner) seja JSON.
+
+Após arranque local autorizado pelo override abaixo, consultar a consola da app
+ou, para a instância Compose própria, usar:
+
+```powershell
+docker compose -p matriz-ficha3 logs --no-log-prefix --tail 50 app
+```
+
+Omitir prefixos Compose facilita o parsing das linhas de eventos; não copiar
+saídas brutas para issues/reports. Usar mensagens fictícias e sanitizar excertos:
+JSON **não é redação automática** de passwords, tokens, cookies, emails ou corpos.
+Não adicionar esses dados ao logging nem alargar endpoints/níveis para os recolher.
+Não há agregador, destino externo, tracing ou política de retenção de logs
+configurados por esta alteração.
+
+O [teste](../backend/src/test/java/pt/matriz/ObservabilityIntegrationTest.java)
+captura um evento real com aspas/quebra de linha e valida os campos parseados.
+O contexto secundário default não reconfigura o logging global da JVM; não é uma
+prova isolada do formato de consola de um processo default.
+O engenheiro B relatou **6 testes PASS em 18-11 às 21:09:28Z**, após duas tentativas
+falhadas de desenvolvimento. Não foram reexecutados nesta revisão.
+A falha de readiness é simulada bloqueando a aquisição JDBC do health indicator,
+**não parando a DB**. [Proveniência e limites B/C](verification.md#documentacao-abc-20261118).
+
 Compose base verifica `/`: **não comprova readiness da DB**.
 O [override](../compose.observability.yaml) ativa o perfil e verifica readiness.
 Ambos mantêm publicações host em loopback; `SERVER_ADDRESS=0.0.0.0` é interno
@@ -157,7 +191,7 @@ ou disponíveis garantidos para uma nova execução.
 
 ## CI e demonstração Render
 
-O [workflow](../.github/workflows/ci.yml) define push/PR para main e execução
+O [workflow](../.github/workflows/ci.yml) define push, PR para main e execução
 manual, `contents: read`. Semgrep, backend e testes/build frontend são paralelos;
 o integrado depende dos três, valida Compose, constrói uma imagem e verifica
 bibliotecas npm/JAR **antes** de iniciar stack/E2E na mesma imagem.
@@ -198,6 +232,65 @@ docker run --rm --mount "type=bind,source=$($PWD.Path),target=/src,readonly" --w
 Downloads de regras exigem rede; isto não é um scan executado nesta revisão.
 A regra local recusa CORS Java wildcard. Não equivale a pentest/auditoria integral.
 
+<a id="prerelease-de-teste-ghcr"></a>
+
+### Prerelease de teste — GHCR
+
+O [release.yml](../.github/workflows/release.yml) está **CONFIGURADO e validado
+localmente segundo relato do engenheiro C**. Não há build desta release, login,
+push GHCR ou publicação remota comprovados. Não equivale a desafio GHCR
+demonstrado por execução; seguir este procedimento exige aprovação remota separada.
+
+1. Identificar o commit exato da tag da release. O workflow recebe apenas
+   `release: published`; ambos os jobs exigem `prerelease == true` e
+   `draft == false`. Não há trigger manual ou por push; draft não publicado
+   não produz esse evento. Uma release estável publicada pode gerar um run,
+   mas as guardas excluem ambos os jobs.
+   O checkout usa `github.sha` do evento e verifica `HEAD^{commit}`, não a branch
+   atual nem `target_commitish`.
+2. Antes de aprovar a publicação, confirmar que o **CI push mais recente desse
+   commit**, do mesmo repositório e de `.github/workflows/ci.yml`, já terminou
+   com sucesso. A tentativa identificada tem de conter exatamente um de cada job
+   exigido, todos `completed`/`success`: `Static analysis (Semgrep)`,
+   `Backend tests`, `Frontend tests and build` e `End-to-end tests`.
+   Após consultar os jobs, o gate reconfirma sucesso/aplicabilidade tanto no run
+   atual como no mais recente do commit e exige a mesma identidade
+   (`run_id`, `run_attempt`, `run_number`). Uma mudança detetada bloqueia,
+   mesmo que a nova tentativa já tenha terminado com `success`.
+   O workflow não dispara CI, não espera nem repete silenciosamente.
+3. O job `prepare` consulta a API pública do GitHub **sem token**. Repositório
+   privado, rate limit, erro de API, CI ausente/em curso/falhado, job omitido,
+   skipped ou malsucedido bloqueiam. Listas com mais de 100 jobs também bloqueiam.
+   Não prometer suporte privado nem contornar falhas adicionando credenciais.
+4. `publish` repete o gate completo imediatamente antes de build/push,
+   reutilizando a âncora YAML de `prepare`, sem confiar só no resultado anterior.
+   Só após essa revalidação reconstrói o Dockerfile do commit verificado para
+   `linux/amd64` e faz push para `ghcr.io/<owner>/<repo>` em lowercase, apenas com
+   a tag `test-<release-id>-sha-<commit>` (SHA completo). Sem `latest`.
+   O workflow tem `contents: read`; **só `publish`** acrescenta `packages: write`.
+   Login GHCR via `docker/login-action` com `github.actor`/`GITHUB_TOKEN`, sem PAT
+   ou segredo novo; checkout sem credenciais persistidas e build com
+   `github-token: ''`.
+5. Se executado com sucesso, o summary regista imagem/tag, referência
+   `image@sha256:…`, commit e run CI revalidado em `publish`; digest tem de corresponder a
+   `sha256:` seguido de 64 hexadecimais minúsculos. Não há digest publicado
+   conhecido nesta tarefa. Uma falha no summary não desfaz um push já ocorrido.
+
+As consultas revalidam CI do mesmo **commit** nos instantes observados, mas
+permanece uma janela externa após a última consulta, durante build/push.
+Não há atomicidade entre GitHub e registry nem eliminação de todas as corridas:
+uma alteração posterior do CI não fica impedida por este gate.
+CI anterior do mesmo commit não garante scan da imagem reconstruída pela release
+nem igualdade dos digests; `release.yml` não volta a executar Trivy ou E2E nessa
+imagem. A exceção HIGH exata de A continua vigente nas condições
+acima, **não remediada nem scan limpo**. Tag rastreável não substitui referência
+por digest nem impõe imutabilidade da tag no registry.
+
+Publicar uma prerelease é uma ação com efeitos: aciona push GHCR. Push prévio/CI
+pode também ter efeitos Render por `checksPass`; não criar tag/release nem
+acionar workflows apenas para conferir documentação. Validações locais relatadas
+e ferramentas indisponíveis estão em [verification](verification.md#documentacao-abc-20261118).
+
 [render.yaml](../render.yaml) define demonstração temporária Docker/PostgreSQL 17,
 planos free em Frankfurt, seed fictício, cookie Secure e sem observability.
 Usa `PORT` e variáveis DB do fornecedor, sem IdP externo. Endereço
@@ -208,9 +301,10 @@ de backups são informação histórica, a reconfirmar nas
 [condições Render Free](https://render.com/docs/free), não garantia atual.
 Dados demo são partilhados/descartáveis; não usar dados pessoais.
 
-GitHub Actions não publica a app, mas `autoDeployTrigger: checksPass` do Render
-pode reagir a checks. **Não fazer push, acionar CI remota ou deploy sem autorização
-específica.** Expiração da infraestrutura não é policy de retenção da aplicação.
+O CI não faz deploy da app; o workflow de prerelease configura publicação de
+imagem GHCR, não deploy. `autoDeployTrigger: checksPass` do Render pode reagir
+a checks. **Não fazer push, criar prerelease publicada, acionar CI remota ou
+deploy sem autorização específica.** Expiração da infraestrutura não é policy de retenção da aplicação.
 Produção está diferida; retenção anual é pressuposto sem âmbito/início aprovados
 ou purga; capacidade/backups/p95 exigem decisões próprias.
 

@@ -1,0 +1,207 @@
+name: Test prerelease image
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-prerelease-${{ github.event.release.id }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: github.event_name == 'release' && github.event.action == 'published' && github.event.release.prerelease == true && github.event.release.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      image: ${{ steps.verify.outputs.image }}
+      tag: ${{ steps.verify.outputs.tag }}
+      commit: ${{ steps.verify.outputs.commit }}
+      ci-run: ${{ steps.verify.outputs.ci-run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # For release events this is the tagged commit, not target_commitish
+          # (which may be a branch) or the default branch's current HEAD.
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Verify release identity and existing CI checks
+        id: verify
+        shell: bash
+        env:
+          RELEASE_SHA: ${{ github.sha }}
+          RELEASE_REF: ${{ github.ref }}
+        run: &verify-release |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import subprocess
+          from urllib.parse import urlencode
+          from urllib.request import Request, urlopen
+
+          def require(condition, message):
+              if not condition:
+                  raise SystemExit(message)
+
+          event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text())
+          release = event["release"]
+          require(os.environ["GITHUB_EVENT_NAME"] == "release"
+                  and event.get("action") == "published"
+                  and release.get("prerelease") is True
+                  and release.get("draft") is False,
+                  "Only a published test prerelease is allowed")
+          release_id = release.get("id")
+          require(type(release_id) is int and release_id > 0, "Invalid release ID")
+          release_tag = release.get("tag_name")
+          require(isinstance(release_tag, str) and release_tag
+                  and os.environ["RELEASE_REF"] == "refs/tags/" + release_tag,
+                  "Release event must identify its tag ref")
+          commit = os.environ["RELEASE_SHA"]
+          require(re.fullmatch(r"[0-9a-f]{40}", commit), "Invalid release commit")
+          actual = subprocess.check_output(
+              ["git", "rev-parse", "--verify", "HEAD^{commit}"], text=True).strip()
+          require(actual == commit, "Checkout does not match the release commit")
+          repository = os.environ["GITHUB_REPOSITORY"].lower()
+          component = r"[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*"
+          require(re.fullmatch(component + "/" + component, repository),
+                  "Repository name is not a valid lowercase Docker image path")
+          image = "ghcr.io/" + repository
+          # Do not interpolate a free-form release name/tag into shell or outputs.
+          tag = f"test-{release_id}-sha-{commit}"
+          require(re.fullmatch(r"[a-z0-9][a-z0-9_.-]{0,127}", tag),
+                  "Invalid test image tag")
+
+          # Read-only, unauthenticated API: no token is exposed to scripts/builds.
+          # Private repositories, rate limits, missing/in-progress/failed CI and
+          # API errors fail closed. Never dispatch or silently wait/retry CI.
+          def api(path):
+              request = Request(os.environ["GITHUB_API_URL"] + path, headers={
+                  "Accept": "application/vnd.github+json",
+                  "X-GitHub-Api-Version": "2022-11-28",
+                  "User-Agent": "matriz-test-prerelease-check",
+              })
+              with urlopen(request, timeout=30) as response:
+                  return json.load(response)
+
+          base = "/repos/" + repository + "/actions"
+          query = urlencode({"head_sha": commit, "event": "push", "per_page": 100})
+          def require_success(run):
+              require(run["head_sha"] == commit and run["event"] == "push"
+                      and run["head_repository"]["full_name"].lower() == repository
+                      and run["path"] == ".github/workflows/ci.yml"
+                      and run["status"] == "completed"
+                      and run["conclusion"] == "success",
+                      "Latest push CI for the exact release commit must succeed")
+
+          def latest_successful_run():
+              # Do not filter by success: a newer pending/failed run must block.
+              runs = api(base + "/workflows/ci.yml/runs?" + query)["workflow_runs"]
+              require(bool(runs), "No push CI run exists for the release commit")
+              latest = max(runs, key=lambda run: run["run_number"])
+              require_success(latest)
+              return latest
+
+          latest = latest_successful_run()
+          run_id, attempt = latest["id"], latest["run_attempt"]
+          require(type(run_id) is int and type(attempt) is int
+                  and run_id > 0 and attempt > 0, "Invalid CI run identity")
+          result = api(f"{base}/runs/{run_id}/attempts/{attempt}/jobs?per_page=100")
+          require(result["total_count"] <= 100, "CI job list exceeds checked page")
+          jobs = result["jobs"]
+          required = {
+              "Static analysis (Semgrep)", "Backend tests",
+              "Frontend tests and build", "End-to-end tests",
+          }
+          for name in sorted(required):
+              matches = [job for job in jobs if job["name"] == name]
+              require(len(matches) == 1 and matches[0]["status"] == "completed"
+                      and matches[0]["conclusion"] == "success",
+                      "Required CI job missing, skipped or unsuccessful: " + name)
+
+          # Attempt-specific jobs can stay green while the run is rerun.
+          # Recheck the live run AND the latest applicable run after reading jobs.
+          def require_same_run(run):
+              require_success(run)
+              require((run["id"], run["run_attempt"], run["run_number"])
+                      == (run_id, attempt, latest["run_number"]),
+                      "CI run or attempt changed during verification")
+
+          require_same_run(api(f"{base}/runs/{run_id}"))
+          require_same_run(latest_successful_run())
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"image={image}\ntag={tag}\ncommit={commit}\nci-run={run_id}\n")
+          print(f"Verified release {release_id}, commit {commit}, CI run {run_id}")
+          PY
+
+  publish:
+    needs: prepare
+    if: github.event_name == 'release' && github.event.action == 'published' && github.event.release.prerelease == true && github.event.release.draft == false && needs.prepare.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Revalidate current CI immediately before build and publish
+        id: reverify
+        shell: bash
+        env:
+          RELEASE_SHA: ${{ github.sha }}
+          RELEASE_REF: ${{ github.ref }}
+        # Reuse the complete gate, not prepare's potentially stale CI result.
+        # This is not atomic with GitHub CI changes during the following build/push.
+        run: *verify-release
+      - name: Build and publish only the test tag
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          push: true
+          github-token: ''
+          tags: ${{ needs.prepare.outputs.image }}:${{ needs.prepare.outputs.tag }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ needs.prepare.outputs.commit }}
+            org.opencontainers.image.version=${{ needs.prepare.outputs.tag }}
+      - name: Record published digest and commit
+        shell: bash
+        env:
+          IMAGE: ${{ needs.prepare.outputs.image }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+          COMMIT: ${{ needs.prepare.outputs.commit }}
+          CI_RUN: ${{ steps.reverify.outputs.ci-run }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]] || {
+            echo "::error::Missing or invalid published image digest"
+            exit 1
+          }
+          {
+            printf '### Test prerelease image\n\n'
+            printf -- '- Image: `%s:%s`\n' "$IMAGE" "$TAG"
+            printf -- '- Immutable reference: `%s@%s`\n' "$IMAGE" "$DIGEST"
+            printf -- '- Release commit: `%s`\n' "$COMMIT"
+            printf -- '- Successful prior push CI run: `%s`\n' "$CI_RUN"
+            printf '\nCI tested the same commit, not this rebuilt image digest.\n'
+          } >> "$GITHUB_STEP_SUMMARY"
