@@ -1,5 +1,69 @@
 # Matriz — Release notes 0.4.0-rc.1
 
+## Estado vigente — suplemento de 17/18-11-2026
+
+**Mesmo candidato académico `0.4.0-rc.1`, sem nova release/bump/tag/publicação.**
+Este suplemento prevalece sobre pendências ultrapassadas das baselines abaixo,
+sem reescrever os seus resultados. Aprovação do autor não é validação do cliente.
+
+### Registo e usabilidade
+
+- Registo académico aprovado em **17-11**: conta ativa sem confirmação/envio de
+  email, POST público com CSRF, 201 só mensagem e regresso ao login **sem auto-login**.
+  Sem recuperação; duplicado 409 explícito e throttle independente 5 pedidos por
+  endereço remoto observado/15 min após CSRF. Schema V3 suficiente, sem migration
+  nova; conta não herda projetos/participações, pode criar projetos após login.
+- Delta de **18-11**: mínimo 6 pontos de código brutos, máximo técnico 200 sem
+  trim/truncagem/composição, UI/erros de registo sem divulgar máximo; login antigo
+  preservado. Gestor adiciona por email completo; API mantém userId exato,
+  exclusivamente um critério por presença inclusive null. Repetição/concorrência
+  dá 204 neutro, sem duplicação ou alteração de permissões.
+- Templates por tipo/ciclo local, ações compactas/seletores textuais, anexos com
+  nomes acessíveis e detalhe painel/página. Correção de foco conserva background
+  até efeito de rota e consome uma vez o fecho já confirmado, sem retirar guards.
+  Sem nova persistência, dependência ou alteração de stack neste delta.
+- Contrato vigente **30 operações / US-01–20**; 29 operações e exclusão de registo
+  nas baselines abaixo pertencem às fases anteriores.
+
+### Evidência e alcance
+
+[Verificação vigente](docs/verification.md#estado-vigente--18-11-2026) e
+[tasks existentes](specs/001-usabilidade-contas-tarefas/tasks.md) registam
+**T024 fechada, 28/28**, full E2E único **11/11 PASS** em
+**18-11-2026, 11:55:02.541–11:56:16.986 UTC**, exit 0 sem grep/retries, revisão
+independente readonly **`review-t024-full-closure` PASS**; gates B5/T028 PASS.
+Visual humano aprovado às **09:42:49Z**, com proveniência separada. Backend
+**58**, frontend **141/10 ficheiros/build** são execuções anteriores B1/B3;
+seleção **74/build** da correção de foco tem registo próprio. Nada disso foi
+reexecutado nesta revisão documental. `.last-run.json` passed/lista vazia não
+prova sozinho totais/tempos; fonte é a execução/console documentada.
+
+### CI — risco temporariamente aceite, não scan limpo
+
+Log remoto das **14:08 UTC de 18-11**, fornecido pelo autor, reportou um HIGH
+`picomatch@4.0.7`/`CVE-2026-112366` sem fix, npm 294/294 e JAR 63/63 cobertos;
+bloqueou antes de E2E. Não é scan deste lote nem invalida o full local anterior.
+Exceção aprovada às **14:30:17Z** e implementada no workflow: exclusivamente
+frontend/npm, pacote/versão/CVE/HIGH exatos, todas as ocorrências da versão no
+lock `dev: true`, sem `FixedVersion`, antes de **2026-11-25T00:00:00Z exclusivo**.
+Sem renovação automática; fix/produção/outros findings/expiração/erros de scanner
+ou cobertura incompleta bloqueiam. Findings e contagens reais permanecem visíveis.
+[Política e evidência](docs/verification.md#exceção-temporária-do-scan-ci--18-11-2026).
+Não há nova confirmação remota da política modificada.
+
+### Documentação e operação
+
+README reduzido com imagens locais fornecidas; detalhes de desenvolvimento,
+agentes/Spec Kit, observabilidade, CI e Render em [development](docs/development.md).
+[Referências UI](docs/ui/README.md) distinguem screenshot de prova de validação.
+Preservar `.env`/volumes/migrations; `POSTGRES_PASSWORD` alimenta DB e app,
+seed opt-in e registo sem auto-login. Sem mudança operacional neste lote D1/D2.
+
+Continuam pendentes prova CI atual positiva/negativa e uploads/retenção reais,
+aceitação do cliente, entrega portável de evidência externa e decisões de
+capacidade/backups/policy/p95/produção. Fecho T024 não é certificação WCAG ou
+segurança integral; gates anteriores não constituem revisão independente D1/D2.
+
 ## Suplemento posterior — extensões de 13-11-2026
 
 Mesmo candidato **`0.4.0-rc.1`**, sem bump/tag/publicação. Aprovação do autor para demonstração académica, não do cliente. Esta secção acrescentada em 17-11 não altera a baseline de 12-11 preservada abaixo; menções abaixo a “sem migration nova/V1–V3” pertencem **apenas** à migração Boot 4 dessa baseline.

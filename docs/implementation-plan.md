@@ -11,15 +11,15 @@ Implementação aprovada pelo autor («aprovo» ao arranque pelos caminhos do pl
 | B2 T008–T012 | Implementados cinco caminhos, novo email.ts, UI registo/membros. Gate independente PASS relatado; seleção 90, suite 124 em duas execuções finais/build PASS relatados. |
 | B3 T013–T022 | Implementados catorze caminhos, templates por ciclo, ícones/seletores/anexos. P2/B3-01 dupla confirmação X standalone corrigida; re-review PASS relatado. Seleção 74, suite final 141/10 ficheiros/build PASS relatados; falha temporal pontual de foco B2 na primeira seleção, repetição/full passaram sem alteração B2. |
 | B4 T023 | Só frontend/e2e/matriz.spec.ts preparado/revisto estaticamente: 11 cenários por AST, não discovery/execução. HIGH B4-01 corrigido para aguardar DELETE 204 e GET 200 sem anexo/id/filename/erro, uma eliminação; gate readonly da correção PASS e B5 liberado com T024 bloqueado, segundo handover. |
-| B4 T024 | **BLOQUEADO/NÃO EXECUTADO**: falta alvo/versão/uso/quota livre e destinos de artefactos expressamente autorizados. Sem sondar/iniciar serviços, discovery Playwright, E2E, capturas, visual ou teclado browser deste delta. A instância 18086 anterior não foi assumida disponível/atualizada/autorizada. B4 não é PASS runtime. |
+| B4 T024 | **CONCLUÍDA [x]**: full autorizado de 18-11, **11:55:02.541–11:56:16.986 UTC, 11/11 PASS/exit 0**, sem grep/retries; revisão independente `review-t024-full-closure` PASS. Visual humano aprovado às 09:42:49Z separadamente. Bloqueios/RED/seleções anteriores permanecem históricos em verification. |
 | B5 T025–T027 | Alinhamento dos treze caminhos canónicos/instruções autorizados, conferência documental própria e progresso serializado em tasks.md; **gate B5 independente readonly PASS, sem findings**, segundo evidência final do revisor transmitida pelo utilizador. Sem alterar outros artefactos da feature ou estado. |
 | B6 T028 | **Executado/PASS [x]**, revisão independente final readonly concluída e sem findings, segundo a mesma evidência; não executada pelo autor B5. Sem testes/builds/probes pelo revisor nem inferência de E2E/UX runtime/cliente/produção. |
 
-**Fecho administrativo atual: 27/28 tarefas concluídas no alcance indicado; única pendência T024 [ ] BLOQUEADO/NÃO EXECUTADO.** Gates independentes B5/B6 concluídos; dados de execução anteriores preservados, sem novas execuções nesta atualização.
+**Fecho vigente: 28/28 tarefas concluídas no alcance documentado; T024 [x], gates B5/B6 e revisão do full PASS.** Fonte: fecho em [verification](verification.md#estado-vigente--18-11-2026) e tasks.md, não nova execução nesta atualização. Backend 58/frontend 141/build são anteriores B1/B3; a correção de foco teve seleção 74/build próprios.
 
-O mínimo vigente é 6 pontos brutos (máximo técnico 200 oculto na UI/erros de registo); login/segurança preservados. Participantes por email completo sem diretório, mantendo userId exato; templates transitórios por ciclo e apresentação compacta sem novo contrato de tarefas/schema DB. [Rastreabilidade e resultados](verification.md#usabilidade-de-contas-tarefas-e-participantes--18-11-2026) distinguem relatos dos executores/revisores e verificações desta B5. O T4 anterior já teve 1 E2E/quatro Axe relatados em 17-11; não valida o novo delta, nem é apagado pelo bloqueio T024.
+O mínimo vigente é 6 pontos brutos (máximo técnico 200 oculto na UI/erros de registo); login/segurança preservados. Participantes por email completo sem diretório, mantendo userId exato; templates transitórios por ciclo e apresentação compacta sem novo contrato de tarefas/schema DB. [Rastreabilidade e resultados](verification.md#usabilidade-de-contas-tarefas-e-participantes--18-11-2026) distinguem relatos dos executores/revisores e verificações documentais. O T4 anterior teve 1 E2E/quatro Axe relatados em 17-11; permanece histórico, não prova do delta.
 
-Esta B5 não executa testes/builds/serviços/instalações/hooks ou operações Git de escrita, nem propõe novo plano/backlog. Cliente/servidor devem ser entregues coordenadamente; sem autorização de arranque, commit/push/deploy. Próxima decisão humana: alvo/versão/uso/quota e saídas para T024; revisões B5/B6 concluídas conforme fecho acima.
+A presente revisão documental não executa testes/builds/serviços/instalações/hooks ou operações Git de escrita, nem propõe novo plano/backlog. Cliente/servidor devem ser entregues coordenadamente. Novas execuções, publicação e serviços exigem autorização própria; aceitação do cliente, prova remota da política CI alterada, uploads/retenção reais e decisões de produção continuam pendentes. A exceção CI de 18-11 está em [constraints](constraints.md#restrições-em-vigor--ficha-03-extensões-v4-e-registo-académico), sem alteração funcional neste lote.
 
 ## Registo académico — plano aprovado em 17-11-2026
 
@@ -48,7 +48,7 @@ V1 não reconstrói uma baseline pura da ficha 02: arquiva os documentos mistos 
 
 As contagens de 13-11 abaixo são **evidência documentada**, não reexecuções/certificação de logs nesta tarefa. Matriz de pendências em [coursework-review](coursework-review.md#pendências-e-decisões-humanas): CI atual positiva/negativa/uploads/retenção reais, revisão independente/humana/cliente, capacidade/backups/policy/p95/produção. Arquivar/documentar não resolve essas pendências nem equivale a revisão de segurança das extensões.
 
-## Incremento autorizado atual — 13-11-2026
+## Incremento autorizado de 13-11-2026 — histórico do plano
 
 Autor aprovou as extensões, não cliente: V4/MAT global, tipo/peso/motivo, relações BLOCKS reais, anexos PostgreSQL, comentários multipart/histórico, Markdown/templates e detalhe partilhado. Referência HEAD `640b7e847f385cd69fabf0ff5ffd62dbf7f06cc2`, candidato `0.4.0-rc.1` sem bump/tag/publicação. As fases da ficha 03 abaixo são histórico do plano anterior; a exclusão de anexos foi substituída por este incremento.
 
@@ -64,7 +64,7 @@ Critérios atuais em [requirements](requirements.md), [histórias](user-stories.
 
 O scan anterior à última revisão P2 e Semgrep pré-extensões permanecem históricos. A execução final atual cobre 294/294 pares npm e 63/63 bibliotecas do JAR entregue, Trivy 0 HIGH/CRITICAL; Semgrep 135 regras/47 alvos/0 findings. Scans e 6 E2E usaram a mesma imagem final fresca, não o contentor reutilizado da revisão UI anterior. Sucesso GitHub anterior reportado pelo autor não valida as novas funcionalidades remotamente: prova no âmbito/branch atual, uploads/retenção reais continuam pendentes. [Proveniência e pendências](verification.md#validação-final-local-das-extensões--execução-de-13-11-2026). Esta atualização documental não repetiu execuções.
 
-## Decisões validadas pelo autor
+## Decisões validadas pelo autor — histórico da ficha 03
 
 Em 29-10-2026 o autor aprovou o âmbito integral da ficha 03, substituindo as exclusões da ficha 02: comentários, prioridade, pesquisa/filtros, edição/eliminação de projetos/tarefas e vários responsáveis. Escolheu Java 21, Spring Boot, React e PostgreSQL, mantendo o monólito modular.
 
@@ -84,7 +84,7 @@ Aprovados: sessão HttpOnly e CSRF com Spring Security. A decisão de demonstra�
 
 Cada incremento é analisado e verificado antes do seguinte. O plano pode ser ajustado com evidência, sem alargar o âmbito autorizado. A revisão crítica final e qualquer refatoração separada são registadas em `verification.md`. Os exemplos de bugs dos anexos são cenários de teste, não bugs observados neste projeto.
 
-## Ficheiros e limites
+## Ficheiros e limites — histórico anterior ao registo de 17-11
 
 Criar `backend/` com código Java, SQL e testes; `frontend/` com código React, testes e manifests; configuração Docker e exemplo de ambiente. Atualizar requisitos, histórias, restrições, arquitetura, dados, API, README e AGENTS; manter o wireframe da ficha 02 identificado como referência histórica. Não alterar `.idea` nem o índice Git.
 

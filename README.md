@@ -1,176 +1,48 @@
-# Matriz
+<h1 align="center"><img src="docs/ui/MatrizGithub.png" alt="Matriz" width="600"></h1>
 
-Aplicação de gestão de projetos e tarefas desenvolvida na ficha 03 de AI-Powered Software Engineering, a partir dos Specification Pack e Architecture Pack das fichas 01 e 02.
 
-**Estado atual — usabilidade, 18-11-2026:** implementação aprovada pelo autor na worktree, candidato `0.4.0-rc.1` sem publicação. Registo com mínimo 6, membros por email completo (API mantém userId exato), templates uma aplicação por tipo/ciclo e ações por ícones/seletores textuais. B1–B3 implementados e gates independentes PASS segundo handover: backend **58** (reports locais também conferidos por leitura nesta B5), frontend final **141 em 10 ficheiros** e build PASS relatados. T023 preparado e revisto **apenas estaticamente**; **T024 E2E/visual bloqueado**, sem alvo/versão/uso/quota e destinos de artefactos autorizados. Gate B5 e revisão final T028 pendentes; não há execução de testes/builds/serviços por esta tarefa documental. [Evidência atual e limites](docs/verification.md#usabilidade-de-contas-tarefas-e-participantes--18-11-2026).
 
-Os parágrafos datados seguintes conservam estados históricos. A pendência T4 antiga foi ultrapassada pela [execução do registo de 17-11](docs/verification.md#execução-local-autorizada-do-registo-e-revisão-por-leitura--17-11-2026), com 1 E2E/quatro Axe relatados; não valida este delta nem autoriza reutilizar a instância anterior.
+Aplicação académica de gestão de projetos e tarefas, desenvolvida na formação
+AI-Powered Software Engineering com apoio de IA e decisões humanas.
+Organiza projetos, participantes e tarefas com vários responsáveis, comentários,
+anexos, relações de bloqueio e acompanhamento do progresso.
 
-**Registo académico — decisão do autor em 17-11-2026:** implementado registo público com conta imediatamente ativa, sem confirmação por email. Sucesso regressa ao login com “Conta criada. Inicie sessão.”, **sem auto-login**. Não é validação do cliente, publicação desta alteração ou autorização de produção; mantém-se `0.4.0-rc.1`. T1/T2 e correções foram reportadas como revistas: backend **49** sem falhas/erros/skips (totais dos reports locais conferidos em T3), frontend **56** e build OK **relatados, não reexecutados em T3**. Inspeção visual/E2E do registo pendentes para T4; os resultados/scans de 13-11 abaixo não cobrem esta alteração. [Contrato, proveniência e pendências do registo](docs/verification.md#registo-académico--17-11-2026).
+**Demonstração no Render:** [Abrir a Matriz](https://matriz-demo-h27u.onrender.com/).
 
-**Estado funcional documentado — 13-11-2026:** extensões de tarefas aprovadas pelo autor, sobre a referência histórica `640b7e847f385cd69fabf0ff5ffd62dbf7f06cc2`; mantém-se o candidato `0.4.0-rc.1`, sem nova versão ou publicação. O relatório de validação final local regista **41 testes backend, 43 frontend e 6 E2E sem falhas**, imagem final fresca em contentores novos, Trivy **0 HIGH/CRITICAL** com **294/294 pares npm e 63/63 bibliotecas JAR**, Semgrep **135 regras/47 alvos/0 findings** e actionlint **1.7.7 PASS**. Regista também migração populada V3→V4/MAT/defaults, preservação de dados/relações/comentários/bytes após recriação app/db e paragem/retoma da DB própria, com readiness 503 e liveness 200 durante a indisponibilidade. São **resultados documentados**, não reexecutados nem certificados nesta tarefa; os logs externos não foram reabertos. Revisão independente, inspeção/aceitação humana/cliente e prova GitHub Actions no âmbito/branch atual, uploads/retenção reais continuam pendentes. [Contrato e evidências atuais](docs/verification.md#extensões-de-tarefas--13-11-2026).
+![Painel inicial da Matriz — screenshot fornecida pelo utilizador](docs/ui/painel-inicial.png)
 
-**Revisão documental — 17-11-2026:** [matriz das fichas 01–05 e inventário pedagógico](docs/coursework-review.md), [proveniência de arquitetura e dados](docs/architecture/README.md) e [referências UI](docs/ui/README.md). V1 conserva os documentos mistos tal como encontrados (não baseline pura da ficha 02); a informação atual está completa nos caminhos canónicos. Após T1/T2, por preferência do utilizador, consolidou-se o conteúdo antes separado como V2 e removeu-se essa cópia documental. Arquivo e rastreabilidade não encerram as pendências.
+---
 
-**Histórico da ficha 05 — 12-11-2026:** migração Spring Boot 4 e T6 local passaram com 19 Maven, 13 frontend e 5 E2E, Semgrep 0 findings e Trivy 0 HIGH/CRITICAL; persistência/readiness também passaram nessa baseline anterior às extensões. Não são prova atual das novas funcionalidades. [CHANGELOG](CHANGELOG.md), [RELEASE_NOTES](RELEASE_NOTES.md) e [registo histórico T6](docs/verification.md#ficha-05--candidato-040-rc1) permanecem fontes históricas. Prova remota GitHub Actions, uploads/retenção e aceitação humana não estão concluídos.
+## Estado
 
-## Problema e objetivos
+Candidato académico **`0.4.0-rc.1`**, sem nova release/publicação ou validação
+do cliente. Registo académico e usabilidade implementados; T024 fechada,
+28/28 tarefas, full E2E 11/11 PASS documentado em 18-11-2026.
+Aprovação visual humana registada separadamente.
+[Evidência, proveniência e pendências](docs/verification.md).
+Não é um serviço pronto para produção; usar apenas dados fictícios.
 
-O ponto de partida do cliente é: “Precisamos de uma aplicação onde as nossas equipas possam organizar projetos, gerir tarefas e acompanhar o progresso do trabalho.”
+---
 
-A Matriz centraliza o trabalho de cada projeto, os responsáveis e os comentários e apresenta o progresso através dos estados das tarefas. Esta entrega implementa uma demonstração académica com dados fictícios, não um serviço preparado para produção.
+## Tecnologias
 
-## MVP proposto
+- **Backend:** Java 21, Spring Boot 4.0.9 e Spring Security; sessão local com CSRF.
+- **Interface:** React 19.2, TypeScript e Vite.
+- **Dados:** PostgreSQL 17, JDBC e migrations Flyway.
+- **Execução:** Docker Compose; monólito modular com interface e API no mesmo JAR.
 
-O autor aprovou o âmbito alargado da ficha 03 para implementação. Isso não equivale a validação pelo cliente:
-
-- Acesso autenticado com contas locais previamente disponibilizadas ou criadas pelo registo público académico.
-- Criação, consulta, pesquisa, edição e eliminação de projetos, com gestor e membros por projeto.
-- Adição e remoção de membros de um projeto.
-- Criação, consulta, edição e eliminação de tarefas, com filtros por estado e prioridade.
-- Vários responsáveis elegíveis por tarefa, sem atribuições duplicadas.
-- Comentários com autor autenticado e data atribuídos pelo servidor.
-- Estados “Por fazer”, “Em curso” e “Concluída”.
-- Contagens por estado e percentagem de tarefas concluídas por projeto.
-- Chave global estável `MAT-n` (UUID continua identidade), tipos TASK/BUG/IMPROVEMENT, peso opcional e motivo de fecho opcional apenas em DONE.
-- Relações RELATED, BLOCKS e DUPLICATES no mesmo projeto; BLOCKS impede conclusão com bloqueadores não concluídos e reabertura de bloqueadores com dependentes concluídos.
-- Até cinco anexos diretos por tarefa e cinco por comentário, 4 MiB cada, guardados no PostgreSQL; download autenticado e eliminação pelo autor ou gestor.
-- Histórico imutável pela API, Markdown básico seguro em descrição/comentários e três templates fixos; detalhe partilhado entre painel desktop e página completa.
-
-Notificações, @mentions, Defcon/Goal, sprints, integrações/serviços externos, recuperação de palavra-passe e relatórios avançados ficam fora do âmbito. O registo público foi acrescentado apenas para a demonstração académica pela decisão do autor de 17-11; não há envio/confirmação de email. As aprovações de 13/17-11 são do autor, não validação pelo cliente; capacidade de armazenamento, backups e retenção continuam por decidir, sem purga automática.
-
-A interface mantém o tema escuro/azul inspirado no [Black Dashboard React](https://github.com/creativetimofficial/black-dashboard-react), com estrutura de espaço de trabalho ao estilo Jira: barra superior, navegação lateral, breadcrumbs, vistas e tabelas compactas. Em telemóvel, a navegação abre num diálogo modal. O painel usa as contagens reais do projeto selecionado, não métricas fictícias nem somas de uma página de projetos. Não importa o template; a extensão aprovada usa `react-markdown` **10.1.0**, sem HTML, imagens ou GFM.
-
-## Documentação
-
-Para mais informações sobre utilização, funcionalidades, arquitetura e processo de desenvolvimento, consulte a [Wiki da Matriz no GitHub](https://github.com/Fibigor/matriz/wiki). A Wiki oferece uma visão geral; os ficheiros abaixo mantêm os requisitos, contratos e evidências de referência.
-
-| Ficheiro | Conteúdo |
-|---|---|
-| [docs/requirements.md](docs/requirements.md) | Visão, utilizadores, requisitos, prioridades, âmbito e exercício de Prompt Engineering. |
-| [docs/user-stories.md](docs/user-stories.md) | User Stories atuais, extensões de 13-11, critérios, exceções e histórico da ficha 01. |
-| [docs/constraints.md](docs/constraints.md) | Factos, pressupostos, perguntas, segurança, decisões pendentes, revisão crítica e desafio complementar. |
-| [AGENTS.md](AGENTS.md) | Instruções persistentes para agentes que trabalhem neste projeto. |
-| [.github/copilot-instructions.md](.github/copilot-instructions.md) | Orientação curta do Copilot e ligação às regras do projeto. |
-| [.github/agents/](.github/agents/) | Agentes especializados para planeamento, coordenação, implementação e revisão. |
-| [.github/skills/](.github/skills/) | Skills reutilizáveis de contexto e validação da Matriz. |
-| [docs/architecture.md](docs/architecture.md) | Arquitetura atual completa e ligação à comparação/DEC-01 histórica em V1. |
-| [docs/architecture/README.md](docs/architecture/README.md) | Versões documentais, proveniência e hashes de origem; sem renumerar ADRs ou OpenAPI. |
-| [docs/adr/README.md](docs/adr/README.md) | Índice dos Architecture Decision Records (ADRs) e decisões técnicas aceites. |
-| [docs/database.md](docs/database.md) | Schema V1–V4/ER atual completo e ligação ao arquivo integral do modelo misto. |
-| [openapi.yaml](openapi.yaml) | Contrato OpenAPI 3.1 atual: 30 operações, incluindo extensões V4 e registo académico. |
-| [docs/ui/README.md](docs/ui/README.md) | [Wireframe atual](docs/ui/wireframe.svg) e referência histórica [PNG](docs/architecture/v1/ui/wireframe.png)/[SVG](docs/architecture/v1/ui/wireframe.svg), transferidos sem mudar bytes. |
-| [docs/coursework-review.md](docs/coursework-review.md) | Rastreabilidade fichas 01–05, 16 PDFs/28 anexos, evidência documentada e pendências. |
-| [docs/implementation-plan.md](docs/implementation-plan.md) | Decisões aprovadas, diferenças face à ficha 02 e incrementos. |
-| [docs/verification.md](docs/verification.md) | Cenários, resultados reais, testes, revisão e limitações. |
-| [CHANGELOG.md](CHANGELOG.md) | Extensões de 13-11 sobre o mesmo candidato e baseline histórica de 12-11 preservada. |
-| [RELEASE_NOTES.md](RELEASE_NOTES.md) | Suplemento V4, compatibilidade/migração e baseline T6 histórica; critérios remotos/revisão final pendentes. |
-| [docs/test-plan.md](docs/test-plan.md) | Cenários unitários, de integração, E2E e autorização da ficha 04. |
-| [docs/quality-security-review.md](docs/quality-security-review.md) | Revisão histórica da ficha 04 (05-11/70e0eca), não auditoria das extensões. |
-| [render.yaml](render.yaml) | Blueprint Render da demonstração temporária, com endereço registado [matriz-demo-h27u.onrender.com](https://matriz-demo-h27u.onrender.com); disponibilidade não revalidada nesta tarefa. |
-
-Leitura recomendada: requisitos, restrições e User Stories. Os agentes devem começar pelo `AGENTS.md`.
-
-## Utilizar o fluxo de agentes
-
-Para alterações não triviais, comece pelo agente **Planeador Matriz** no seletor de agentes do Copilot. Descreva o resultado pretendido e peça uma proposta com âmbito, critérios de aceitação, ficheiros afetados, dependências e validações. Responda às perguntas de clarificação e reveja a proposta antes de aprovar a escrita dos artefactos. O planeador não altera ficheiros na análise inicial.
-
-Para incrementos novos, o planeador usa as skills `speckit-specify`, `speckit-clarify`, `speckit-plan`, `speckit-tasks` e `speckit-analyze`, com `speckit-checklist` quando útil. Depois de aprovados os caminhos concretos, pode criar/editar apenas os artefactos em `specs/<identificador>-<nome>/` e o estado `.specify/feature.json` necessário. Não implementa código, executa testes nem altera documentação canónica. A aprovação destes artefactos **não autoriza a implementação**. Para tarefas pequenas ou manutenção, pode propor um plano mínimo em chat, sem criar uma feature artificial.
-
-Pode fornecer documentos PDF e apresentações PPT/PPTX como contexto. O planeador usa leitura nativa ou extração local com ferramentas já disponíveis, identifica as páginas/slides usados e assinala conteúdo que não conseguiu ler. Não instala dependências nem envia os documentos para serviços externos; se faltar suporte, pede uma exportação ou o conteúdo relevante. A extração textual não garante a leitura de imagens ou diagramas.
-
-No final do planeamento, recebe uma **descrição para o utilizador** e um **prompt de handover para o Orquestrador Matriz**, pronto a copiar, com o plano, critérios, caminhos dos artefactos, IDs das tarefas, dependências, validação e estado real da aprovação. O handover referencia a mesma especificação/plano/tarefas, sem criar cópias concorrentes. O prompt não substitui a aprovação humana nem inicia a implementação automaticamente.
-
-Depois da aprovação:
-
-1. Para trabalho com várias tarefas, entregue o prompt de handover e a aprovação explícita do plano ao **Orquestrador Matriz**. Ele coordena as tarefas e só paraleliza até três quando não há conflitos de ficheiros, dependências ou validação; caso contrário, segue sequencialmente.
-2. Para uma tarefa isolada, ou quando o orquestrador a encaminhar, escolha o agente adequado: **Engenheiro Backend Matriz** para Java/Spring e persistência; **Engenheiro Frontend Matriz** para React/TypeScript e interface; **Engenheiro de Documentação e Configuração Matriz** para documentação, CI e configuração.
-3. Dê a cada tarefa um âmbito e critérios aprovados. Os engenheiros usam `speckit-implement` apenas nos IDs e caminhos atribuídos, nunca no backlog inteiro por omissão. O orquestrador designa um único escritor de `tasks.md`, normalmente o engenheiro de documentação/configuração, para evitar alterações concorrentes. Confirme os ficheiros novos/removidos e qualquer mudança fora do plano antes de permitir que avance.
-4. Peça ao **Revisor Matriz** uma revisão independente depois da implementação. O revisor usa `speckit-analyze` quando existem os artefactos necessários, sem hooks nem persistência de estado, e revê também o diff e as evidências. Não altera ficheiros nem executa `speckit-converge`, que pode escrever tarefas/relatórios.
-5. Inspecione as alterações e os resultados. A pessoa responsável decide os próximos passos e executa commit, push ou publicação apenas com a aprovação necessária.
-
-As skills `contexto-matriz` e `validacao-matriz` complementam o fluxo: a primeira orienta a leitura das regras atuais e fontes de verdade; a segunda ajuda a selecionar verificações existentes e a relatar resultados reais. Todos os agentes devem respeitar `AGENTS.md`: usar dados fictícios, preservar `.env` e volumes, não inventar resultados e pedir autorização para operações sensíveis. Para uma tarefa pequena, o planeador pode propor um único passo, sem necessidade de criar um plano extenso.
-
-Se o cliente não disponibilizar invocação de skills ao agente, este lê o respetivo `SKILL.md`, segue as instruções compatíveis com o seu papel e declara a limitação; mencionar um comando não comprova a sua execução. `speckit-converge` fica reservado a uma tarefa de avaliação separada e aprovada para o engenheiro de documentação/configuração, sem iniciar automaticamente o trabalho identificado. Alterar a constituição também exige aprovação própria.
-
-## Spec Kit — incrementos novos
-
-Integração [GitHub Spec Kit v1.4.2](https://github.com/github/spec-kit/releases/tag/v1.4.2)
-para Copilot, com scripts PowerShell. A [constituição](.specify/memory/constitution.md)
-adapta o processo ao [AGENTS.md](AGENTS.md); não substitui os agentes Matriz.
-`docs/` e `openapi.yaml` continuam fontes canónicas. Não houve migração retroativa:
-`specs/` será criado apenas para um incremento novo aprovado.
-
-As nove skills estão em `.github/skills/speckit-*/SKILL.md`. No chat do Copilot,
-use-as **uma de cada vez**, revendo os resultados:
-
-```text
-/speckit-specify <descrever o incremento novo>
-/speckit-clarify
-/speckit-plan
-/speckit-tasks
-/speckit-analyze
-/speckit-implement
-/speckit-converge
-```
-
-`/speckit-checklist` apoia a revisão dos requisitos; `/speckit-constitution`
-propõe alterações aos princípios já preenchidos. As skills complementam o
-planeador/orquestrador/engenheiros/revisor Matriz, sem executar ambos os fluxos
-em duplicado. Se as skills não aparecerem, reabra a sessão do Copilot no repositório;
-a descoberta depende do cliente e da versão do Copilot utilizados.
-
-**Aprovações:** antes de qualquer fase que escreva, o agente apresenta os caminhos
-a criar/alterar, incluindo `specs/` e `.specify/feature.json`, e aguarda autorização.
-Invocar uma skill ou passar um checklist não aprova a implementação nem a fase
-seguinte. Não há extensões opcionais nem automatização Git instalada. Os blocos
-“Matriz: local governance” nas nove skills são adaptações locais, não conteúdo
-oficial inalterado; preservá-los nas atualizações.
-
-### CLI e reprodução da instalação
-
-Pré-requisitos da ferramenta: Python 3.11+, Git, PowerShell e `uv`. São ferramentas
-de desenvolvimento, não dependências da aplicação. Para instalar numa máquina
-nova, após autorização:
-
-```powershell
-python -m pip install --user uv
-python -m uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v1.4.2
-& "$env:USERPROFILE\.local\bin\specify.exe" version
-```
-
-O último comando funciona com a localização padrão de executáveis do uv no
-Windows, mesmo sem essa pasta no PATH. Se o uv tiver uma localização personalizada,
-consulte `python -m uv tool dir --bin-dir`. Se já existir outra instalação, não a
-substitua sem rever a versão e obter autorização.
-
-Os ficheiros base foram gerados pelo CLI 1.4.2 com
-`--integration copilot --script ps --non-interactive --ignore-agent-tools`.
-A opção `--ignore-agent-tools` dispensa apenas a verificação do executável do
-assistente; não comprova a descoberta das skills no cliente.
-Para reproduzir o scaffolding, gerar **numa pasta nova**, fora deste repositório:
-
-```powershell
-& "$env:USERPROFILE\.local\bin\specify.exe" init C:\caminho\novo\matriz-speckit-review --integration copilot --script ps --non-interactive --ignore-agent-tools
-```
-
-Rever o diff antes de atualizar. Não repetir `init --here --force` sobre esta
-integração: pode substituir a constituição e as adaptações locais. Os manifests
-em `.specify/` registam a versão; uma atualização do CLI não autoriza nem garante
-a atualização dos ficheiros versionados.
-
-Verificações locais sem criar uma feature ou executar a aplicação:
-
-```powershell
-& "$env:USERPROFILE\.local\bin\specify.exe" version
-.\.specify\scripts\powershell\resolve-template.ps1 spec-template -Json
-```
+---
 
 ## Executar localmente
 
-Pré-requisitos: Docker com Compose. Para desenvolvimento fora dos contentores: Java 21, Maven 3.9+, Node 22.12+ e npm. O monólito modular usa Spring Boot **4.0.9**, Spring Framework **7.0.10**, Spring Security **7.0.8**, Jackson **3.1.7**, Flyway **11.14.1**, React/TypeScript e PostgreSQL **17**. O Dockerfile usa Node **22** e Java **21**. `backend/` contém API e persistência; `frontend/` contém interface e testes. Versões efetivas e compatibilidade Jackson em [RELEASE_NOTES.md](RELEASE_NOTES.md).
+Pré-requisitos: Git e Docker com Compose. Obter o código:
 
-Em PowerShell, na raiz do repositório:
+```powershell
+git clone https://github.com/Fibigor/matriz-ai-powered.git
+Set-Location matriz-ai-powered
+```
+
+Na raiz do repositório, preparar a configuração **apenas se `.env` não existir**:
 
 ```powershell
 if (-not (Test-Path -LiteralPath .env)) {
@@ -179,144 +51,67 @@ if (-not (Test-Path -LiteralPath .env)) {
 docker compose -p matriz-ficha3 --env-file .env config --quiet
 ```
 
-O comando `config --quiet` valida a configuração sem iniciar serviços nem mostrar os valores das variáveis. Se terminar sem erros, iniciar:
+O exemplo contém configuração fictícia local. `POSTGRES_PASSWORD` deve ter valor:
+é usado **pela base de dados e pela aplicação**; definir só `DATABASE_PASSWORD`
+no `.env` não basta. Se `.env` já existir, não o substituir nem partilhar.
+Num volume já inicializado, manter a palavra-passe original: alterar a variável
+não altera a credencial guardada no PostgreSQL. **Não apagar o volume para corrigir isso.**
+
+Após validação sem erros:
 
 ```powershell
 docker compose -p matriz-ficha3 --env-file .env up --build -d
 ```
 
-**Erro `required variable POSTGRES_PASSWORD is missing a value`:** o Compose não recebeu uma palavra-passe não vazia para PostgreSQL. `.env.example` é apenas um modelo, não é carregado automaticamente. Criar `.env` com o bloco acima; se já existir, não o substituir: editar apenas as variáveis em falta. Confirmar que o ficheiro se chama `.env` (não `.env.txt`) e que os comandos são executados na raiz do repositório.
+Abrir **http://localhost:8080**. Por omissão, app e PostgreSQL são publicados
+apenas em loopback (8080 e 55432). Flyway aplica V1–V4; o volume conserva dados.
+O seed fictício é **opt-in** (`DEMO_ENABLED=true`), não redefine dados/credenciais
+existentes. Não editar migrations aplicadas nem usar `docker compose down -v`.
 
-Para a demonstração local, `.env.example` fornece valores fictícios para PostgreSQL. `POSTGRES_PASSWORD` é usado pelo Compose tanto para a base de dados como para `DATABASE_PASSWORD` da aplicação; definir apenas `DATABASE_PASSWORD` em `.env` não resolve o erro de configuração do PostgreSQL. Manter `.env` fora do controlo de versões e não partilhar o seu conteúdo.
-
-Se já existir um volume inicializado, usar a palavra-passe com que a base de dados foi criada: alterar `POSTGRES_PASSWORD` no ficheiro não altera a palavra-passe guardada no PostgreSQL. Não apagar o volume para resolver este problema.
-
-Abrir `http://localhost:8080`. PostgreSQL fica exposto apenas em `127.0.0.1:55432` e a aplicação apenas localmente. O Dockerfile compila React e inclui os ficheiros estáticos no JAR.
-
-Flyway aplica as migrations V1–V4 automaticamente. V4 atribui chaves às tarefas existentes por `(created_at,id)`, preserva UUIDs/datas/versões, define TASK e valores opcionais null, sem inventar histórico. A migração é aditiva; não apagar volumes nem editar migrations aplicadas. O volume Docker conserva a base de dados. O seed fictício é ativado por `DEMO_ENABLED=true`; cria Ana, Bruno e Carla, mas não redefine palavras-passe nem dados em arranques seguintes. Não usar `docker compose down -v` para reiniciar: isso elimina o volume.
-
-As contas fictícias usam os emails `ana@example.invalid`, `bruno@example.invalid` e `carla@example.invalid`, todas com palavra-passe **`Matriz-Demo-2026!`**. Ana gere Alfa, Bruno participa em Alfa e Carla só tem o seu projeto Beta. Estas credenciais são públicas e exclusivas da demonstração; os visitantes do Render podem alterar os dados demo. Não usar dados pessoais ou credenciais reais.
-
-Para desenvolvimento, iniciar só a base de dados e executar em dois terminais:
+Parar e retomar os contentores existentes sem eliminar dados:
 
 ```powershell
-docker compose -p matriz-ficha3 --env-file .env up -d db
-$env:DATABASE_PASSWORD='matriz-local-example'
-$env:DEMO_ENABLED='true'
-mvn -f backend\pom.xml spring-boot:run
+docker compose -p matriz-ficha3 stop
+docker compose -p matriz-ficha3 start
 ```
 
-```powershell
-Set-Location frontend
-npm ci
-npm run dev
-```
+---
 
-Abrir `http://localhost:5173`. Vite encaminha `/api` para `127.0.0.1:8080`; toda a configuração do prefixo API está em `frontend/src/api.ts`. `.env` é lido pelo Compose, não automaticamente pelo Maven: ajustar as variáveis do terminal se forem alterados os valores do exemplo.
+## Utilizar
 
-### Observabilidade local — opt-in
+No login, escolher **Criar conta**. O registo é exclusivamente académico:
+conta ativa sem confirmação por email, sucesso regressa ao login
+**sem auto-login**; é necessário iniciar sessão explicitamente.
+Não há recuperação de palavra-passe. Uma conta nova não herda projetos ou
+participações, mas pode criar projetos após login.
 
-Desligada por omissão: o resolver de acesso não disponibiliza endpoints operacionais sem o perfil `observability`, mesmo que a exposição seja alargada. O perfil usa **a mesma porta da aplicação** (8080 por omissão), sem serviço de monitorização externo nem porta de gestão separada. Não ativar no Render ou em hosts públicos.
+O gestor gere projeto, membros por email completo e atribuições; participantes
+ativos gerem tarefas e comentam. A API controla permissões, não apenas os botões.
+Tarefas têm estado, prioridade, chave `MAT-n`, tipo, templates, Markdown básico,
+anexos e histórico; bloqueadores pendentes podem impedir a conclusão.
 
-| Rota GET com o perfil ativo | Acesso e conteúdo |
-|---|---|
-| `/actuator/health` | Anónimo, mínimo: `status` e nomes dos grupos `liveness`/`readiness`; sem detalhes/componentes e sem criar sessão. |
-| `/actuator/health/liveness` | Anónimo, só `status`; inclui `livenessState`, não a base de dados. |
-| `/actuator/health/readiness` | Anónimo, só `status`; inclui `readinessState` e o indicador JDBC `db`. UP → 200; DOWN → 503. |
-| `/actuator/metrics` | Sessão autenticada pelo login local existente; lista apenas nomes `jvm.*` e `http.server.requests`. |
-| `/actuator/metrics/jvm.*`, `/actuator/metrics/http.server.requests` | Sessão autenticada; medidas do nome permitido, quando registado. |
+---
 
-Não existem aliases `/livez` ou `/readyz`. Discovery `/actuator`, componentes individuais de health e endpoints sensíveis (`env`, `configprops`, `heapdump`, `loggers`, `threaddump`, `mappings`, etc.) não ficam disponíveis. Escritas operacionais são recusadas; sessão/CSRF de negócio mantêm-se. As rotas operacionais **não pertencem a `/api`** nem ao contrato OpenAPI de negócio. Métricas não são logs de conteúdo: não recolher nem registar corpos de pedidos/respostas, credenciais, tokens ou cookies.
+## Documentação e desenvolvimento
 
-O Compose base verifica apenas a resposta HTTP de `/`; **não comprova readiness da base de dados**. O override [compose.observability.yaml](compose.observability.yaml) ativa o perfil e troca o healthcheck da aplicação por `/actuator/health/readiness`. Ambos conservam publicações em loopback; `SERVER_ADDRESS=0.0.0.0` dentro do contentor não publica o host em todas as interfaces.
+- [Requisitos](docs/requirements.md), [restrições e decisões pendentes](docs/constraints.md)
+  e [User Stories](docs/user-stories.md).
+- [Arquitetura](docs/architecture.md), [dados](docs/database.md),
+  [ADRs](docs/adr/README.md) e [OpenAPI](openapi.yaml).
+- [Desenvolvimento](docs/development.md): execução direta, testes, agentes/Spec Kit,
+  observabilidade local, CI e limites da demonstração Render.
+- [Verificação atual e histórico](docs/verification.md),
+  [plano de testes](docs/test-plan.md) e [referências UI](docs/ui/README.md).
+- [Rastreabilidade académica](docs/coursework-review.md),
+  [guião de apresentação](docs/presentation-script.md),
+  [changelog](CHANGELOG.md) e [release notes](RELEASE_NOTES.md).
 
-Exemplo de procedimento isolado proposto em T5, não executado nessa fase: projeto `matriz-ficha05-check`, portas propostas 18085/55435. Esse projeto foi reportado como já criado/parado, com volume preservado. T6 usou outro projeto, `matriz-ficha05-final`, nas mesmas portas, verificadas livres antes do ensaio; app/db próprios ficaram parados no fim e o volume/fixture foram preservados. Para qualquer futura execução do exemplo, confirmar portas e estado e obter autorização, sem parar instâncias alheias. Manter o `.env` existente; não o copiar por cima nem imprimir a configuração expandida.
+Agentes devem começar pelo [AGENTS.md](AGENTS.md). CI mantém uma
+[exceção temporária exata](docs/constraints.md)
+para um HIGH de desenvolvimento até **2026-11-25T00:00:00Z exclusivo**;
+não é scan limpo nem remediação.
 
-```powershell
-$env:APP_HOST_PORT='18085'
-$env:POSTGRES_HOST_PORT='55435'
-docker compose -p matriz-ficha05-check --env-file .env -f compose.yaml -f compose.observability.yaml config --quiet
-# Só após autorização de arranque/verificação:
-docker compose -p matriz-ficha05-check --env-file .env -f compose.yaml -f compose.observability.yaml up --build -d --wait
-# Parar sem remover contentores ou volumes:
-docker compose -p matriz-ficha05-check --env-file .env -f compose.yaml -f compose.observability.yaml stop
-# Retomar a configuração/imagem existentes, sem rebuild:
-docker compose -p matriz-ficha05-check --env-file .env -f compose.yaml -f compose.observability.yaml start
-Remove-Item Env:APP_HOST_PORT
-Remove-Item Env:POSTGRES_HOST_PORT
-```
+<a id="observabilidade-local--opt-in"></a>
 
-Para regressar ao perfil base é necessário recriar `app` com apenas `compose.yaml` numa execução autorizada; `start` não remove o perfil de um contentor já criado. Nunca usar `down -v` nem eliminar o volume para mudar de perfil ou versão. Os comandos acima são instruções, não prova de persistência/arranque do candidato.
-
-## Autenticação, permissões e testes
-
-Login local por email e palavra-passe; hashes scrypt e sessão Matriz no servidor, cookie `JSESSIONID` HttpOnly/SameSite Strict e timeout inativo de 30 minutos. Credenciais inválidas e contas inativas recebem resposta genérica; cinco falhas por email/endereço em 15 minutos bloqueiam novas tentativas durante 15 minutos. `POST /api/auth/login` exige CSRF; `GET /api/auth/csrf` fornece o token para `X-CSRF-TOKEN`, também exigido nas restantes escritas, incluindo registo. O identificador de sessão é renovado no login e invalidado no logout. Não há recuperação de palavra-passe; o frontend não guarda credenciais em localStorage. Reiniciar o backend termina sessões, mas não apaga dados.
-
-No login, escolher **Criar conta** e indicar nome, email, palavra-passe e confirmação local. Nome: 1–120 pontos de código Unicode após trim; email: trim/lowercase, máximo 254 unidades UTF-16 após normalização e regex partilhada com login, aceitando Unicode (não prova de existência/entrega). Palavra-passe de registo: 6–200 pontos de código brutos, sem trim/truncagem/composição obrigatória; espaços são permitidos e contam, inclusive como todo o conteúdo. A UI mostra «Mínimo de 6 caracteres», sem divulgar o máximo nem truncar por maxLength HTML; excesso dá «Palavra-passe demasiado longa», também em detail/errors do servidor. Login conserva compatibilidade com palavras-passe antigas curtas e aceita até 200 pontos de código. Sucesso limpa a palavra-passe e regressa ao login sem a transportar nem guardar; é necessário iniciar sessão explicitamente.
-
-`POST /api/auth/register` é público **com CSRF**, JSON `{displayName,email,password}`; responde 201 `application/json` com apenas `{"message":"Conta criada. Inicie sessão."}`. Validação: 422 com `errors[{field,message}]`; email existente, incluindo concorrência: 409 explícito (divulgação de existência aceite pelo autor). Limite independente do login: **5 pedidos por endereço remoto observado em 15 minutos**, contando sucessos e falhas que passam CSRF; excedido dá 429 com `Retry-After`. Estado em memória por instância, limpo no reinício; não confia em headers forwarded do cliente. Um proxy pode agregar visitantes: não se promete o IP real do visitante nem proteção distribuída. Conta nova não herda projetos, participações ou privilégios; depois do login pode criar projetos pelas permissões atuais. UUID/username internos são gerados, hash scrypt; schema V3 já suporta, sem migration/dependência nova.
-
-Só o gestor edita/elimina projetos e gere membros/atribuições. Todos os participantes ativos gerem tarefas e comentam. A API aplica as mesmas restrições a acessos diretos; recursos alheios e inexistentes devolvem 404 indistinguível. A eliminação exige confirmação na interface e remove dependentes numa transação. As edições usam versão otimista; conflitos não sobrepõem dados silenciosamente.
-
-Em **Participantes do projeto**, o gestor indica o **Email completo do membro**, sem diretório/sugestões/convites. A UI envia só email, mostra nomes/funções/inatividade sem IDs e conserva erro/entrada para correção. Repetir confirma participação sem duplicar; conta inexistente/inativa tem a mesma recusa. Integrações existentes podem continuar a enviar `userId` exato, nunca os dois critérios (presença null também conta).
-
-Na criação/edição de tarefa, aplicar um template desativa/acinzenta esse tipo no ciclo atual, mesmo após apagar texto ou mudar e regressar ao tipo. Cancelar confirmação não consome; guardar/falhar/refetch/recuperar/resize/maximizar não reiniciam. Nova criação após sucesso ou fecho/reabertura efetiva/outra tarefa reiniciam, sem guardar esse estado no servidor. Detalhe usa maximizar/X à direita (página completa só X), seletores «Editar»/«Pré-visualizar» e atividade textuais com foco/seleção, Guardar/Eliminar lado a lado. Ficheiros mostram metadados seguidos de ícones com nome por ficheiro: retirar só seleção, descarregar e eliminar apenas se autorizado. Confirmações/guards/permissões mantêm-se; geometria/teclado em navegador deste delta aguardam T024.
-
-```powershell
-mvn -f backend\pom.xml test '-Dapi.version=1.44'
-Set-Location frontend
-npm test
-npm run build
-npx playwright install chromium
-npm run test:e2e
-```
-
-Os testes Java usam PostgreSQL isolado via Testcontainers (Docker necessário) e verificam o login local real através do controller; `api.version` assegura compatibilidade do cliente Docker de testes com Docker Desktop 29. Os testes E2E requerem API, Vite e seed local já iniciados; criam/eliminam os seus próprios projetos, não os projetos existentes. Incluem auditoria axe-core em combinações de vista/viewport para critérios WCAG 2.0, 2.1 e 2.2 A/AA, incluindo contraste.
-
-Para executar os mesmos E2E contra a aplicação completa do Compose, em vez de Vite:
-
-```powershell
-Set-Location frontend
-$env:PLAYWRIGHT_BASE_URL='http://localhost:8080'
-npm run test:e2e
-```
-
-### CI — GitHub Actions
-
-O workflow [.github/workflows/ci.yml](.github/workflows/ci.yml) está definido para pushes, pull requests para `main` e execução manual, com `contents: read`. Semgrep, testes backend (PostgreSQL/Testcontainers) e testes/build frontend são jobs paralelos. O job E2E depende dos três: valida Compose sem imprimir configuração, constrói uma única imagem integrada e aplica os gates npm/JAR **antes de iniciar a stack e executar os E2E**, incluindo axe-core. O build frontend básico já ocorre no seu job; a dependência dos três jobs aplica-se ao build integrado. Semgrep falha com findings (`--error`), sem conta/token.
-
-Trivy **0.76.2**, fixado por digest `sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb`, analisa vulnerabilidades de **bibliotecas**, não pacotes do SO: manifests npm com dev dependencies e bibliotecas do JAR realmente entregue. O gate confere todos os pares nome/versão do lock e caminhos `BOOT-INF/lib/*.jar`. HIGH/CRITICAL bloqueiam **mesmo sem correção disponível**; não há ignores, `ignore-unfixed`, VEX ou exceções. Erros do scanner/download de DB e cobertura incompleta também bloqueiam. Ambos os scans são tentados mesmo se o primeiro falhar.
-
-O scanner corre localmente no runner, sem upload de código, mounts de `.env`/credenciais ou encaminhamento do ambiente do host. Downloads das bases públicas de vulnerabilidades/Java continuam necessários; telemetry e consultas remotas de dependências estão desativadas. Relatórios JSON/TXT de dependências são configurados para upload mesmo em falha e retenção de sete dias; relatórios Playwright, quando presentes, também por sete dias. Diagnósticos Compose em falha são reduzidos/sanitizados; não recolher corpos HTTP ou cookies. A mesma imagem passa depois a `up --no-build --wait`, com health HTTP base e sem perfil de observabilidade.
-
-Isto descreve a definição conferida, **não uma execução GitHub Actions deste candidato**. T6 passou os gates e fixtures locais, mas prova positiva/negativa remota, upload em falha e retenção reais continuam **não verificados**. O workflow usa exclusivamente dados fictícios de `.env.example`, sem publicação/deploy. Porém, o Render pode reagir a checks bem-sucedidos conforme o Blueprint; **não fazer push ou acionar checks remotos sem autorização específica**.
-
-Para executar localmente, com Docker Desktop ativo e na raiz do repositório:
-
-```powershell
-docker run --rm --mount "type=bind,source=$($PWD.Path),target=/src,readonly" --workdir /src --entrypoint semgrep semgrep/semgrep scan --config .semgrep.yml --error
-```
-
-O scan aplica os rulesets públicos `p/java` e `p/typescript` e a regra local `.semgrep.yml`, que rejeita CORS Java com origem wildcard. Semgrep precisa de acesso à internet para obter os rulesets na primeira execução. A análise não altera ficheiros do projeto.
-
-### Render — demonstração temporária
-
-`render.yaml` configura um serviço Docker e PostgreSQL 17 gratuitos em Frankfurt. O endereço registado da demonstração é [https://matriz-demo-h27u.onrender.com](https://matriz-demo-h27u.onrender.com); **não foi verificado ao vivo em T5 (12-11-2026)** e não se afirma que execute este candidato. O serviço respeita a porta `PORT` fornecida pelo Render; o Compose local continua a usar `8080`, `DATABASE_URL` e as mesmas portas/valores locais. No Render, o Blueprint ativa o seed de contas fictícias, define `COOKIE_SECURE=true` e mantém SameSite Strict; não ativa `observability`. O workflow GitHub Actions não publica a aplicação, mas o Blueprint contém `autoDeployTrigger: checksPass`: passar checks pode desencadear deploy pelo Render. Nenhuma alteração Render, push ou execução remota foi efetuada nesta tarefa.
-
-Não é necessária configuração de IdP externo. As contas de demonstração e a palavra-passe acima ficam acessíveis a qualquer visitante; os respetivos dados são partilhados e podem ser alterados. Este perfil é exclusivamente para demonstração temporária, não produção.
-
-Este perfil é exclusivamente para demonstração temporária, não produção: o serviço gratuito pode suspender-se após 15 minutos sem tráfego e a base de dados gratuita atual, com duração de 30 dias, expira em **2 de dezembro de 2026**. Após expirar, há 14 dias para atualizar a base antes da eliminação dos dados; não há backups para a base gratuita e só pode existir uma base gratuita ativa por workspace. Esta expiração da infraestrutura não define a policy de retenção da aplicação. Verificar as [limitações atuais do Render Free](https://render.com/docs/free) antes de depender da demonstração ou alterar o plano.
-
-Parar serviços sem apagar o volume: `docker compose -p matriz-ficha3 stop`. Depois, `docker compose -p matriz-ficha3 start` volta a iniciá-los com os dados existentes.
-
-## Estado da entrega
-
-**Final local atual das extensões — 13-11-2026:** concluído nos termos da abertura e da [execução final registada](docs/verification.md#validação-final-local-das-extensões--execução-de-13-11-2026), não uma publicação ou aceitação do cliente. App/db próprios terminaram parados e o volume foi conservado. GitHub Actions no âmbito/branch atual, uploads/retenção reais e revisão independente/humana continuam pendentes. Os parágrafos datados seguintes são históricos; os seus HEADs e números não descrevem a entrega V4 atual.
-
-Em 12-11-2026, T5 alinhou documentação, OpenAPI e manifests frontend com `0.4.0-rc.1`; o POM já tinha essa versão. T6 concluiu localmente um build fresco após esse alinhamento e validou a mesma imagem nos scans, 5 E2E, recriação app/db com persistência e observabilidade com paragem/retoma real da DB própria. Passaram 19 testes Maven e 13 frontend, além do build frontend; Semgrep teve 0 findings e Trivy 0 HIGH/CRITICAL, com cobertura 216/216 pares npm incluindo dev e 63/63 JARs internos. São resultados T6 registados, não novas execuções desta correção documental nem reutilização das medições pré-T5. Evidência e limites em [verification.md](docs/verification.md#ficha-05--candidato-040-rc1). Prova positiva/negativa GitHub Actions, uploads/retenção reais, revisão final humana/independente e arquivo/entrega portável continuam pendentes. HEAD de referência `46694e5`, candidato na worktree sem commit final; sem release/tag/publicação, validação de cliente ou certificação de produção. Não se declara a ficha integralmente concluída.
-
-A entrega original da ficha 03 foi versionada pelo autor em `e73250d`; a revisão visual e de acessibilidade está em `f780a29` (`feat: enhance UI components with improved accessibility and visual organization`), observado em `main` e `origin/main` em 29-10-2026. A atualização documental posterior é trabalho da worktree, sem commit ou push efetuados pelo agente.
-
-As conclusões da comparação de prompts realizada pelo autor no Gemini Pro estão em [docs/requirements.md](docs/requirements.md), sem transcrições das conversas. Os procedimentos para reproduzir a entrega numa cópia limpa, percorrer os fluxos por teclado e verificar o contrato e os diagramas estão em [docs/verification.md](docs/verification.md).
-
-Produção está diferida. O registo da demonstração temporária no Render mantém a expiração da base gratuita em **2 de dezembro de 2026**, sem revalidação ao vivo nesta tarefa; isto não representa prontidão para produção. Um ano de retenção é apenas pressuposto provisório, sem policy aprovada, âmbito ou evento inicial definidos; não existe purga automática. A expiração da base de demonstração é independente dessa policy. p95 é uma métrica a observar, mas não há carga de referência nem alvo aprovados. Antes de qualquer decisão futura de produção será necessário validar política de identidade, HTTPS/segredos, retenção, backups, volumes/escala e acessibilidade. A janela curta de suporte OSS Boot 4.0 indicada para dezembro de 2026 exige nova decisão/reconfirmação antes de operação prolongada. As verificações não são certificação de segurança, conformidade ou desempenho.
+**Observabilidade local — opt-in:** procedimentos e limites foram movidos para
+[o guia de desenvolvimento](docs/development.md).

@@ -60,7 +60,7 @@ describe('Registo na Matriz', () => {
     await userEvent.keyboard('{Enter}');
     expect(await screen.findByRole('status')).toHaveTextContent('Conta criada. Inicie sessão.');
     expect(screen.getByRole('heading', { name: 'Entrar na Matriz' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Email')).toHaveFocus();
+    await waitFor(() => expect(screen.getByLabelText('Email')).toHaveFocus());
     expect(screen.getByLabelText('Palavra-passe')).toHaveValue('');
     expect(screen.queryByRole('button', { name: 'Sair' })).not.toBeInTheDocument();
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
@@ -90,7 +90,7 @@ describe('Registo na Matriz', () => {
       fill('Utilizador fictício', email, password);
       await userEvent.click(screen.getByRole('button', { name: 'Criar conta' }));
       expect(await screen.findByRole('status')).toHaveTextContent('Conta criada. Inicie sessão.');
-      expect(screen.getByLabelText('Email')).toHaveFocus();
+      await waitFor(() => expect(screen.getByLabelText('Email')).toHaveFocus());
       expect(screen.getByLabelText('Palavra-passe')).toHaveValue('');
       expect(fetchMock.mock.calls.some(([url]) => url === '/api/auth/login')).toBe(false);
       expect(JSON.parse(registrationCalls()[0][1]!.body as string).email).toBe(email);
@@ -198,7 +198,7 @@ describe('Registo na Matriz', () => {
           '/api/auth/me', '/api/auth/csrf', '/api/auth/register',
         ]);
         expect(screen.getByLabelText('Palavra-passe')).toHaveValue('');
-        expect(screen.getByLabelText('Email')).toHaveFocus();
+        await waitFor(() => expect(screen.getByLabelText('Email')).toHaveFocus());
       }
       expect(store).not.toHaveBeenCalled();
     },

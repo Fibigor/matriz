@@ -1,5 +1,31 @@
 # Matriz — Verificação atual e histórico
 
+<a id="estado-vigente"></a>
+
+## Estado vigente — 18-11-2026
+
+**Candidato académico `0.4.0-rc.1`, sem bump/release/publicação ou validação do cliente.** Este resumo prevalece sobre estados intermédios datados abaixo, preservados como cronologia; não anuncia novas execuções desta revisão documental.
+
+| Tema | Estado e proveniência |
+|---|---|
+| Registo académico | Aprovado pelo autor em 17-11; conta ativa sem confirmação email, sucesso regressa ao login sem auto-login. Evolução de usabilidade implementada em 18-11. Contrato vigente: RF-01–17, US-01–20 e 30 operações no OpenAPI. |
+| T024 / incremento de usabilidade | **Fechada [x], 28/28 tarefas**, conforme [tasks](../specs/001-usabilidade-contas-tarefas/tasks.md) e registo detalhado abaixo: full autorizado único de **11:55:02.541–11:56:16.986 UTC, 11/11 PASS, exit 0**, sem grep/retries; não soma de seleções. Revisão independente readonly **`review-t024-full-closure` PASS**, sem findings substantivos. Gates B5 e T028 PASS documentados. |
+| Visual humano | Aprovação do autor em **18-11-2026T09:42:49Z**, com proveniência própria. Não inferir cobertura específica dessa aprovação nem nova inspeção visual das imagens pelo agente. |
+| Testes/build anteriores | Backend **58** e frontend **141/10 ficheiros/build** pertencem a B1/B3. A correção de foco tem seleção **74/build** próprios. Não foram reexecutados pelo full nem por esta revisão documental; 41/43/6 e scans de 13-11 continuam históricos. |
+| Artefactos do full | `frontend/test-results/t024-20261118-1155-full`: `.last-run.json` passed/failedTests vazio e oito PNG inventariados no relato. A leitura do JSON isolado não prova totais, tempos ou cobertura; estes vêm da execução/console documentada abaixo. Sem HTML/trace. |
+| CI / segurança | Log remoto das **14:08 UTC fornecido pelo autor**, não scan desta tarefa: um HIGH picomatch bloqueou antes dos E2E. Exceção exata aprovada às **14:30:17Z** e implementada no workflow; ver secção seguinte. Não há novo scan limpo nem confirmação remota da política modificada. |
+| Ainda pendente | Prova CI positiva/negativa da política atual e uploads/retenção reais, aceitação do cliente, entrega portável de evidência externa e decisões de capacidade/backups/retenção/p95/produção. O fecho T024 não as encerra nem certifica segurança/WCAG integral. |
+
+**Leitura da cronologia:** estados «bloqueado», «parcial», «27/28» e revisões então pendentes nas notas anteriores ao full descrevem essas fases, não o estado vigente. RED e respetivos diagnósticos não foram apagados nem convertidos retroativamente em PASS. O resumo não autoriza novas execuções ou utilização de serviços.
+
+## Sincronização dos testes de foco após registo — 18-11-2026
+
+Log CI fornecido pelo autor às 18:31 UTC: frontend com **140/141 testes PASS**, falha em `App.test.tsx:201` no foco do email após registo com 200 espaços. A mensagem de sucesso já estava no DOM, mas o foco ainda estava no body. A presença da mensagem não garante que o `useEffect` de foco do login já executou.
+
+Correção aprovada pelo autor nesta sessão: as três assertions de foco após sucesso do registo em `frontend/src/App.test.tsx` passam a usar `await waitFor(...)`. Mantêm a exigência de foco no email; não acrescentam sleeps, retries da suite nem alterações ao comportamento da aplicação, contratos ou dependências.
+
+**Execuções próprias locais, Windows, cwd `frontend`:** antes da alteração, `npm test -- src\App.test.tsx` às **18:32:39 UTC**, **57/57 PASS**, exit 0; a falha intermitente não foi reproduzida nessa execução. Depois da alteração, `npm test` às **18:33:05 UTC**, **141/141 PASS em 10 ficheiros**, exit 0, e `npm run build` (**TypeScript + Vite**) PASS, exit 0. Estes resultados são novos e separados das execuções históricas acima; não confirmam o CI remoto nem constituem verificação browser/E2E, visual ou de segurança.
+
 ## Exceção temporária do scan CI — 18-11-2026
 
 Log remoto fornecido pelo autor, não execução própria: às14:08 UTC Trivy0.76.2 recuperou o erro `BLOB_UNKNOWN` do mirror através de GHCR; frontend-scan exit1 por **`picomatch@4.0.7 / CVE-2026-112366 / HIGH`, sem fix reportada**, image-scan exit0. Cobertura npm294/294 e JAR63/63, 64 entradas Java reportadas, sem pacotes em falta/erros, highCritical1/gatePassedfalse. O gate bloqueou antes dos E2E; não invalida nem substitui o full local11/11 anterior.
@@ -16,7 +42,7 @@ Segundo here-string `python -`, com PyYAML já disponível: YAML carregado e **d
 
 ## Usabilidade de contas, tarefas e participantes — 18-11-2026
 
-**Estado vigente do incremento:** implementação aprovada pelo autor («aprovo» ao início pelos caminhos do plano, incluindo dois helpers de email, testes e documentação), não cliente/produção/publicação. P1/P2 e speckit-analyze readonly anteriores sem findings, 28 tarefas, segundo handover. Mesmos [spec](../specs/001-usabilidade-contas-tarefas/spec.md), [plan](../specs/001-usabilidade-contas-tarefas/plan.md), [tasks](../specs/001-usabilidade-contas-tarefas/tasks.md), research/data-model/contracts delta/quickstart/checklist, sem regeneração nem outro contrato concorrente. Os cabeçalhos antigos de aprovação e estados T4 são históricos, não falta atual de aprovação B5.
+**Contexto do incremento e cronologia:** implementação aprovada pelo autor («aprovo» ao início pelos caminhos do plano, incluindo dois helpers de email, testes e documentação), não cliente/produção/publicação. P1/P2 e speckit-analyze readonly anteriores sem findings, 28 tarefas, segundo handover. Mesmos [spec](../specs/001-usabilidade-contas-tarefas/spec.md), [plan](../specs/001-usabilidade-contas-tarefas/plan.md), [tasks](../specs/001-usabilidade-contas-tarefas/tasks.md), research/data-model/contracts delta/quickstart/checklist, sem regeneração nem outro contrato concorrente. Cabeçalhos antigos de aprovação e estados T4/B5 são históricos; prevalece o resumo vigente acima.
 
 ### Implementação e evidência recebida, não executada pela B5
 
@@ -32,6 +58,8 @@ Segundo here-string `python -`, com PyYAML já disponível: YAML carregado e **d
 <a id="t024--parcial-visual-aprovado-pelo-autor-e2e-automático-pendente"></a>
 
 ### T024 — parcial: visual aprovado pelo autor, E2E executado com falha
+
+**Título histórico da fase das 09:52 UTC**, conservado para compatibilidade de ligações. A cronologia seguinte termina no full 11/11 PASS e fecho T024 às 11:56; não descreve uma falha ainda aberta.
 
 **Atualização de 18-11-2026T09:42:49Z:** análise visual manual realizada e aprovada pelo autor, segundo o seu relato/aprovação: «ok podes dar como feita e aprovada a análise visual».
 
@@ -86,7 +114,7 @@ Console filtrada em memória para proteger credenciais, exit preservado. Duraç�
 | Dados e quota | **Três pedidos de registo nesta execução; quatro conhecidos na janela contando o anterior**, sem 429 reportado; não inferir saldo atual. Três novas contas fictícias; restantes dados deixados, exceto eliminações já inerentes aos próprios testes, sem cleanup extra. |
 | Preservação relatada | Hashes dos outros ficheiros/índice idênticos antes/depois; uma linha fonte foi a única edição do executor, sem docs/tasks editados por ele. Conferência documental própria de preservação é separada da evidência de execução. |
 
-**Pendências atuais após 10:03 UTC:** investigar a falha de templates apenas sob nova autorização; concluir matriz de templates e os cinco cenários não executados, geometria dedicada/seletores/guards/anexos e restante teclado/foco/Axe, sem promover cobertura parcial a integral. Revisão independente da correção e desta nova nota/evidência **pendente**, sem nova revisão PASS. Sem correção adicional, rerun ou continuação automática. Este registo T024/T027 usa as mesmas skills por leitura, limitado a `docs/verification.md` e `specs/001-usabilidade-contas-tarefas/tasks.md`; checklist 16/16 de qualidade, sem regenerar plano, helper, hooks ou estado persistido.
+**Pendências históricas após 10:03 UTC, ultrapassadas pelas fases seguintes:** investigar a falha de templates apenas sob nova autorização; concluir matriz de templates e os cinco cenários não executados, geometria dedicada/seletores/guards/anexos e restante teclado/foco/Axe, sem promover cobertura parcial a integral. Revisão independente da correção e desta nova nota/evidência **pendente naquela fase**, sem nova revisão PASS então. Sem correção adicional, rerun ou continuação automática nesse registo. Este registo T024/T027 usa as mesmas skills por leitura, limitado a `docs/verification.md` e `specs/001-usabilidade-contas-tarefas/tasks.md`; checklist 16/16 de qualidade, sem regenerar plano, helper, hooks ou estado persistido.
 
 **Registo de investigação e correção autorizadas, 18-11-2026, 10:36–10:48 UTC:** o autor autorizou investigação sem edições, depois aprovou os seis seletores abaixo, atualização destes dois documentos, uma execução dirigida e uma execução completa condicionada ao sucesso da primeira, com revisão independente readonly. Skills `debug`, `contexto-matriz` e `validacao-matriz` invocadas nativamente; ferramentas IDE disponíveis, mas sem sessão/configuração de execução. O autor escolheu continuar por fonte/artefactos/Playwright, **sem evidência do debugger IDE**.
 
@@ -154,7 +182,7 @@ Execução própria **11:08:07.641–11:08:58.261 UTC**, runner **47,4 s**, **ex
 
 Diretório novo **`frontend/test-results/t024-20261118-1108-full`**, contém apenas `.last-run.json`, conferido **failed/um identificador**; sem PNG/HTML/trace persistidos. Tempos/totais/diagnóstico vêm da console, não do JSON. Evidência anterior preservada. Três registos previstos da suite sem429; restantes dados fictícios deixados salvo operações inerentes, sem cleanup extra, nova instalação ou Git writes. **T024 continua `[ ]`, 27/28; última suite FALHADA7/1/3 na nova imagem, foco validado em E2E, anexos e três cenários seguintes pendentes.** Sem correção adicional nem rerun automático; eventual investigação/correção do teste de anexos exige âmbito apresentado e aprovação. Aprovação visual humana anterior permanece separada.
 
-**Atualização vigente — correção autorizada do teste de anexos e seleção de quatro cenários, 18-11-2026, 11:11–11:13 UTC:** autor aprovou só `frontend/e2e/matriz.spec.ts`, estes dois documentos, seleção do cenário de anexos e dos três seguintes, com revisão independente; **nova suite completa explicitamente pendente**, sem restart nem pedidos de registo para ultrapassar quota.
+**Histórico — correção autorizada do teste de anexos e seleção de quatro cenários, 18-11-2026, 11:11–11:13 UTC:** autor aprovou só `frontend/e2e/matriz.spec.ts`, estes dois documentos, seleção do cenário de anexos e dos três seguintes, com revisão independente; **nova suite completa explicitamente pendente naquela fase**, sem restart nem pedidos de registo para ultrapassar quota.
 
 Causa da exceção: non-null assertion em `postDataBuffer()` assumia disponibilidade que o Playwright não garante. A implementação Chromium instalada inicializa esse corpo a null e só o preenche quando existem entradas de bytes do protocolo; a execução de 11:08 comprovou retorno null neste pedido. Não se atribui uma causa mais específica à omissão dos bytes. Testes unitários existentes `TaskActivity.test.tsx` e `TaskAttachments.test.tsx`, conferidos por leitura, verificam partes `comment` application/json e `files` repetidos; **não reexecutados nesta fase**.
 

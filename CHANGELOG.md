@@ -1,5 +1,44 @@
 # Changelog — Matriz
 
+## Suplemento — 2026-11-17/18 — mesmo candidato 0.4.0-rc.1
+
+Atualização académica aprovada pelo autor; **sem bump/tag/release/publicação** ou
+validação do cliente. As baselines de 12/13-11 abaixo são históricas e preservadas.
+
+- **17-11 — Registo académico:** conta ativa sem confirmação/envio de email,
+  POST público com CSRF, 201 só mensagem e regresso ao login **sem auto-login**.
+  409 explícito de duplicado e quota independente 5 pedidos/endereço remoto
+  observado/15 min; sem projetos/participações herdados ou nova migration.
+  [Contrato e evidência datada](docs/verification.md#registo-académico--17-11-2026).
+- **18-11 — Usabilidade:** registo mínimo 6 pontos brutos, mensagens seguras,
+  membros por email completo mantendo API userId exato, templates por tipo/ciclo,
+  seletores textuais e ações por ícones. Corrigida restituição de foco no fecho do
+  painel sem dispensar guards/confirmar uma segunda vez. Sem mudança de schema,
+  stack ou permissões. [Estado vigente](docs/verification.md#estado-vigente--18-11-2026).
+- **Evidência de 18-11:** T024 fechada/28 tarefas, full único **11/11 PASS às
+  11:55:02.541–11:56:16.986 UTC**, revisão independente readonly
+  `review-t024-full-closure` PASS; B5/T028 PASS documentados. Visual humano
+  aprovado às **09:42:49Z** separadamente. Backend **58**/frontend **141**/build
+  são execuções anteriores B1/B3; seleção **74**/build da correção de foco tem
+  proveniência própria. RED/seleções anteriores não foram apagados ou somados.
+- **18-11 — CI:** log remoto fornecido pelo autor às 14:08 reportou HIGH
+  `picomatch@4.0.7`/`CVE-2026-112366`, sem fix, bloqueando antes de E2E.
+  Exceção aprovada às **14:30:17Z**: só frontend/npm/HIGH/versão-CVE exatas,
+  todas as ocorrências no lock `dev: true`, sem `FixedVersion`, antes de
+  **2026-11-25T00:00:00Z exclusivo**, sem renovação automática.
+  Restantes findings/erros/cobertura incompleta bloqueiam; finding mantido,
+  **não scan limpo nem remediação**.
+  [Política e verificações estáticas anteriores](docs/verification.md#exceção-temporária-do-scan-ci--18-11-2026).
+- **18-11 — Documentação D1→D2:** estado atual alinhado, ADR histórico com evolução,
+  README curto, detalhes em [development](docs/development.md), título visual e
+  screenshot fornecidos copiados sem transformação para [docs/ui](docs/ui/README.md).
+  Screenshot não constitui nova prova visual/automatizada. Só validação estática
+  neste lote, sem testes/builds/scans/serviços/remoto.
+
+Confirmação remota da política modificada, prova positiva/negativa e
+uploads/retenção reais, aceitação do cliente e produção continuam pendentes.
+As revisões do incremento não são revisão independente deste lote documental.
+
 ## Extensões — 2026-11-13 — mesmo candidato 0.4.0-rc.1
 
 Âmbito académico aprovado pelo autor, não aceitação do cliente; sem bump, tag ou publicação. Esta secção posterior complementa, **não reescreve**, a baseline de 12-11 abaixo.

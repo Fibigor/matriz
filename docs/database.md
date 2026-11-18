@@ -10,7 +10,7 @@ Delta implementado com aprovação do autor, sem alteração de schema/migration
 
 `NewTask.appliedTypes`/`TaskEditor.appliedTypes` são conjuntos React independentes por ciclo, sem tabela/coluna/JSON/storage. Save/refetch/falha/recuperação/layout conservam; nova criação após sucesso ou fecho/reabertura efetiva/outra tarefa reiniciam. Anexos continuam em BYTEA, canDelete derivado; retirar File da seleção não elimina dados persistidos. Ícones/seletores não alteram modelo, versões nem permissões.
 
-B1–B3 revistos segundo handover; T023 preparado/revisto estaticamente, **T024 integrado/visual bloqueado**, gate B5/T028 pendentes. [Proveniência e limites atuais](verification.md#usabilidade-de-contas-tarefas-e-participantes--18-11-2026); a execução anterior do registo em 17-11 está preservada, não é prova do delta.
+**T024 fechada, 28/28 tarefas**, full E2E **11/11 PASS às 11:55–11:56 UTC**, revisão `review-t024-full-closure` PASS e B5/T028 PASS documentados. Visual humano aprovado às 09:42:49Z separadamente. Backend 58/frontend 141/build anteriores e seleção 74/build da correção de foco não foram reexecutados nesta revisão. [Proveniência e limites atuais](verification.md#estado-vigente--18-11-2026); a execução do registo de 17-11 permanece histórica.
 
 ## Evolução física confirmada
 
@@ -29,7 +29,7 @@ RF-17 reutiliza `app_user` e o índice único parcial `app_user_email_lower_uniq
 
 `ON CONFLICT (lower(email)) WHERE email IS NOT NULL DO NOTHING` usa o índice V3: duplicado, incluindo concorrência, dá 409 explícito sem alterar conta/hash existente; outras falhas de integridade/DB não são mascaradas como email duplicado. Não insere projeto, participação ou privilégio herdado. Depois de login explícito a conta ativa pode criar projetos pelas permissões atuais. Conta ativa não prova posse do email: sem confirmação/envio de email/recuperação. Sucesso devolve só mensagem e não autentica. Decisão académica do autor, não cliente/produção/publicação.
 
-Login conserva hashes existentes/passwords antigas curtas e até 200 pontos de código. Quotas de registo/login são independentes, só em memória por instância, não novas tabelas; registo conta 5 pedidos por endereço remoto observado/15 min após CSRF, sem confiar em forwarded cliente nem prometer IP real atrás de proxy. [Critérios US-20](user-stories.md#registo-académico--us-20) e [evidência/visual-E2E pendentes](verification.md#registo-académico--17-11-2026).
+Login conserva hashes existentes/passwords antigas curtas e até 200 pontos de código. Quotas de registo/login são independentes, só em memória por instância, não novas tabelas; registo conta 5 pedidos por endereço remoto observado/15 min após CSRF, sem confiar em forwarded cliente nem prometer IP real atrás de proxy. [Critérios US-20](user-stories.md#registo-académico--us-20) e [evidência histórica do registo](verification.md#registo-académico--17-11-2026).
 
 ## Entidades, cardinalidades e integridade
 

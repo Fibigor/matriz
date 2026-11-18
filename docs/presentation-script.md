@@ -2,6 +2,8 @@
 
 **Objetivo:** apresentar a Matriz em **5 minutos**, com demonstração ao vivo de dois fluxos na aplicação. Guião para **4m45**, com **15 segundos de margem**; não são necessários slides.
 
+**Referência atual — 18-11-2026:** candidato académico `0.4.0-rc.1`, sem nova release/publicação. Registo público académico aprovado em 17-11, sem auto-login; usabilidade de 18-11 com T024 fechada e 28/28 tarefas, full 11/11 PASS às 11:55–11:56 UTC e revisão `review-t024-full-closure` PASS documentados. Visual humano aprovado às 09:42:49Z separadamente. Backend 58/frontend 141/build anteriores e seleção 74/build da correção de foco não foram reexecutados nesta revisão. A demonstração ao vivo e o ensaio abaixo continuam por preparar/confirmar pelo autor; [evidência e limites](verification.md#estado-vigente--18-11-2026).
+
 ## 0:00–0:30 — Contexto
 
 *Ação: começar no painel, com sessão já iniciada como gestor e o projeto de demonstração selecionado.*
@@ -16,7 +18,7 @@
 >
 > Ao passar para «Em curso» e depois para «Concluída», a equipa acompanha a evolução. O progresso é calculado sobre todas as tarefas do projeto, independentemente dos filtros ou da página apresentada.
 
-*Nota de execução: a criação atualiza a lista e o progresso; não abre automaticamente o detalhe. Clicar no título. Usar um projeto com poucas tarefas para tornar visível a alteração da percentagem, sem percorrer várias páginas ou combinações de filtros.*
+*Nota de execução: a criação atualiza a lista e o progresso; não abre automaticamente o detalhe. Clicar no título. Usar um projeto fictício com poucas tarefas e sem bloqueadores pendentes para este percurso: BLOCKS pode recusar a conclusão. No desktop, o detalhe abre em painel; acesso direto/móvel usa página. Não alterar dados alheios para preparar a apresentação.*
 
 ## 1:30–2:20 — Fluxo 2: colaborar sobre a tarefa
 
@@ -52,7 +54,7 @@
 >
 > Foi então aprovada a migração major para Spring Boot 4, com adaptação ao Jackson e preservação do contrato da API. Depois de reconstruir e repetir os testes e os scans com bases atualizadas, o resultado local documentado foi zero ocorrências altas ou críticas.
 >
-> Isto não é uma certificação de segurança. A lição foi atualizar e verificar o comportamento e a cobertura da análise, não apenas procurar um número a zero.
+> Esse zero é histórico. Em 18 de novembro, um novo log remoto fornecido pelo autor reportou um HIGH em picomatch de desenvolvimento. Foi aprovada uma exceção exata, sem correção disponível reportada e só até 25 de novembro às 00:00 UTC, limite exclusivo; não é scan limpo. A lição é verificar comportamento, cobertura e risco, não apenas procurar um zero.
 
 ## 4:35–4:45 — Fecho
 
@@ -83,4 +85,4 @@
 
 **Entrega:** segundo as orientações fornecidas pelo utilizador, é obrigatório submeter o URL do repositório GitHub; capturas de ecrã ou ficheiros ZIP não o substituem. Os cinco minutos incluem a demonstração. Não é necessário criar slides nem uma release para entregar o URL.
 
-**Base factual e limites:** fluxos e regras confrontados com [requisitos](requirements.md), [User Stories](user-stories.md), [OpenAPI](../openapi.yaml) e `frontend/src/Tasks.tsx`; stack e entrega descritas no [README](../README.md) e na [arquitetura](architecture.md). A sequência histórica **38 → 2 → 0** e os resultados locais constam de [verificação](verification.md). Zero HIGH/CRITICAL refere-se aos scans locais documentados de bibliotecas, à imagem e às bases de vulnerabilidades usadas, não a uma garantia geral de segurança. A execução de CI bem-sucedida é informação fornecida pelo utilizador, não revalidada nesta tarefa; a documentação mantém pendente a prova remota do candidato atual. O URL definitivo e o acesso do formador exigem confirmação humana.
+**Base factual e limites:** fluxos e regras em [requisitos](requirements.md), [User Stories](user-stories.md), [OpenAPI](../openapi.yaml) e fontes frontend; stack/entrega no [README](../README.md) e na [arquitetura](architecture.md). A sequência **38 → 2 → 0** é histórica, temporal e limitada a bibliotecas/imagem/bases usadas. A [exceção atual](constraints.md#restrições-em-vigor--ficha-03-extensões-v4-e-registo-académico) exige todos os critérios do workflow, sem renovação automática; não omitir o finding. Log remoto é evidência fornecida, não execução desta tarefa; confirmação remota da política modificada permanece pendente. Sem certificação de segurança/produção. O URL definitivo, acesso do formador e tempo real do guião exigem confirmação humana.
