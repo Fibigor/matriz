@@ -91,6 +91,7 @@ jobs:
           import io
           import json
           import os
+          from datetime import datetime, timezone
           from pathlib import Path
           import subprocess
           import tarfile
@@ -102,6 +103,14 @@ jobs:
           image = os.environ["IMAGE_NAME"]
           scanner = os.environ["TRIVY_IMAGE"]
           statuses = {}
+          # Explicit author risk acceptance, 2026-11-18; no automatic renewal.
+          exception = {
+              "report": "frontend", "type": "npm", "package": "picomatch",
+              "version": "4.0.7", "vulnerability": "CVE-2026-112366",
+              "severity": "HIGH", "expiresAt": "2026-11-25T00:00:00+00:00",
+              "reason": "Temporary accepted risk in development-only tooling; "
+                        "no published fix identified at approval. Not remediation."
+          }
 
           def execute(label, command):
               result = subprocess.run(command, text=True, stdout=subprocess.PIPE,
@@ -120,7 +129,7 @@ jobs:
                     "--timeout", "15m"]
           policy = ["--scanners", "vuln", "--pkg-types", "library", "--offline-scan",
                     "--disable-telemetry", "--skip-version-check", "--no-progress",
-                    "--ignorefile", "", "--severity", "HIGH,CRITICAL", "--exit-code", "1",
+                    "--ignorefile", "", "--severity", "HIGH,CRITICAL", "--exit-code", "0",
                     "--list-all-pkgs", "--format", "json"]
           frontend_mounts = []
           for filename in ("package.json", "package-lock.json"):
@@ -140,6 +149,8 @@ jobs:
           coverage = {"image": image, "statuses": statuses}
           errors = []
           findings = []
+          accepted = []
+          blocking = []
           try:
               frontend = json.loads((reports / "frontend-trivy.json").read_text())
               delivered = json.loads((reports / "image-trivy.json").read_text())
@@ -148,6 +159,12 @@ jobs:
               java = [p for r in delivered.get("Results", []) if r.get("Type") == "jar"
                       for p in r.get("Packages", [])]
               lock = json.loads((workspace / "frontend/package-lock.json").read_text())
+              exception_packages = [
+                  v for k, v in lock["packages"].items() if k
+                  and (v.get("name") or k.rsplit("node_modules/", 1)[-1]) == exception["package"]
+                  and v.get("version") == exception["version"]]
+              development_only = bool(exception_packages) and all(
+                  v.get("dev") is True for v in exception_packages)
               expected = {(v.get("name") or k.rsplit("node_modules/", 1)[-1], v["version"])
                           for k, v in lock["packages"].items() if k and v.get("version")}
               found = {(p["Name"], p["Version"]) for p in npm}
@@ -177,19 +194,39 @@ jobs:
                               jarReported=len(java), jarMissing=missing_java)
               if not nested or missing_java:
                   errors.append("Incomplete executable Spring Boot nested JAR coverage")
-              for report in (frontend, delivered):
+              for report_name, report in (("frontend", frontend), ("image", delivered)):
                   for result in report.get("Results", []):
                       for finding in result.get("Vulnerabilities", []):
                           if finding["Severity"] in ("HIGH", "CRITICAL"):
                               findings.append(finding)
+                              exempt = (
+                                  report_name == exception["report"]
+                                  and result.get("Type") == exception["type"]
+                                  and finding["PkgName"] == exception["package"]
+                                  and finding["InstalledVersion"] == exception["version"]
+                                  and finding["VulnerabilityID"] == exception["vulnerability"]
+                                  and finding["Severity"] == exception["severity"]
+                                  and development_only
+                                  and not finding.get("FixedVersion")
+                                  and datetime.now(timezone.utc) <
+                                  datetime.fromisoformat(exception["expiresAt"]))
+                              if exempt:
+                                  accepted.append({"finding": finding, "exception": exception})
+                              else:
+                                  blocking.append(finding)
                               print(finding["PkgName"], finding["InstalledVersion"],
                                     finding["VulnerabilityID"], finding["Severity"],
-                                    "fix:", finding.get("FixedVersion") or "not available")
+                                    "fix:", finding.get("FixedVersion") or "not available",
+                                    "ACCEPTED RISK until " + exception["expiresAt"]
+                                    if exempt else "BLOCKING")
           except Exception as error:
               errors.append(str(error))
-          # FixedVersion is deliberately NOT a gate condition; exceptions require human approval.
-          failed = any(code != 0 for code in statuses.values()) or bool(errors) or bool(findings)
-          coverage.update(errors=errors, highCritical=len(findings), gatePassed=not failed)
+          # Trivy exit codes detect scanner errors; this gate enforces vulnerability policy.
+          # Unfixed findings still block unless the exact approved exception applies.
+          failed = any(code != 0 for code in statuses.values()) or bool(errors) or bool(blocking)
+          coverage.update(errors=errors, highCritical=len(findings),
+                          acceptedHighCritical=accepted, blockingHighCritical=len(blocking),
+                          assessedAt=datetime.now(timezone.utc).isoformat(), gatePassed=not failed)
           (reports / "coverage.json").write_text(json.dumps(coverage, indent=2) + "\n")
           print(json.dumps({k: v for k, v in coverage.items()
                             if k not in ("frontendPackages", "javaPackages", "nestedJars")},

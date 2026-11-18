@@ -1,5 +1,19 @@
 # Matriz — Verificação atual e histórico
 
+## Exceção temporária do scan CI — 18-11-2026
+
+Log remoto fornecido pelo autor, não execução própria: às14:08 UTC Trivy0.76.2 recuperou o erro `BLOB_UNKNOWN` do mirror através de GHCR; frontend-scan exit1 por **`picomatch@4.0.7 / CVE-2026-112366 / HIGH`, sem fix reportada**, image-scan exit0. Cobertura npm294/294 e JAR63/63, 64 entradas Java reportadas, sem pacotes em falta/erros, highCritical1/gatePassedfalse. O gate bloqueou antes dos E2E; não invalida nem substitui o full local11/11 anterior.
+
+Leitura própria do lock: picomatch4.0.7 `dev: true`, usado por Vite7.3.7, Vitest4.1.12, tinyglobby0.2.17 e peer opcional de fdir6.5.0. [Advisory GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf): ReDoS; nenhum fix publicado identificado na investigação. A classificação dev não prova ausência de exploração.
+
+Autor aprovou às14:30:17Z uma [exceção de risco exata e temporária](constraints.md#restrições-em-vigor--ficha-03-extensões-v4-e-registo-académico), implementada apenas no Python de `.github/workflows/ci.yml`. Aceita só frontend/npm, CVE/pacote/versão/severidade exatos, todas as ocorrências dessa versão no lock dev, sem fix e antes de **2026-11-25T00:00:00Z**. Report/console mantêm finding, motivo, validade e disposição ACCEPTED RISK, total `highCritical` real, lista `acceptedHighCritical`, contagem `blockingHighCritical` e instante UTC `assessedAt`. Outros findings e falhas operacionais/cobertura permanecem bloqueantes; sem ignores, redução de severidade ou exclusão de dev.
+
+`--exit-code 0` nos scans delega a decisão de vulnerabilidades ao gate Python; exit não zero do scanner continua a bloquear. Não é remediação ou “zero vulnerabilidades”.
+
+**Validação própria nesta alteração:** PowerShell here-string via `python -`, Python3.14.10: extraído/compilado o Python real do passo scan e executado integralmente com filesystem/subprocess/relógio simulados em memória, sem escrever fixtures ou iniciar Docker: **23/23 cenários PASS, exit0**. Cobriu exceção exata visível, instante imediatamente anterior/igual/posterior à expiração, pacote/versão/CVE/severidade diferentes, fix disponível, tipo/report errados, dependência de produção/dev ausente/ocorrência mista, finding adicional bloqueante, falha operacional de cada um dos três comandos, ambos JSON inválidos, cobertura npm/JAR incompleta e ausência do finding após expiração. Verificou tentativa de ambos os scans, flags e disposição/contagens/gate. Fixtures não são um novo scan nem prova de acesso à DB pública.
+
+Segundo here-string `python -`, com PyYAML já disponível: YAML carregado e **dois blocos Python embutidos analisados por AST, PASS/exit0**. `git diff --check` PASS; índice preservado vazio. `actionlint` não disponível no PATH, não instalado/executado; parsing não substitui lint integral de Actions. Nenhuma nova execução Trivy ou GitHub Actions, teste funcional/build/E2E, instalação ou alteração de serviços nesta fase; confirmação remota da política modificada permanece pendente.
+
 ## Usabilidade de contas, tarefas e participantes — 18-11-2026
 
 **Estado vigente do incremento:** implementação aprovada pelo autor («aprovo» ao início pelos caminhos do plano, incluindo dois helpers de email, testes e documentação), não cliente/produção/publicação. P1/P2 e speckit-analyze readonly anteriores sem findings, 28 tarefas, segundo handover. Mesmos [spec](../specs/001-usabilidade-contas-tarefas/spec.md), [plan](../specs/001-usabilidade-contas-tarefas/plan.md), [tasks](../specs/001-usabilidade-contas-tarefas/tasks.md), research/data-model/contracts delta/quickstart/checklist, sem regeneração nem outro contrato concorrente. Os cabeçalhos antigos de aprovação e estados T4 são históricos, não falta atual de aprovação B5.
