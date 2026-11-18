@@ -4,7 +4,7 @@
 
 ## Estado vigente — 18-11-2026
 
-**Candidato académico `0.4.0-rc.1`, sem bump/release/publicação ou validação do cliente.** Este resumo prevalece sobre estados intermédios datados abaixo, preservados como cronologia; não anuncia novas execuções desta revisão documental.
+**Candidato académico `0.4.0-rc.1`, sem bump/release/publicação ou validação do cliente.** Este resumo prevalece sobre estados intermédios datados abaixo, preservados como cronologia; cada resultado distingue execução local, relato do autor e evidência histórica.
 
 | Tema | Estado e proveniência |
 |---|---|
@@ -13,12 +13,122 @@
 | Visual humano | Aprovação do autor em **18-11-2026T09:42:49Z**, com proveniência própria. Não inferir cobertura específica dessa aprovação nem nova inspeção visual das imagens pelo agente. |
 | Testes/build anteriores | Backend **58** e frontend **141/10 ficheiros/build** pertencem a B1/B3. A correção de foco tem seleção **74/build** próprios. Não foram reexecutados pelo full nem por esta revisão documental; 41/43/6 e scans de 13-11 continuam históricos. |
 | Artefactos do full | `frontend/test-results/t024-20261118-1155-full`: `.last-run.json` passed/failedTests vazio e oito PNG inventariados no relato. A leitura do JSON isolado não prova totais, tempos ou cobertura; estes vêm da execução/console documentada abaixo. Sem HTML/trace. |
-| CI / segurança — A | Trivy já integrado; exceção exata aprovada às **14:30:17Z**, não remediação/scan limpo. O HIGH bloqueante das 14:08 é histórico. O relatório final preexistente relata CI SUCCESS às 18:46:03 UTC; ver ressalva de proveniência na nota A/B/C abaixo, sem consulta remota nesta revisão. |
-| Logs JSON — B | Só `observability`: consola ECS nativa Boot. Engenheiro relatou **6 testes PASS/exit 0 às 21:09:28Z**; não somados aos 58 anteriores nem executados por este agente. Revisão independente local B sem achados, segundo o relato de fecho abaixo; sem novo Maven pelo revisor. |
-| Prerelease GHCR — C | **CONFIGURADO localmente, revisão independente PASS**, segundo relato do Revisor Matriz / `revisão-final-f1`, sem achados após F1. Revalidações não são atómicas com build/push; **sem publicação comprovada** ou garantia de scan/igualdade do digest reconstruído. |
-| Ainda pendente | Prova negativa controlada CI, uploads/retenção reais e reconciliação da proveniência remota; execução/publicação C sob aprovação separada, aceitação do cliente, entrega portável de evidência externa e decisões de capacidade/backups/retenção/p95/produção. O fecho local B/C não encerra essas pendências nem revisões de outros incrementos; o fecho T024 não certifica segurança/WCAG integral. |
+| CI / segurança — A | Trivy/exceção exata das **14:30:17Z** preservados, não remediação/scan limpo. Após o SUCCESS histórico das 18:46, o autor forneceu o run **44402196925 FAIL** da SHA `dca7a9457a01bc68436aaf6cbb9f8de548d97a3d`: backend 59/2 erros, Semgrep/frontend PASS, E2E skipped. Sem nova consulta remota; ver correção abaixo. |
+| Logs JSON — B | Só `observability`: consola ECS nativa Boot, YAML preservado. Falha de isolamento global do logging reproduzida/corrigida nos testes; execução local final **6/6 selecionados e 60/60 full PASS**, terminadas às **21:49:10Z/21:49:56Z**. Revisão independente **`review-ci-json-isolation` PASS**, sem achados; os seis das 21:09 continuam históricos. |
+| Prerelease GHCR — C | **CONFIGURADO localmente**, revisão anterior `revisão-final-f1` PASS por relato. Autor autorizou GHCR condicionado a **novo CI verde da SHA corrigida**; commit/push exigem aprovação separada. **Nenhuma release/imagem publicada por esta sessão**; sem digest conhecido nem garantia de scan/igualdade do digest reconstruído. |
+| Ainda pendente | Novo CI verde da SHA corrigida, commit/push separadamente aprovados, publicação GHCR e prova do digest; prova negativa controlada CI, uploads/retenção reais, aceitação do cliente, entrega portável de evidência externa e decisões de capacidade/backups/retenção/p95/produção. O fecho local B/C não encerra essas pendências; o fecho T024 não certifica segurança/WCAG integral. |
 
 **Leitura da cronologia:** estados «bloqueado», «parcial», «27/28» e revisões então pendentes nas notas anteriores ao full descrevem essas fases, não o estado vigente. RED e respetivos diagnósticos não foram apagados nem convertidos retroativamente em PASS. O resumo não autoriza novas execuções ou utilização de serviços.
+
+<a id="correcao-ci-json-20261118"></a>
+
+## Correção CI dos logs JSON — 18-11-2026
+
+**Repositório identificado pelo autor:** `Fibigor/matriz`; o nome
+`matriz-ai-powered` redireciona. Isto esclarece a diferença de nomes das notas
+anteriores, não constitui nova consulta remota dos seus resultados.
+Base local confirmada: `dca7a9457a01bc68436aaf6cbb9f8de548d97a3d`,
+worktree/índice inicialmente limpos. A correção permanece não commitada.
+
+**Falha remota preservada, proveniência do autor:** [run 44402196925](https://github.com/Fibigor/matriz/actions/runs/44402196925),
+concluído em **21:31:46Z**, backend **59 testes, 0 failures, 2 errors**;
+Semgrep/frontend PASS e E2E skipped segundo o contexto fornecido. Os dois erros
+eram `consoleEmitsParseableStructuredJson` e
+`defaultProfileDisablesOperationalEndpointsEvenIfExposureIsBroadened`,
+em `assertStructuredLog:181`: Jackson encontrou `-` no timestamp textual,
+não JSON. O PASS isolado de seis testes às 21:09 não cobria esta interação.
+
+### Causa e correção
+
+O Engenheiro Backend examinou o bytecode dos JARs locais Boot **4.0.9** com
+`javap -p -c` (sem fontes locais disponíveis): `LogbackLoggingSystem.initialize`
+retorna quando encontra o marcador global de inicialização; `beforeInitialize`
+também o respeita. `cleanUp` remove esse marcador, mas não a propriedade
+exportada `CONSOLE_LOG_STRUCTURED_FORMAT`; `LoggingSystemProperties` não
+substitui uma propriedade já existente. O ciclo de fecho do
+`LoggingApplicationListener` faz cleanup do proprietário.
+
+Na suite, o contexto default de `ApiIntegrationTest` fica em cache, deixando
+o encoder textual inicializado. Ativar o perfil `observability` num segundo
+contexto não reconstrói esse encoder global. A suite original reproduziu
+localmente os mesmos dois erros antes da edição.
+
+Alteração limitada a
+[ObservabilityIntegrationTest.java](../backend/src/test/java/pt/matriz/ObservabilityIntegrationTest.java):
+um `TestExecutionListener` liberta o marcador e guarda/limpa a propriedade
+exportada **antes da inicialização Boot**; no fim, depois do fecho do contexto
+por `@DirtiesContext(AFTER_CLASS)`, faz cleanup e restaura a propriedade
+anterior. O formato continua a vir do perfil real, **não é imposto pelo teste**.
+A ordenação do listener serve o ciclo de inicialização/fecho; não foi imposta
+qualquer ordem às classes ou métodos de teste.
+
+O YAML [application-observability.yaml](../backend/src/main/resources/application-observability.yaml)
+fica intacto: ECS nativo só no perfil local opt-in, sem dependências novas.
+As assertions originais de emissão SLF4J, aspas/quebra de linha, timestamp,
+nível, logger e mensagem conservam-se, incluindo durante/depois do contexto
+default secundário. Não há filtro por formato, omissão de assertions ou
+substituição por um evento fabricado. Esse contexto secundário continua
+deliberadamente sem listener de logging para não disputar o proprietário.
+
+Uma segunda classe de teste **no mesmo ficheiro**, descoberta na suite,
+inicializa uma aplicação default com o seu próprio PostgreSQL Testcontainers,
+sem seed, e exige uma emissão real **textual**, com a propriedade de formato
+ausente. É evidência de outro contexto com logging reinicializado, não de um
+processo default separado nem de contextos concorrentes com formatos diferentes.
+Endpoints, permissões, sessão e CSRF não foram alterados.
+
+### Execuções locais desta sessão
+
+Executadas pelo agente principal após aprovação explícita do autor para
+substituir a execução/escrita indisponível do Backend delegado; proposta
+técnica do Engenheiro Backend, coordenação inicial pelo Orquestrador.
+Diretoria: raiz local Windows; apenas bases descartáveis dos próprios
+Testcontainers, sem reutilizar/parar serviços existentes nem ler `.env`.
+
+| Comando Maven | Intervalo UTC de 18-11-2026 | Resultado observado |
+|---|---|---|
+| `mvn -f backend\pom.xml test '-Dapi.version=1.44'` — original | 21:45:33.869–21:46:18.013 | **RED**, 59 testes, 0 failures, 2 errors, 0 skipped; exit 1, Maven 42.917 s; mesmos dois erros remotos. |
+| `mvn -f backend\pom.xml test '-Dapi.version=1.44' '-Dtest=ObservabilityIntegrationTest'` — intermédio | 21:46:50.598–21:47:06.627 | 6/6 PASS, exit 0, Maven 14.916 s; não é a validação final. |
+| `mvn -f backend\pom.xml test '-Dapi.version=1.44'` — intermédio | 21:47:13.170–21:47:59.037 | 59/59 PASS, exit 0, Maven 44.661 s. A conferência detetou que a nova classe estava local a um método e não era descoberta; foi deslocada para nível de topo no mesmo ficheiro antes de repetir ambos os comandos. |
+| `mvn -f backend\pom.xml test '-Dapi.version=1.44' '-Dtest=ObservabilityIntegrationTest'` — final | **21:48:54.649–21:49:10.905** | **6/6 PASS**, 0 failures/errors/skipped, exit 0/BUILD SUCCESS, Maven **15.111 s**. |
+| `mvn -f backend\pom.xml test '-Dapi.version=1.44'` — final | **21:49:10.908–21:49:56.845** | **60/60 PASS**, 0 failures/errors/skipped, exit 0/BUILD SUCCESS, Maven **44.843 s**. |
+
+Conferência dos XML locais finais em `backend/target/surefire-reports`:
+API **44**, consola default **1**, login throttle **1**, registration throttle
+**3**, inputs **5**, observability **6**. Não se somam execuções nem os 58
+históricos. Reports locais são artefactos ignorados e substituídos por execuções
+seguintes; os intervalos/RED anteriores provêm da consola desta sessão, não de
+um arquivo publicado. Frontend/E2E/scans não foram reexecutados nesta correção.
+
+**Revisão independente — `review-ci-json-isolation`: PASS, sem achados
+confirmados.** O Revisor Matriz conferiu o diff integral dos três ficheiros,
+base/índice, bytecode Boot/Spring Test, os XML finais **60/60** e reanalisou
+**três eventos ECS e um default textual**, incluindo escaping/campos/timestamp.
+`git diff --check` PASS. Sem novo Maven, rede, serviços ou escrita pelo revisor;
+seleção/intervalos/RED anteriores provêm da execução do agente principal.
+A primeira sondagem do leitor PowerShell do revisor falhou por conversão
+automática de datas e foi corrigida só em memória, sem alterar reports.
+Não comprova todas as permutações/paralelismo, CI remoto verde ou autorização
+de commit/push/publicação. O registo deste fecho foi autorizado pelo autor.
+
+### Gate de publicação
+
+O autor autorizou GHCR, **não** contornar CI. Não houve commit, staging, push,
+tag, release, publicação, deploy ou uso de credenciais nesta sessão.
+Commit/push continuam sujeitos a aprovação separada com ficheiros/mensagem;
+push pode acionar Render após checks verdes. Sem cliente autenticado usado.
+
+Após aprovação/envio da correção pelo autor, confirmar na interface GitHub o
+**último CI push da SHA corrigida**, com os quatro jobs `Static analysis
+(Semgrep)`, `Backend tests`, `Frontend tests and build` e `End-to-end tests`
+concluídos com sucesso, nenhum skipped. Só então, na interface
+**Fibigor/matriz → Releases → Draft a new release**, selecionar uma tag que
+resolva exatamente para essa SHA, marcar **Set as a pre-release** e publicar
+sob a autorização concedida. Um draft guardado não publica.
+O [workflow existente](../.github/workflows/release.yml) repete os gates;
+não os desativar nem fornecer tokens para os contornar. Confirmar o run de
+release e conservar imagem/tag, digest `sha256` e SHA/run CI do summary.
+[Procedimento e limitações](development.md#prerelease-de-teste-ghcr).
 
 <a id="documentacao-abc-20261118"></a>
 

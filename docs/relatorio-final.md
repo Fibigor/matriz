@@ -28,19 +28,22 @@ Fontes: [requisitos](requirements.md), [arquitetura](architecture.md), [release 
 |---|---|---|
 | Backend | **58 testes PASS**, execução B1 do incremento de usabilidade | Não reexecutados na elaboração deste relatório |
 | B — observabilidade/JSON | Engenheiro relatou Maven selecionado **6 testes PASS**, zero falhas/erros/skips, exit 0/BUILD SUCCESS em **18-11 às 21:09:28Z**, diff-check PASS | Após duas tentativas falhadas durante desenvolvimento de testes; não execução do agente documental, não suite completa nem soma aos 58 anteriores |
+| Correção CI JSON — execução local atual | Em 18-11, **21:48:54.649–21:49:10.905 UTC**, seleção **6/6 PASS**; **21:49:10.908–21:49:56.845 UTC**, suite backend **60/60 PASS**, zero falhas/erros/skips, ambos exit 0/BUILD SUCCESS | Executados pelo agente principal autorizado, apenas Testcontainers isolados; inclui nova regressão default textual. RED local anterior 59/2 erros preservado; não comprova CI remoto verde. [Comandos e proveniência](verification.md#correcao-ci-json-20261118). |
 | Frontend e build | Em 18-11, às **18:33:05 UTC**, **141/141 testes PASS em 10 ficheiros** e build TypeScript/Vite PASS | Execução local posterior à correção das assertions de foco; não comprova CI remoto |
 | E2E completo | Em 18-11, **11:55–11:56 UTC**, **11/11 PASS**, numa execução completa sem retries | Fecho T024, 28/28 tarefas, com revisão independente `review-t024-full-closure` PASS; não é soma de seleções |
 | Visual humano | Aprovação do autor em 18-11, às **09:42:49Z** | Evidência distinta dos testes automáticos; não certifica acessibilidade integral |
 | CI remoto — relato preexistente | Run [44371108744](https://github.com/Fibigor/matriz/actions/runs/44371108744), branch `main`, commit `cf0a74102d3061493ee44c5b74261d18bf150342`: **SUCCESS**, concluído em **18-11, às 18:46:03 UTC**, conforme registo anterior deste relatório | O registo anterior atribuía consulta à API pública após confirmação do autor e sucesso aos quatro jobs. Não consultado nesta revisão; URL `Fibigor/matriz` difere deste repositório `Fibigor/matriz-ai-powered`, proveniência por reconciliar |
+| CI remoto — falha posterior preservada | Autor forneceu [run 44402196925](https://github.com/Fibigor/matriz/actions/runs/44402196925), SHA `dca7a9457a01bc68436aaf6cbb9f8de548d97a3d`, **FAIL às 21:31:46Z**: backend 59 testes/2 erros JSON, Semgrep/frontend PASS, E2E skipped | Não consultado remotamente nesta sessão. O autor esclareceu que o repo real é `Fibigor/matriz` e `matriz-ai-powered` redireciona; isto esclarece os nomes, não revalida o SUCCESS anterior. Novo CI verde da SHA corrigida continua obrigatório. |
 | CI remoto — histórico | Logs fornecidos pelo autor das **14:08 UTC** (HIGH bloqueante) e **18:31 UTC** (140/141 testes frontend PASS, falha temporal de foco) | Falhas anteriores, registadas como ultrapassadas pelo relato SUCCESS posterior; preservadas como histórico, com a ressalva de proveniência acima |
 
-A pipeline define análise estática, testes backend/frontend, build e job integrado com imagem Docker, scans de bibliotecas e E2E. O relato remoto acima é preservado, mas não confirma aqui este repositório nem cobre alterações locais posteriores B/C ou ausência de vulnerabilidades.
+A pipeline define análise estática, testes backend/frontend, build e job integrado com imagem Docker, scans de bibliotecas e E2E. O SUCCESS remoto anterior é histórico: não cobre a correção local posterior nem prevalece sobre o FAIL fornecido às 21:31. Não prova ausência de vulnerabilidades.
 
 O HIGH de CI originou uma exceção temporária aprovada: exclusivamente **`picomatch@4.0.7` / `CVE-2026-112366` / HIGH / frontend npm**, todas as ocorrências dessa versão no lock com `dev: true`, sem `FixedVersion` reportada e antes de **2026-11-25T00:00:00Z exclusivo**, sem renovação automática. Outros findings, fix disponível, dependência de produção, expiração ou erros de scanner/cobertura continuam bloqueantes. É aceitação delimitada de risco, não remediação ou scan limpo.
 
-**Ainda por confirmar nesta síntese:** reconciliação da proveniência remota,
+**Ainda por confirmar nesta síntese:** novo CI verde da SHA corrigida,
 prova negativa controlada da política atual e uploads/retenção reais dos
-artefactos. O relato de run bem-sucedido não comprova, por si só, esses pontos.
+artefactos. O esclarecimento do nome do repositório pelo autor não substitui
+consulta dos runs; o resultado local não é um CI remoto bem-sucedido.
 
 Comandos, cronologia e limitações: [verification.md](verification.md). Política: [constraints.md](constraints.md#excecao-temporaria-ci). Definição: [ci.yml](../.github/workflows/ci.yml).
 
@@ -49,7 +52,7 @@ Comandos, cronologia e limitações: [verification.md](verification.md). Políti
 | Desafio opcional | Estado e evidência | O que não comprova |
 |---|---|---|
 | **A — scan de dependências** | **Já integrado**; Trivy e gate preservados, com a exceção exata descrita acima. | Não remediado nem scan limpo. Sem novo scan nesta edição; risco, validade e bloqueios mantêm-se. |
-| **B — observabilidade/JSON** | **Implementado; validação local relatada**. `logging.structured.format.console: ecs` apenas em `observability`, sem encoder/dependência nova. Evento SLF4J real capturado com aspas/quebra de linha; teste valida `@timestamp` parseável, `log.level`, `log.logger` e `message` após parsing. | Não valida toda a saída do processo como JSON nem um processo default isolado: o contexto secundário default já não reconfigura logging global. Não houve paragem real da DB; teste bloqueia só a aquisição JDBC do health indicator. Health, CSRF, sessão e autorização preservados no teste. |
+| **B — observabilidade/JSON** | **Corrigido, validado e revisto localmente**: `review-ci-json-isolation` PASS, sem achados. YAML ECS opt-in preservado, sem encoder/dependência nova. Isolamento do marcador/propriedade globais Boot nos testes; emissão SLF4J real com escaping e campos ECS conserva assertions. Seleção 6/6 e full 60/60 PASS; nova classe no mesmo ficheiro comprova consola default textual. | Não prova toda a saída como JSON, outro processo default nem formatos independentes em contextos concorrentes. Contexto default secundário não reconfigura logging global. Sem paragem real da DB: bloqueio só da aquisição JDBC do health indicator. Endpoints, sessão, CSRF e permissões inalterados. Novo CI verde pendente. |
 | **C — imagem GHCR** | **CONFIGURADO localmente com revisão independente PASS por relato**, não desafio comprovado por publicação. [release.yml](../.github/workflows/release.yml) guarda release published/prerelease true/draft false, commit exato, último CI push desse commit e quatro jobs existentes SUCCESS; após F1 revalida identidades/runs/attempts antes/depois dos jobs e antes de build/push. | Sem Docker build desta release, autenticação GHCR, chamadas rede/CI remoto/release/push/publicação. Sem run/digest publicado; revalidação não é atómica com registry/build/push. |
 
 C configura imagem `ghcr.io/<owner>/<repo>` lowercase e apenas tag
@@ -81,8 +84,16 @@ integral green. Sem novo Maven: os seis testes B continuam relato do engenheiro
 serviços, release ou publicação. Não são execuções do agente documental nem
 revisão desta escrita de fecho. [Proveniência e limites](verification.md#documentacao-abc-20261118).
 
-Executar C remotamente exige **aprovação separada**: criar prerelease publicada
-aciona push GHCR; push/CI prévios podem ter efeitos Render por `checksPass`.
+**Estado posterior à falha CI:** o autor autorizou publicação GHCR somente
+depois de novo CI verde da SHA corrigida. **Commit/push exigem aprovação
+separada**, com ficheiros e mensagem apresentados; nenhum foi executado.
+Revisão desta correção pelo Revisor Matriz, **`review-ci-json-isolation` PASS**,
+sem achados: conferiu bytecode, diff e reports finais, incluindo três eventos
+ECS e um default textual. Não repetiu Maven nem consultou CI remoto.
+Criar prerelease publicada aciona push GHCR; push/CI prévios podem ter efeitos
+Render por `checksPass`. Nenhuma release/imagem foi publicada por esta sessão.
+Sem cliente autenticado usado: o [procedimento manual após os gates](verification.md#correcao-ci-json-20261118)
+usa a interface GitHub, sem solicitar tokens.
 Configuração não é publicação ou aceitação do cliente; a revisão PASS é local,
 não prova atomicidade API/registry nem scan/igualdade do digest reconstruído.
 Logs JSON não sanitizam automaticamente dados sensíveis; usar só dados fictícios,
@@ -96,6 +107,7 @@ e [proveniência detalhada](verification.md#documentacao-abc-20261118).
 | Dificuldades com Keycloak na fase de deployment, relatadas pelo autor | Retirar a dependência do IdP e adotar autenticação local com sessão, scrypt e CSRF. Adequar a complexidade ao ambiente da demonstração, sem apresentar esta escolha como identidade pronta para produção. |
 | Atualização de dependências e compatibilidade | Migração aprovada para Spring Boot 4, adaptação ao Jackson e verificação do contrato, testes e scans. Atualizar versões exige validar comportamento, não apenas eliminar alertas. |
 | Assertion de foco pós-registo falhava temporalmente no CI | As três assertions passaram a esperar pela condição com `waitFor`, sem sleeps nem alteração da aplicação. A presença da mensagem de sucesso não garante que o efeito de foco já terminou. |
+| Logs ECS passavam isoladamente, mas falhavam depois de `ApiIntegrationTest` na mesma JVM | O Boot conservava o marcador global Logback do contexto default em cache e não reconstruía o encoder. Listener de teste isola marcador/propriedade exportada antes da inicialização e restaura a propriedade após fecho do contexto; YAML de aplicação intacto. RED local 59/2 erros → full 60/60 PASS, com emissão default textual adicional; sem ordenar testes nem filtrar eventos textuais. |
 | Dupla confirmação ao fechar o detalhe em página | Correção da coordenação entre toolbar e guard de navegação, mantendo a proteção de rascunhos e testes de regressão. |
 | Novo finding HIGH após scans históricos sem HIGH/CRITICAL | Exceção exata, temporária e visível, aprovada pelo autor. Um scan anterior não garante ausência futura de alertas; aceitar risco não equivale a corrigi-lo. |
 

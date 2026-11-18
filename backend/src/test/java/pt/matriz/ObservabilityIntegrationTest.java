@@ -25,6 +25,8 @@ import org.springframework.boot.jdbc.health.DataSourceHealthIndicator;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointsSupplier;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.logging.LoggingApplicationListener;
+import org.springframework.boot.logging.LoggingSystem;
+import org.springframework.boot.logging.LoggingSystemProperty;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -35,9 +37,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.jdbc.datasource.AbstractDataSource;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.TestContext;
+import org.springframework.test.context.TestExecutionListeners;
+import org.springframework.test.context.support.AbstractTestExecutionListener;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -48,9 +54,38 @@ import static org.assertj.core.api.Assertions.assertThat;
         properties = {"management.endpoints.web.exposure.include=*",
                 "logging.level.org.springframework.boot.jdbc.health.DataSourceHealthIndicator=ERROR"})
 @ActiveProfiles("observability")
+@TestExecutionListeners(listeners = ObservabilityIntegrationTest.IsolatedLoggingListener.class,
+        mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @Testcontainers
 @ExtendWith(OutputCaptureExtension.class)
 class ObservabilityIntegrationTest {
+    public static class IsolatedLoggingListener extends AbstractTestExecutionListener {
+        private static final String FORMAT =
+                LoggingSystemProperty.CONSOLE_STRUCTURED_FORMAT.getEnvironmentVariableName();
+        private static final String PREVIOUS_FORMAT = IsolatedLoggingListener.class.getName() + ".previousFormat";
+
+        @Override public int getOrder() { return Integer.MIN_VALUE; }
+
+        @Override
+        public void beforeTestClass(TestContext testContext) {
+            testContext.setAttribute(PREVIOUS_FORMAT, System.getProperty(FORMAT));
+            // Boot's initialization marker and exported format are JVM-global.
+            // Let Boot initialize logging from the actual application profile.
+            LoggingSystem.get(testContext.getTestClass().getClassLoader()).cleanUp();
+            System.clearProperty(FORMAT);
+        }
+
+        @Override
+        public void afterTestClass(TestContext testContext) {
+            // Reverse listener order closes the dirty context before restoring state.
+            LoggingSystem.get(testContext.getTestClass().getClassLoader()).cleanUp();
+            String previous = (String) testContext.removeAttribute(PREVIOUS_FORMAT);
+            if (previous == null) System.clearProperty(FORMAT);
+            else System.setProperty(FORMAT, previous);
+        }
+    }
+
     @Container
     static final PostgreSQLContainer DATABASE = new PostgreSQLContainer("postgres:17-alpine");
 
@@ -170,6 +205,7 @@ class ObservabilityIntegrationTest {
 
     @Test
     void consoleEmitsParseableStructuredJson(CapturedOutput output) {
+        assertThat(application.getEnvironment().getProperty("logging.structured.format.console")).isEqualTo("ecs");
         assertStructuredLog(output, "observability-json-fixture");
     }
 
@@ -215,6 +251,7 @@ class ObservabilityIntegrationTest {
                     assertThat(access.accessFor(EndpointId.of(id), fallback)).isEqualTo(Access.NONE);
                 }
             }
+
             // Boot may retain internal health beans; NONE must remove every operational
             // endpoint from the HTTP supplier, not merely hide it behind Spring Security.
             assertThat(context.getBean(WebEndpointsSupplier.class).getEndpoints()).isEmpty();
@@ -265,5 +302,40 @@ class ObservabilityIntegrationTest {
                 }
             });
         }
+    }
+}
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        classes = MatrizApplication.class)
+@ActiveProfiles("default")
+@TestExecutionListeners(listeners = ObservabilityIntegrationTest.IsolatedLoggingListener.class,
+        mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@Testcontainers
+@ExtendWith(OutputCaptureExtension.class)
+class DefaultConsoleLoggingIntegrationTest {
+    @Container
+    static final PostgreSQLContainer DATABASE = new PostgreSQLContainer("postgres:17-alpine");
+
+    @DynamicPropertySource
+    static void properties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", DATABASE::getJdbcUrl);
+        registry.add("spring.datasource.username", DATABASE::getUsername);
+        registry.add("spring.datasource.password", DATABASE::getPassword);
+        registry.add("matriz.demo.enabled", () -> false);
+    }
+
+    @Autowired ConfigurableApplicationContext application;
+
+    @Test
+    void defaultConsoleRemainsTextualWithoutStructuredLoggingOptIn(CapturedOutput output) {
+        assertThat(application.getEnvironment().getProperty("logging.structured.format.console")).isNull();
+        String marker = "default-text-fixture";
+        LoggerFactory.getLogger("pt.matriz.observability.fixture").info(marker);
+        var lines = output.getOut().lines().filter(line -> line.contains(marker)).toList();
+        assertThat(lines).hasSize(1);
+        assertThat(lines.getFirst()).doesNotStartWith("{")
+                .contains("INFO", "pt.matriz.observability.fixture")
+                .endsWith(marker);
     }
 }
