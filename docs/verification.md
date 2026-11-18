@@ -4,7 +4,7 @@
 
 ## Estado vigente — 18-11-2026
 
-**Candidato académico `0.4.0-rc.1`, sem bump/release/publicação ou validação do cliente.** Este resumo prevalece sobre estados intermédios datados abaixo, preservados como cronologia; cada resultado distingue execução local, relato do autor e evidência histórica.
+**Candidato académico `0.4.0-rc.1`, sem bump ou imagem GHCR comprovada/validação do cliente.** Há uma prerelease de teste criada pelo autor, descrita abaixo; não é publicação da imagem. Este resumo prevalece sobre estados intermédios datados abaixo, preservados como cronologia; cada resultado distingue execução local, relato do autor e evidência histórica.
 
 | Tema | Estado e proveniência |
 |---|---|
@@ -13,12 +13,107 @@
 | Visual humano | Aprovação do autor em **18-11-2026T09:42:49Z**, com proveniência própria. Não inferir cobertura específica dessa aprovação nem nova inspeção visual das imagens pelo agente. |
 | Testes/build anteriores | Backend **58** e frontend **141/10 ficheiros/build** pertencem a B1/B3. A correção de foco tem seleção **74/build** próprios. Não foram reexecutados pelo full nem por esta revisão documental; 41/43/6 e scans de 13-11 continuam históricos. |
 | Artefactos do full | `frontend/test-results/t024-20261118-1155-full`: `.last-run.json` passed/failedTests vazio e oito PNG inventariados no relato. A leitura do JSON isolado não prova totais, tempos ou cobertura; estes vêm da execução/console documentada abaixo. Sem HTML/trace. |
-| CI / segurança — A | Trivy/exceção exata das **14:30:17Z** preservados, não remediação/scan limpo. Após o SUCCESS histórico das 18:46, o autor forneceu o run **44402196925 FAIL** da SHA `dca7a9457a01bc68436aaf6cbb9f8de548d97a3d`: backend 59/2 erros, Semgrep/frontend PASS, E2E skipped. Sem nova consulta remota; ver correção abaixo. |
+| CI / segurança — A | Trivy/exceção exata das **14:30:17Z** preservados, não remediação/scan limpo. FAIL JSON **44402196925** histórico; após correção, o autor reporta CI verde para `a5fc8efe…`, sem confirmação independente dos quatro jobs (API pública 403 às 22:07). Esta nova correção de autenticação ainda não tem commit/CI remoto. |
 | Logs JSON — B | Só `observability`: consola ECS nativa Boot, YAML preservado. Falha de isolamento global do logging reproduzida/corrigida nos testes; execução local final **6/6 selecionados e 60/60 full PASS**, terminadas às **21:49:10Z/21:49:56Z**. Revisão independente **`review-ci-json-isolation` PASS**, sem achados; os seis das 21:09 continuam históricos. |
-| Prerelease GHCR — C | **CONFIGURADO localmente**, revisão anterior `revisão-final-f1` PASS por relato. Autor autorizou GHCR condicionado a **novo CI verde da SHA corrigida**; commit/push exigem aprovação separada. **Nenhuma release/imagem publicada por esta sessão**; sem digest conhecido nem garantia de scan/igualdade do digest reconstruído. |
-| Ainda pendente | Novo CI verde da SHA corrigida, commit/push separadamente aprovados, publicação GHCR e prova do digest; prova negativa controlada CI, uploads/retenção reais, aceitação do cliente, entrega portável de evidência externa e decisões de capacidade/backups/retenção/p95/produção. O fecho local B/C não encerra essas pendências; o fecho T024 não certifica segurança/WCAG integral. |
+| Prerelease GHCR — C | Prerelease de teste do autor às **22:09 UTC**, SHA `a5fc8efe…`; run **44408725656 FAIL** no gate por HTTP 403 segundo log fornecido às 22:10. Nenhuma imagem publicada por esse run. Correção local: API autenticada nos dois passos, `actions: read` nos dois jobs, `packages: write` só em `publish`. Revisão independente desta correção **PASS**, conforme relato recebido do Revisor Matriz `review-ghcr-api-auth`; distinta do PASS histórico `revisão-final-f1`, sem prova remota. |
+| Ainda pendente | Commit/push separadamente aprovados da nova SHA, novo CI quatro jobs verde e nova prerelease/tag, publicação GHCR e prova do digest; prova negativa controlada CI, uploads/retenção reais, aceitação do cliente, entrega portável de evidência externa e decisões de capacidade/backups/retenção/p95/produção. O fecho local B/C não encerra essas pendências; o fecho T024 não certifica segurança/WCAG integral. |
 
 **Leitura da cronologia:** estados «bloqueado», «parcial», «27/28» e revisões então pendentes nas notas anteriores ao full descrevem essas fases, não o estado vigente. RED e respetivos diagnósticos não foram apagados nem convertidos retroativamente em PASS. O resumo não autoriza novas execuções ou utilização de serviços.
+
+<a id="correcao-release-auth-20261118"></a>
+
+## Correção da autenticação do gate de release — 18-11-2026
+
+**Aprovação explícita do autor: 22:12:55 UTC**, limitada ao workflow release e
+a development/verification/relatorio-final/coursework-review. Sem IDs Spec Kit
+atribuídos nem atualização de `tasks.md`. Base local própria confirmada:
+`a5fc8efe56c1bb41d7106d7ba9438cb7e74bb5ff`; worktree/índice inicialmente limpos.
+Patch ainda local, sem stage/commit/push, rede, release ou publicação nesta tarefa.
+
+**Evidência anterior recebida no handover, não reconsultada nesta tarefa:**
+o autor confirmou commit/push manual dessa base e reportou CI verde. A consulta
+pública das 22:07 devolveu 403; não houve confirmação independente dos quatro
+jobs verdes. O agente anterior conferiu páginas públicas e git ref da
+[prerelease test-ghcr-20261118T220713Z](https://github.com/Fibigor/matriz/releases/tag/test-ghcr-20261118T220713Z),
+publicada pelo autor às **22:09:00 UTC**, prerelease para a SHA acima.
+O [run 44408725656](https://github.com/Fibigor/matriz/actions/runs/44408725656)
+falhou em `prepare` / `Verify release identity and existing CI checks`.
+O log fornecido pelo autor às **22:10** identifica
+`urllib.error.HTTPError: HTTP 403 rate limit exceeded`, no percurso
+`latest_successful_run → api → urlopen`. Nenhuma imagem GHCR foi publicada
+por esse run; não há digest conhecido.
+
+**Correção atual:** as duas verificações (âncora YAML partilhada) recebem
+o token automático apenas no ambiente do passo e enviam `Authorization: Bearer`
+à API GitHub. `GITHUB_API_URL` é fornecido pelo GitHub, não por metadata da
+release. Token ausente/vazio bloqueia com mensagem genérica; erros HTTP/API
+bloqueiam sem fallback anónimo, retry, corpo de resposta ou credenciais nos logs.
+Ambos os jobs explicitam `contents: read`/`actions: read`; só `publish`
+tem `packages: write`. Login GHCR continua com GITHUB_TOKEN, checkout sem
+persistência e build com `github-token: ''`, sem token em argumentos/contexto.
+Autenticação tem quota própria, não garante disponibilidade/permissões/sucesso.
+Todos os gates de identidade, último CI push, quatro jobs, run/attempt e
+revalidação antes de build/push permanecem. Sem `latest`, bypass ou novo scan.
+
+### Validação local própria desta correção
+
+Executada nesta tarefa em Windows, a partir da raiz, sem ficheiros de harness
+gravados. Comando **`python -B -`**, alimentado por here-string PowerShell em
+cada verificação inline; PyYAML **6.0.3** já disponível, sem instalação.
+
+| Verificação efetivamente executada | Resultado |
+|---|---|
+| YAML/estrutura/permissões/env/âncora/guardas e AST do Python real extraído dos dois passos | **PASS**, AST **2/2**; token só nos dois ambientes de verificação, login GHCR preservado, build sem token. |
+| Comparação normalizada com `git show HEAD:.github/workflows/release.yml` | **PASS**, delta estrutural restrito a autenticação/permissões; AST dos gates/outputs idêntica fora da obtenção do token e função API; trigger continua apenas `release: published`. |
+| Python real completo de cada passo, evento/git/API/outputs simulados em memória | **186/186 casos PASS**, **386 chamadas API simuladas** autenticadas. Sucesso e outputs exatos; token ausente/vazio/espaços; 401/403/429/500 e erros URL/IO/JSON em cada uma das quatro consultas; sem fallback/retry/leak. Regressões de identidade, último push/run, quatro jobs, paginação, rerun/attempt e revalidação após jobs cobertas em ambos os passos. |
+| `bash --noprofile --norc -n` via `C:/Program Files/Git/bin/bash.exe`, stdin com cada bloco expandido | **3/3 PASS** (inclui reutilização da âncora). |
+| `bash --noprofile --norc -c` com guard de digest real extraído, fixtures fictícias | **6/6 PASS**; summary completo inalterado face a HEAD, não executado com sucesso. |
+| UTF-8/NUL/newline e links Markdown locais dos quatro documentos | **4/4 PASS**, **125 referências locais / 35 fragmentos** verificados nesta passagem, sem rede. |
+| `git diff --check`; `git ls-files --stage \| git hash-object --stdin` | PASS; índice preservado, impressão inicial/final `c4b4a8c4f2fbd2d89cab7a8754356b4a5aef8158`. |
+
+**Tentativas/limites preservados:** a primeira passagem do harness Python falhou
+porque `deepcopy` preservava aliases artificiais entre respostas da fixture;
+correção só em memória para snapshots independentes, seguida de execução
+integral 186/186 acima. A tentativa de executar o summary com
+`GITHUB_STEP_SUMMARY=/dev/stdout` falhou no Git Bash deste Windows
+(`/dev/stdout: No such file or directory`); não é defeito demonstrado no runner.
+Depois foram executados apenas o guard de digest e o `bash -n` completo, sem
+criar ficheiros. `actionlint`/`shellcheck` indisponíveis e não instalados.
+Sem suites backend/frontend/E2E, Docker, serviços, scans ou CI remoto desta
+correção. Os números/PASS históricos não são execuções novas deste patch.
+
+### Revisão independente da autenticação — relato recebido no fecho documental
+
+**Revisor Matriz `review-ghcr-api-auth`: APROVADO sem achados (PASS)**,
+conforme relato independente transmitido pelo utilizador em 18-11-2026,
+contra HEAD `a5fc8efe56c1bb41d7106d7ba9438cb7e74bb5ff` e o patch local.
+Escopo: autenticação nos dois passos verify/reverify com `Authorization: Bearer`;
+`actions: read`/`contents: read` nos dois jobs e `packages: write` só em
+`publish`; token ausente/erros API bloqueiam sem fallback, retry ou leak;
+AST dos gates anteriores inalterada; quatro docs distinguem histórico e
+correção local, sem prova remota. Não é execução do agente deste fecho.
+
+O revisor relatou validação própria com **`python -B -`**, harness só em
+memória: **196/196 casos PASS**, **400 chamadas API simuladas autenticadas**,
+AST **2/2**, `bash -n` **3/3**, digest **6/6**, quatro docs com
+**125 referências locais / 35 fragmentos PASS** e `git diff --check` PASS.
+Estes resultados não substituem nem se somam aos **186/186 casos / 386
+chamadas simuladas** do engenheiro, preservados acima com proveniência própria.
+HEAD/índice preservados segundo o relato, cinco caminhos modificados,
+sem criações/remoções. Summary completo **não executado**, com limite
+`/dev/stdout` no Git Bash; `actionlint`/`shellcheck` indisponíveis.
+Sem remoto, Maven, suites da aplicação, Docker, serviços ou release.
+Skills `contexto-matriz`/`validacao-matriz` seguidas pelo revisor.
+O PASS fecha apenas esta revisão local: patch ainda não publicado e
+commit/push não autorizados neste fecho.
+
+**Próximo procedimento, não executado:** com revisão local PASS, o autor trata
+commit/push da nova SHA sob aprovação separada; pode haver efeitos Render.
+Confirmar o último CI push dessa SHA com os quatro jobs verdes e criar
+**nova tag/nova prerelease** para essa SHA sob autorização própria.
+Rerun da release antiga usa o workflow antigo e não aplica a correção.
+Não apagar/mover a tag/release anterior nem converter para stable.
+Não se presume scan/igualdade do digest da imagem reconstruída.
 
 <a id="correcao-ci-json-20261118"></a>
 
@@ -28,7 +123,8 @@
 `matriz-ai-powered` redireciona. Isto esclarece a diferença de nomes das notas
 anteriores, não constitui nova consulta remota dos seus resultados.
 Base local confirmada: `dca7a9457a01bc68436aaf6cbb9f8de548d97a3d`,
-worktree/índice inicialmente limpos. A correção permanece não commitada.
+worktree/índice inicialmente limpos. A correção permanecia não commitada nessa fase; o commit/push manual posterior
+para `a5fc8efe…` foi confirmado pelo autor no handover acima.
 
 **Falha remota preservada, proveniência do autor:** [run 44402196925](https://github.com/Fibigor/matriz/actions/runs/44402196925),
 concluído em **21:31:46Z**, backend **59 testes, 0 failures, 2 errors**;
@@ -206,6 +302,10 @@ reexecução completa. Sem nova confirmação do cliente; a revisão independent
 local B consta do relato de fecho abaixo, sem reexecução Maven pelo revisor.
 
 ### C — workflow GHCR configurado, publicação não demonstrada
+
+**Histórico anterior à correção de autenticação das 22:12:55 UTC:**
+a API anónima e o uso do token apenas no login descrevem essa versão,
+não o workflow local atual descrito no início deste documento.
 
 `release.yml` recebe `release: published` e exige prerelease true/draft false.
 Checkout do SHA exato da release, verificação do ref da tag e `HEAD^{commit}`;

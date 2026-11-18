@@ -236,10 +236,13 @@ A regra local recusa CORS Java wildcard. Não equivale a pentest/auditoria integ
 
 ### Prerelease de teste — GHCR
 
-O [release.yml](../.github/workflows/release.yml) está **CONFIGURADO e validado
-localmente segundo relato do engenheiro C**. Não há build desta release, login,
-push GHCR ou publicação remota comprovados. Não equivale a desafio GHCR
-demonstrado por execução; seguir este procedimento exige aprovação remota separada.
+O [release.yml](../.github/workflows/release.yml) está **CONFIGURADO**, com
+correção de autenticação ainda local em 18-11-2026. A prerelease de teste criada
+pelo autor às 22:09 UTC falhou no gate com HTTP 403, antes de publicar imagem;
+não há publicação GHCR comprovada. A evidência e a validação desta correção,
+com revisão independente **PASS** segundo relato do Revisor Matriz
+`review-ghcr-api-auth` (não execução deste fecho nem prova remota), estão em
+[verification](verification.md#correcao-release-auth-20261118).
 
 1. Identificar o commit exato da tag da release. O workflow recebe apenas
    `release: published`; ambos os jobs exigem `prerelease == true` e
@@ -258,16 +261,20 @@ demonstrado por execução; seguir este procedimento exige aprovação remota se
    (`run_id`, `run_attempt`, `run_number`). Uma mudança detetada bloqueia,
    mesmo que a nova tentativa já tenha terminado com `success`.
    O workflow não dispara CI, não espera nem repete silenciosamente.
-3. O job `prepare` consulta a API pública do GitHub **sem token**. Repositório
-   privado, rate limit, erro de API, CI ausente/em curso/falhado, job omitido,
+3. Os dois passos de verificação consultam a API GitHub com o `GITHUB_TOKEN`
+   automático, apenas no ambiente desses passos, usando `Authorization: Bearer`.
+   Token ausente/vazio bloqueia explicitamente, sem fallback anónimo; não se
+   registam valores, headers ou corpos de resposta. A quota autenticada é própria,
+   não ilimitada: falta de permissão, rate limit, erro de API, CI ausente/em curso/falhado, job omitido,
    skipped ou malsucedido bloqueiam. Listas com mais de 100 jobs também bloqueiam.
-   Não prometer suporte privado nem contornar falhas adicionando credenciais.
+   Não prometer sucesso de quota/permissões nem contornar falhas com PAT ou segredos novos.
 4. `publish` repete o gate completo imediatamente antes de build/push,
    reutilizando a âncora YAML de `prepare`, sem confiar só no resultado anterior.
    Só após essa revalidação reconstrói o Dockerfile do commit verificado para
    `linux/amd64` e faz push para `ghcr.io/<owner>/<repo>` em lowercase, apenas com
    a tag `test-<release-id>-sha-<commit>` (SHA completo). Sem `latest`.
-   O workflow tem `contents: read`; **só `publish`** acrescenta `packages: write`.
+   O default tem apenas `contents: read`; ambos os jobs explicitam
+   `contents: read` e `actions: read`; **só `publish`** tem `packages: write`.
    Login GHCR via `docker/login-action` com `github.actor`/`GITHUB_TOKEN`, sem PAT
    ou segredo novo; checkout sem credenciais persistidas e build com
    `github-token: ''`.
@@ -290,6 +297,13 @@ Publicar uma prerelease é uma ação com efeitos: aciona push GHCR. Push prévi
 pode também ter efeitos Render por `checksPass`; não criar tag/release nem
 acionar workflows apenas para conferir documentação. Validações locais relatadas
 e ferramentas indisponíveis estão em [verification](verification.md#documentacao-abc-20261118).
+
+Com revisão local desta correção PASS, o autor trata commit/push da **nova SHA**, mediante
+aprovação separada (pode acionar Render). Confirmar o novo último CI push com os
+quatro jobs verdes e só depois criar **nova tag e nova prerelease** apontando
+exatamente à SHA corrigida, sob aprovação própria. Reexecutar a release antiga
+usa o workflow antigo e não aplica este patch. Não apagar/mover a tag/release
+anterior nem convertê-la em stable. Esta tarefa não executa esses passos.
 
 [render.yaml](../render.yaml) define demonstração temporária Docker/PostgreSQL 17,
 planos free em Frankfurt, seed fictício, cookie Secure e sem observability.
