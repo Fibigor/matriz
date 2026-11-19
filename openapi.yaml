@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Matriz — API atual com extensões V4 e registo académico
+  title: Matriz — API atual com estado Em revisão e registo académico
   version: 0.4.0-rc.1
   description: |
     Contrato da demonstração implementada, não uma API de produção certificada.
@@ -23,6 +23,11 @@ info:
     Campos JSON desconhecidos são recusados com 400; formato/tipo inválido dá 400;
     validação semântica 422, versão antiga 409, falha de dados 503.
     Falha de transporte não prova rollback: não repetir escritas automaticamente.
+    Feature 002: estados TODO/IN_PROGRESS/IN_REVIEW/DONE; nova entrada em DONE
+    exige IN_REVIEW imediatamente persistido. DONE->DONE mantém-se permitido.
+    Cliente e servidor exigem entrega coordenada: o enum expandido e a proibição
+    de conclusão direta não são compatibilidade transparente para clientes antigos.
+    Progress inclui inReview obrigatório; não há endpoints ou permissões novos.
     Listas paginadas usam createdAt ascendente e id ascendente como desempate.
     Pagination é baseada em 1; página além do fim é vazia; zero itens implica zero páginas.
     Nomes, títulos e comentários são aparados nas extremidades; descrições e pesquisa
@@ -344,6 +349,7 @@ paths:
       parameters:
         - name: status
           in: query
+          description: Filtra pelos quatro estados, incluindo IN_REVIEW; não altera os agregados globais.
           schema: { $ref: '#/components/schemas/Status' }
         - name: priority
           in: query
@@ -418,8 +424,17 @@ paths:
       operationId: updateTask
       summary: Participante substitui campos editáveis com versão atual
       description: |
-        Concluir não exige responsável, mas exige todos os bloqueadores diretos DONE.
+        Nova entrada em DONE exige estado imediatamente anterior persistido IN_REVIEW
+        e todos os bloqueadores diretos DONE. TODO/IN_PROGRESS->DONE dá 422 status:
+        "Coloque a tarefa em revisão antes de a concluir.".
+        Seleção intermédia no rascunho ou revisão histórica abandonada não satisfaz a regra.
+        TODO/IN_PROGRESS->IN_REVIEW e o regresso a ambos são permitidos, mesmo com bloqueadores.
+        Qualquer participante ativo autorizado pode rever/concluir, sem atribuição,
+        gestor, revisor separado ou pessoa diferente. DONE->DONE é manutenção.
+        A guarda usa a origem persistida após lock/revalidação/versão e antes de UPDATE/evento;
+        recusa não altera dados, versão, datas ou histórico. Versão antiga mantém 409.
         Reabrir bloqueador com qualquer dependente direto DONE dá 422 status.
+        IN_REVIEW continua não concluído para BLOCKS e não admite motivo de fecho.
         type/weight omitidos preservam; type null explícito é 422; weight null limpa.
         closeReason omitido preserva em DONE->DONE, entrada em DONE dá null;
         reabertura limpa motivo, motivo não null fora de DONE é 422 closeReason.
@@ -454,6 +469,22 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Task' }
+        '422':
+          description: Origem sem revisão persistida, bloqueio ou outra validação semântica; nenhuma escrita parcial.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              examples:
+                reviewRequired:
+                  summary: Tentativa de concluir diretamente com pedido válido e versão atual
+                  value:
+                    type: about:blank
+                    title: Unprocessable Content
+                    status: 422
+                    detail: Coloque a tarefa em revisão antes de a concluir.
+                    errors:
+                      - field: status
+                        message: Coloque a tarefa em revisão antes de a concluir.
         default: { $ref: '#/components/responses/Failure' }
     delete:
       tags: [Tarefas]
@@ -890,7 +921,10 @@ components:
       required: [version]
       properties:
         version: { $ref: '#/components/schemas/Version' }
-    Status: { type: string, enum: [TODO, IN_PROGRESS, DONE] }
+    Status:
+      type: string
+      enum: [TODO, IN_PROGRESS, IN_REVIEW, DONE]
+      description: Por fazer, Em curso, Em revisão, Concluída. Criação mantém TODO; nova entrada DONE exige IN_REVIEW persistido.
     Priority: { type: string, enum: [LOW, MEDIUM, HIGH] }
     TaskType: { type: string, enum: [TASK, BUG, IMPROVEMENT] }
     NullableWeight:
@@ -921,15 +955,21 @@ components:
             role: { type: string, enum: [MANAGER, MEMBER] }
     Progress:
       type: object
-      required: [total, todo, inProgress, done, completedPercent]
-      description: Total global; todos os DONE contam independentemente de motivo/peso; percentagem 0 se vazio, arredondada com meios para cima.
+      required: [total, todo, inProgress, inReview, done, completedPercent]
+      description: |
+        Agregado global independente de filtros/paginação, em Project.progress e nos
+        dois locais de TaskPage (project.progress e progress).
+        total = todo + inProgress + inReview + done.
+        completedPercent = 0 se total=0; senão 100*done/total arredondado a inteiro
+        HALF_UP (meios para cima). Só DONE conta no numerador, sem ponderar motivo/peso.
       properties:
         total: { type: integer, minimum: 0 }
         todo: { type: integer, minimum: 0 }
         inProgress: { type: integer, minimum: 0 }
+        inReview: { type: integer, minimum: 0 }
         done: { type: integer, minimum: 0 }
         completedPercent: { type: integer, minimum: 0, maximum: 100 }
-      example: { total: 5, todo: 2, inProgress: 1, done: 2, completedPercent: 40 }
+      example: { total: 4, todo: 1, inProgress: 1, inReview: 1, done: 1, completedPercent: 25 }
     Pagination:
       type: object
       required: [page, pageSize, totalItems, totalPages]

@@ -1,5 +1,51 @@
 # Ficha 03 — Plano de implementação
 
+## Feature 002 — estado Em revisão, 19-11-2026
+
+Este é o alinhamento canónico **T038**, não um novo plano/backlog.
+Consumidos os mesmos [spec](../specs/002-estado-em-revisao/spec.md),
+[plan](../specs/002-estado-em-revisao/plan.md),
+[tasks](../specs/002-estado-em-revisao/tasks.md),
+[modelo](../specs/002-estado-em-revisao/data-model.md) e
+[contrato delta](../specs/002-estado-em-revisao/contracts/status-delta.md).
+As restrições de fase antigas nesses artefactos conservam proveniência;
+implementação foi aprovada em **18-11-2026 às 23:33:19 UTC**.
+Autor aprovou excecionalmente em **19-11 às 01:31:49 UTC** antecipar
+**T035–T040 antes de T034/G3**, mantendo gates e fecho pendentes.
+Não se reescrevem dependências/plan nem marcadores de tasks.md;
+atualização futura T043 exige atribuição separada.
+
+| Pacote / IDs da feature 002 | Implementação | Testado / revisto / pendente |
+|---|---|---|
+| ER-01 / T001–T003 | Contrato e prontidão acordados, sem redesenho. | G0 `review-002-g0` aprovado segundo handover; não é aprovação operacional geral. |
+| ER-02 / T005/T007/T014 | V5 só CHECK; guarda de origem persistida IN_REVIEW; Progress global com inReview. | Backend 68/68 e G1 aprovados segundo relatos, não executados nesta escrita. |
+| ER-03 / T004/T006/T008–T013/T015 | Testes no ApiIntegrationTest/InputsTest existentes: recusas atómicas, membro não atribuído, motivos, BLOCKS/concorrência/revogação/rollback, quatro estados/25%. | Cadeia limpa V1→V5 e upgrade V4 populada→V5 com snapshots/uma migration/repetição zero; prova V3→V4 preservada com target 4. G1 estático/XML não é rerun. |
+| ER-04 / T017–T026 | Tipos/labels, base persistida segura no editor, quatro contagens/barras/cartões, história localizada apenas a status. Correções posteriores de gráfico/foco integradas no HEAD. | G2 aprovado no lote inicial; final local posterior 174/174 e build PASS relatados, com duas revisões estáticas de correções. T031: autor confirmou aprovação total visual desktop/390/320/teclado às 01:49:42 UTC, não inferida dos testes/build nem inspeção pelo agente. |
+| ER-05 / T027–T033 | Ambiente isolado autorizado; T028/T029 implementadas/revistas (11 cenários antigos preservados + 2 novos = 13 preparados). | RED locais antigos preservados. T030 PASS via CI #22/run 44436970582, SHA HEAD, corroborado independentemente por metadados públicos: quatro jobs completed/success, incluindo E2E do código final. Totais remotos indisponíveis, não 13/13 verificado. T031 total aprovada; T032/T033 pendentes, G3 não fechado. |
+| ER-06 / T035–T040 | Nove canónicos alinhados nesta antecipação; revisão limitada `review-002-documentacao-antecipada` aprovada sem achados. Pós-update autorizado só em verification/test-plan/implementation-plan. | T040 e revisão limitada são documentais; não G3/G4/G5 formal, teste de aplicação ou fecho. [Proveniência e conferências](verification.md#feature-002-doc-checks). Novo delta pronto para revisão estreita. |
+| ER-07 / T003/T016/T026/T034/T041–T043 | G0/G1/G2 recebidos; revisão documental limitada recebida não substitui gates formais. | T034/G3 bloqueado; T041/G4 formal e T042/G5 não realizados. T043 não autorizado; tasks.md e marcadores preservados, sem confundir progresso documental com fecho. |
+
+Rastreabilidade FR-001–010/SC-001–006 e níveis de prova no
+[plano de testes](test-plan.md#feature-002-test-plan); comandos, falhas,
+horários e proveniência têm como único destino de evidência
+[verification](verification.md#feature-002), sem relatórios adicionais.
+Os testes críticos BLOCKS/rollback/races preparam IN_REVIEW persistido para
+atingir a proteção original, não passar pela nova recusa de origem.
+
+A versão mantém `0.4.0-rc.1`. Cliente/servidor/OpenAPI coordenados:
+enum alargado e DONE direto recusado não são compatibilidade transparente.
+Nenhuma publicação/release/deploy nova, permissão, dependência ou operação
+de serviço/Git resulta desta antecipação. Imagem GHCR histórica não contém
+002. CI público canónico **Fibigor/matriz**, run **44436970582 attempt 1**,
+push/main, SHA **`7c182edf7fe1c2cd1009743b029e3cd9d5759c12`** igual ao HEAD:
+quatro jobs verdes confirmados pelo agente `verificar-002-ci-44436970582`,
+não consulta de rede desta escrita. [URLs, horários, HTTP e limites](verification.md#feature-002-ci-final).
+Não há novo full local final nem logs/totais remotos disponíveis; números
+locais 68/174 e 13 cenários preparados não são contagens CI.
+Os nove diffs documentais são posteriores ao SHA testado, não causa do
+sucesso nem parte da imagem CI. A aprovação humana T031 é separada da
+automação e não autoriza reinício nem demonstra persistência após este.
+
 ## Suplemento de usabilidade — 18-11-2026
 
 Implementação aprovada pelo autor («aprovo» ao arranque pelos caminhos do plano, incluindo dois helpers de email, testes e documentação); não cliente, produção ou publicação. P1/P2 e speckit-analyze readonly anteriores sem findings, 28 tarefas, segundo handover. Os estados de aprovação, limites e totais das secções datadas seguintes são históricos, não falta atual de aprovação B5. Mesmos [spec](../specs/001-usabilidade-contas-tarefas/spec.md), [plan](../specs/001-usabilidade-contas-tarefas/plan.md) e [tasks](../specs/001-usabilidade-contas-tarefas/tasks.md), sem regeneração.

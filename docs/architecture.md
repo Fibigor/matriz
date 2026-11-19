@@ -4,6 +4,15 @@
 
 ## Desenho e responsabilidades
 
+**Estado atual — feature 002, 19-11-2026:** leitura estática sobre HEAD
+`7c182edf7fe1c2cd1009743b029e3cd9d5759c12`. IN_REVIEW persistido e
+Progress.inReview implementados; alinhamento canónico antecipado por
+aprovação excecional, **sem aprovação G3/G4/G5 ou fecho**.
+[Evidência e pendências](verification.md#feature-002).
+A publicação GHCR e o fecho de 001 abaixo são anteriores, não incluem 002
+nem provam a geometria/teclado ou persistência após reinício do novo estado.
+Sem versão/tag nova ou alteração de stack, segurança, endpoints e permissões.
+
 **Suplemento atual — 18-11-2026:** usabilidade autorizada pelo autor; candidato `0.4.0-rc.1` sem bump, com [pré-release técnica de teste GHCR publicada](verification.md#current-publication), confirmada por evidência recebida, não release estável ou produção. Este ajuste documental é posterior ao commit/imagem publicados e não os integra. **T024 fechada, 28/28**, full E2E **11/11 PASS às 11:55–11:56 UTC**, revisão `review-t024-full-closure` PASS e gates B5/T028 PASS documentados. Visual humano aprovado às 09:42:49Z separadamente. Backend 58/frontend 141/build anteriores e seleção 74/build da correção de foco não foram reexecutados nesta revisão. A leitura datada de abertura mantém a proveniência; [resumo vigente](verification.md#estado-vigente--18-11-2026).
 
 - [Emails.java](../backend/src/main/java/pt/matriz/common/Emails.java) concentra normalização pura `String.trim().toLowerCase(Locale.ROOT)` e validade (regex Unicode compatível/254 unidades UTF-16), consumido por AuthController, IdentityService e ProjectService; erros/HTTP pertencem aos chamadores. [email.ts](../frontend/src/email.ts) partilha validação em App/Projects, trim Java explícito/lowercase/regex sem `type=email`; API mantém autoridade. Sem nova normalização de composição ou prova de posse.
@@ -39,7 +48,7 @@ flowchart TD
     Projects --> JDBC
     Tasks --> JDBC
     JDBC --> DB[("PostgreSQL 17")]
-    Flyway["Flyway V1–V4"] --> DB
+    Flyway["Flyway V1–V5"] --> DB
 ```
 
 O nó `tasks` agrupa serviços do mesmo pacote, não um serviço de rede. `common` é partilhado pelos módulos; não se desenha uma dependência inversa projetos→tarefas em Java, embora o SQL de projetos consulte contagens de tarefas.
@@ -66,7 +75,9 @@ O Blueprint Render existente tem `checksPass`; uma ação remota pode provocar d
 2. **Listar:** autenticar/validar participação → ler página de projetos ou tarefas em `REPEATABLE_READ` → devolver resultados e agregados globais coerentes. Pesquisa de projetos por nome; tarefas filtradas por estado/prioridade. Ordenação estável `(created_at,id)`. `totalItems` filtrado pode diferir de `progress.total`.
 3. **Escrever tarefa/relação/anexo/comentário:** transação → lock da linha existente do projeto → revalidar participação/permissão e conta ativa após espera → validar versão/regras → gravar dados e atividade → commit. Ver `TaskService.lockProject`; não extrapolar esta revalidação específica para todos os métodos de projetos.
 4. **Concorrência:** projeto/tarefa exigem versão nas edições/eliminações; atribuições exigem versão da tarefa. Relação explícita exige versões atuais dos dois extremos. Conflito 409 não sobrepõe dados. Lock serializa grafo/contagem/revogação no projeto, sem distribuí-los por serviços.
-5. **UI:** guarda síncrona e estado ocupado evitam submissões repetidas. Erro conserva texto; falha de transporte deixa resultado incerto, sem retry automático de escrita. Refetch externo não avança base suja; só resposta local de atribuição/relação reconhecida e correspondente à versão de partida pode avançá-la. Recuperar versão atual ou sair com rascunho exige confirmação.
+5. **UI:** guarda síncrona e estado ocupado evitam submissões repetidas. Erro conserva texto; falha de transporte deixa resultado incerto, sem retry automático de escrita. Snapshot de estado persistido acompanha a versão de base, separado de `values.status`; só base IN_REVIEW/DONE habilita DONE. Inicialização/save confirmado/refetch limpo/recuperação explicitamente confirmada atualizam-no; resposta local de atribuição/relação só avança com identidade e previousVersion correspondentes. GET externo com rascunho sujo não promove base/estado/versão. Escolher revisão no draft não equivale a guardá-la; não há auto-save/dupla escrita. Preservam-se templates por ciclo, guards, foco/Escape/inert; recuperar versão atual ou sair com rascunho exige confirmação.
+6. **Revisão e conclusão:** TODO/IN_PROGRESS → IN_REVIEW guardado → DONE em segunda ação confirmada; TODO pode saltar IN_PROGRESS, revisão pode regressar a ambos. Servidor lê origem sob lock/revalidação e versão, recusa entrada direta com 422 status «Coloque a tarefa em revisão antes de a concluir.» antes de UPDATE/evento e da consulta de bloqueadores dessa entrada direta válida. Revisão histórica abandonada não basta. IN_REVIEW→DONE ainda exige todos os bloqueadores diretos DONE. DONE→DONE antiga mantém-se editável; reabertura para qualquer não-DONE conserva BLOCKS e limpa motivo. Sem revisor/pessoa distinta/atribuição obrigatória.
+7. **Agregados e apresentação:** Progress global contém todo/inProgress/inReview/done; total soma quatro, só done no numerador, HALF_UP inteiro e vazio 0%. Uma tarefa por estado dá 25%. Lista/detalhe de projeto e ambos TaskPage mantêm globais sob filtros/páginas. Labels partilhadas propagam revisão a lista/detalhe/relações; história traduz apenas old/new reconhecidos de status, com fallback e priority/type intactos. Quatro barras/cartões implementados; apreciação visual humana e browser final continuam pendentes.
 
 ```mermaid
 sequenceDiagram
@@ -109,7 +120,22 @@ sequenceDiagram
 
 Gestor gere projeto/membros/atribuições; participantes ativos gerem tarefas/relações/comentários e adicionam anexos. Só autor ou gestor **ainda participante** elimina ficheiro. Download revalida acesso, devolve attachment/nosniff/no-store. API recusa recurso alheio/inexistente com 404 indistinguível e gestão sem permissão com 403. FKs/validações/locks complementam-se; esconder botões não é autorização.
 
-Flyway aplica V1–V4; [modelo atual](database.md) descreve a evolução. V4 é aditiva, preserva UUIDs/datas/versões e não inventa atividade anterior. Seed opt-in sem reinicialização; não alterar migrations já aplicadas, apagar volumes ou assumir rollback de schema por rollback de imagem. Boot 4 mantém Jackson 3 com defaults de compatibilidade documentados nas [release notes](../RELEASE_NOTES.md).
+Flyway aplica V1–V5; [modelo atual](database.md) descreve a evolução. V1–V4
+publicadas conservam proveniência/checksums. V4 é aditiva, preserva
+UUIDs/datas/versões e não inventa atividade anterior. V5 substitui **só**
+`task_status_check` por quatro estados: sem DML, default, backfill ou
+colunas novas, mantendo o CHECK de motivo e DONE antigas intactas.
+IN_REVIEW é não-DONE para motivo/BLOCKS: entrar em revisão com bloqueadores
+é permitido, revisão num bloqueador não liberta dependentes e reabrir para
+revisão com dependente DONE continua recusado.
+Seed opt-in sem reinicialização; não alterar migrations já aplicadas, apagar
+volumes ou assumir rollback de schema por rollback de imagem.
+Boot 4 mantém Jackson 3 com defaults de compatibilidade documentados nas
+[release notes](../RELEASE_NOTES.md).
+
+Cliente/servidor/OpenAPI exigem entrega coordenada: inReview é obrigatório
+no JSON, enum alargado e conclusão direta deixa de ser aceite. Não se promete
+rollout misto ou compatibilidade transparente de clientes que enviam DONE direto.
 
 Limites aprovados: projeto 1–120, tarefa 1–200, descrição até 2 000 pontos de código; autorização e normalização no servidor. Produção diferida; retenção anual é pressuposto sem policy/âmbito/início, sem purga. Capacidade BYTEA/história, backups/recuperação, escala/p95 e operação prolongada exigem decisão.
 

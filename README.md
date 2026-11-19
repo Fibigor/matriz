@@ -15,7 +15,13 @@ anexos, relações de bloqueio e acompanhamento do progresso.
 
 ## Estado
 
-Candidato académico **`0.4.0-rc.1`**, com [pré-release técnica de teste GHCR publicada](docs/verification.md#current-publication), sem release estável. Registo académico e usabilidade implementados; T024 fechada,
+Candidato académico **`0.4.0-rc.1`**, sem nova versão/tag. Feature 002
+**«Em revisão» implementada, validação integrada e fecho pendentes**:
+E2E do código final, apreciação visual, reinício e gates G3–G5 não concluídos.
+[Estado e evidência da feature 002](docs/verification.md#feature-002).
+A [pré-release técnica de teste GHCR publicada](docs/verification.md#current-publication)
+é anterior e **não contém esta feature**; não há release estável.
+No incremento anterior 001, registo académico e usabilidade implementados; T024 fechada,
 28/28 tarefas, full E2E 11/11 PASS documentado em 18-11-2026.
 Aprovação visual humana registada separadamente.
 [Evidência, proveniência e pendências](docs/verification.md).
@@ -63,7 +69,9 @@ docker compose -p matriz-ficha3 --env-file .env up --build -d
 ```
 
 Abrir **http://localhost:8080**. Por omissão, app e PostgreSQL são publicados
-apenas em loopback (8080 e 55432). Flyway aplica V1–V4; o volume conserva dados.
+apenas em loopback (8080 e 55432). O código atual usa Flyway V1–V5; V5 amplia
+apenas o CHECK de estado, sem converter tarefas antigas ou inventar revisões.
+O volume conserva dados; estes procedimentos não são evidência de reinício da feature 002.
 O seed fictício é **opt-in** (`DEMO_ENABLED=true`), não redefine dados/credenciais
 existentes. Não editar migrations aplicadas nem usar `docker compose down -v`.
 
@@ -87,7 +95,16 @@ participações, mas pode criar projetos após login.
 O gestor gere projeto, membros por email completo e atribuições; participantes
 ativos gerem tarefas e comentam. A API controla permissões, não apenas os botões.
 Tarefas têm estado, prioridade, chave `MAT-n`, tipo, templates, Markdown básico,
-anexos e histórico; bloqueadores pendentes podem impedir a conclusão.
+anexos e histórico. Estados: **Por fazer → Em curso → Em revisão → Concluída**;
+também é permitido ir diretamente de Por fazer a Em revisão e devolver revisão
+a Por fazer/Em curso. É necessário **guardar a revisão antes de concluir**:
+uma seleção no rascunho ou revisão antiga abandonada não basta. Qualquer
+participante ativo autorizado pode fazer ambas as ações, sem responsável ou
+revisor separado. Bloqueadores diretos ainda não concluídos impedem concluir,
+não entrar em revisão; reabertura conserva as proteções existentes.
+Tarefas já concluídas podem ser editadas mantendo o estado, sem revisão retroativa.
+Os quatro estados entram no total global; só Concluída conta no progresso
+(uma tarefa de cada estado = 25%), independentemente dos filtros.
 
 ---
 

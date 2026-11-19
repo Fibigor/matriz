@@ -2,7 +2,377 @@
 
 <a id="estado-vigente"></a>
 
+<a id="feature-002"></a>
+
+## Estado vigente — feature 002, 19-11-2026
+
+**Implementação presente; T030 PASS em CI e T031 aprovada pelo autor;
+reinício, gates formais e fecho pendentes.** Base
+observada na antecipação documental: HEAD
+`7c182edf7fe1c2cd1009743b029e3cd9d5759c12`, worktree e índice então
+limpos. Neste delta final, os nove canónicos já estavam modificados e o
+índice vazio; apenas três recebem ajustes. O commit foi identificado no handover como realizado pelo utilizador
+às 01:26:30 UTC; o horário é recebido, não verificado por esta leitura.
+Candidato mantém **`0.4.0-rc.1`**, sem nova versão/tag/release.
+A [publicação GHCR de 18-11](#current-publication) é anterior e **não contém
+002**; o seu CI não prova este commit.
+
+**Atualização inicial recebida do autor durante T035–T040:** «os testes de e2e
+passaram e dou o meu selo de aprovação para a parte visual do frontend».
+Esse relato foi posteriormente corroborado por verificação independente
+dos metadados públicos do **CI #22, run 44436970582, attempt 1**, no
+repositório canónico público **Fibigor/matriz**, SHA igual ao HEAD acima:
+quatro jobs **completed/success**, incluindo E2E. **T030 tem prova de
+execução PASS via CI do código final**, não novo full local; totais remotos
+de testes continuam indisponíveis, sem alegar 13/13.
+Em **19-11-2026 às 01:49:42 UTC**, o autor respondeu **«confirmo aprovação
+total visual»** à pergunta que abrangia desktop, 390/320 px e teclado:
+**T031 tem aprovação humana total nesse âmbito**, separada da automação,
+sem inspeção visual pelo agente. [Proveniência e limites](#feature-002-ci-final).
+T032/T033 continuam pendentes e G3 não fechado. Falhas locais anteriores
+mantêm-se históricas; não são o resultado deste CI.
+
+**Âmbito/aprovação:** implementação aprovada pelo autor em
+18-11-2026 às **23:33:19 UTC**. Em 19-11 às **01:31:49 UTC**, resposta
+«sim» à antecipação de **T035–T040 mantendo gates e fecho pendentes**,
+reconfirmada no pedido atual. Exceção de ordem: documentação antes de
+T034/G3; não reescreve DAG/plan, não aprova G3/G4/G5, não marca tarefas
+e não autoriza T043. Escrita exclusivamente nos nove canónicos existentes:
+OpenAPI, README, requirements, user-stories, database, architecture,
+implementation-plan, test-plan e este documento. O delta final autorizado
+restringe a escrita a **verification, test-plan e implementation-plan**;
+os outros seis diffs ficam preservados. Sem delegação nesta escrita.
+
+Fontes: mesmos [spec](../specs/002-estado-em-revisao/spec.md),
+[plan](../specs/002-estado-em-revisao/plan.md),
+[tasks](../specs/002-estado-em-revisao/tasks.md),
+[modelo](../specs/002-estado-em-revisao/data-model.md),
+[research](../specs/002-estado-em-revisao/research.md),
+[contrato delta](../specs/002-estado-em-revisao/contracts/status-delta.md)
+e [quickstart](../specs/002-estado-em-revisao/quickstart.md).
+Os rótulos antigos «Draft/implementação não autorizada» nesses artefactos
+preservam a fase de origem, não anulam aprovações posteriores.
+Checklist contado nesta tarefa: **16/16**, zero abertos; análise sem achados
+é relato do handover, não nova execução de speckit-analyze ou prova funcional.
+
+### Proveniência e leitura dos estados
+
+Toda a cronologia de aplicação abaixo é **evidência recebida do utilizador,
+dos relatos dos engenheiros e das revisões identificadas**, não execuções
+de Maven/npm/Playwright/Docker/SQL/rede nesta tarefa documental. A observação
+própria limita-se à leitura estática das fontes e às conferências
+[T040](#feature-002-doc-checks). Não foram copiados relatórios privados,
+temporários ou artefactos ignorados como prova permanente.
+
+| Etapa / IDs | Implementação e evidência recebida | Estado / limite |
+|---|---|---|
+| G0 / T003 | `review-002-g0` aprovado, sem achados, incluindo prontidão de T002. | Gate de desenho/backend recebido; não operação geral de serviços. |
+| Backend / T004–T015 | Sete caminhos ER-02/03: V5 nova apenas CHECK; TaskService, ApiModels, Inputs, ProjectService e os dois testes existentes. Guarda após lock/revalidação/versão e antes de UPDATE/evento; entrada direta válida recusa antes de consultar bloqueadores. Quatro contagens globais. | Implementado; full 68/68 relatado, não rerun documental. |
+| G1 / T016 | `review-002-g1-backend` aprovado após leitura dos sete caminhos e seis XML Surefire; corroborados 68 testes, zero falhas/erros/skips. | XML lidos pelo revisor, não por este autor; sem rerun. Tempos RED vêm do engenheiro, não observação do revisor. |
+| Frontend / T017–T025 | Dez caminhos ER-04: enum/labels/inReview, editor com snapshot persistido seguro, quatro barras/cartões e história só status. | Lote inicial 167/167/build relatados; final posterior 174/174/build tem proveniência separada abaixo. |
+| G2 / T026 | `review-002-g2-frontend` aprovado, revisão estática/diff/índice vazio; cache Vitest dez ficheiros failed=false, mtime 00:10:10. | Cache sustenta ficheiros, **não** total 167, horários ou execução de build. G2 não é prova browser/visual nem revisão automática das correções posteriores. |
+| Ambiente / T027 | `preparar-002-e2e-compose` e `review-002-t027-ambiente` aprovado; novo alvo isolado autorizado às 00:21:59. | Prontidão, não E2E funcional; imagem local antiga, não GHCR. |
+| E2E / T028–T030 | T028/T029 implementadas/revistas: preservados 11 percursos e acrescentados 2, total 13 na preparação. R1 de `review-002-e2e-scenarios` corrigido e `review-002-e2e-r1` aprovado. T030 PASS via job E2E do CI #22 no SHA HEAD, corroborado por `verificar-002-ci-44436970582`. | Metadados públicos confirmam execução/sucesso, não totais nem detalhe por cenário. Falhas locais antigas preservadas. Marcadores permanecem T001–T027 [x], T028–T043 abertos (27/43); evidência/progresso não atualiza tasks.md nesta atribuição. |
+| T031–T034/G3 | Autor confirmou aprovação total visual desktop/390/320/teclado às 01:49:42 UTC. Autorização específica de reinício T032/execução T033 pendentes. | T031 decidida; G3 **não fechado**, não aprovado pela antecipação documental, pelo CI ou pela decisão visual. |
+| T035–T040 | Alinhamento antecipado dos nove canónicos e revisão independente limitada `review-002-documentacao-antecipada` aprovados sem achados; este pós-update altera só três caminhos. | Revisão limitada a T035–T040, não gate formal G4/G5 ou fecho; delta final pronto para revisão estreita própria. Sem atualização de tasks.md. |
+| T041/G4, T042/G5, T043 | Gates formais/progresso futuro não realizados nesta atribuição; exigem autorização própria. | Pendentes; a revisão documental limitada recebida não fecha T041/G4. Sem encadeamento automático. |
+
+### Backend — cronologia recebida de 18-11-2026 UTC
+
+Fonte: engenheiro backend `implementar-002-backend`, consolidada no handover
+e nas notas de progresso de tasks; revisão G1 corrobora totais finais, não
+reobserva as execuções. Testcontainers PostgreSQL isolado; comandos de seleção
+não fornecidos literalmente no handover não são reconstruídos aqui.
+
+| UTC | Execução relatada | Resultado |
+|---|---|---|
+| 23:41:03–23:41:20 | RED catálogo/domínio T004 | Uma falha esperada antes da V5. |
+| 23:41:28–23:41:42 | GREEN domínio | 1 passou. |
+| 23:42:11–23:42:28 | RED transições T006 | Três falhas esperadas antes da guarda. |
+| 23:42:47–23:43:06 | GREEN transições | 4 passaram. |
+| 23:45:17–23:45:40 | Compatibilidade/migrations | 11 passaram. |
+| 23:46:36–23:46:43 | RED agregado/assinatura antiga | Falha de compilação. |
+| 23:47:02–23:47:20 | RED comportamento agregado | 6 testes, 2 falhas: total 3 em vez de 4 e 100% em vez de 33%. |
+| 23:47:32–23:48:21 e 23:49:21–23:50:09 | Seleções InputsTest/ApiIntegrationTest | 57/57 GREEN em cada seleção final relatada. |
+| 23:50:13–23:51:06 | Na raiz: `mvn -f backend\pom.xml test '-Dapi.version=1.44'` | **Exit 0, 68/68, zero falhas/erros/skips**: API 52, Inputs 5, Observability 6, DefaultConsole 1, Login 1, Registration 3. |
+
+Provas relatadas e confrontadas estaticamente nos pontos pertinentes:
+422 status com mensagem exata/snapshots sem escrita parcial; membro ativo
+não atribuído e mesma pessoa; abandono não autoriza conclusão; CSRF/acesso/
+versão/revogação após espera intactos. Fixtures BLOCKS/races/rollback tardio
+persistem revisão antes da tentativa crítica para alcançar a proteção antiga.
+V3→V4 continua isolada com target 4; V4 populada→V5 compara dados, bytes,
+relações, eventos e migrations anteriores, aplica uma migration e zero na
+repetição. Cadeia limpa V1→V5 mantém default TODO/CHECK de motivo.
+Quatro estados/25% e globais de lista/detalhe de projeto e ambos TaskPage
+cobertos segundo relato. Não se infere daqui reinício operacional T033.
+
+### Frontend — cronologia recebida de 19-11-2026 UTC
+
+Fonte inicial: `implementar-002-frontend`/T025 e G2; comandos em `frontend`,
+dependências preexistentes, sem instalação. RED de editor por
+`npm test -- src/TaskDetail.test.tsx src/TaskDetailPanel.test.tsx -t "revisão obrigatória"`;
+seleção de apresentação identificada pelo engenheiro com `-t quatroestados`.
+Não se inventa o restante comando de seleção quando não fornecido.
+
+| UTC | Execução relatada | Resultado |
+|---|---|---|
+| 00:01:42.868–00:02:05.305 | RED editor | 9 falhas, 1 passou, 17 skips. |
+| 00:03:24.244–00:03:40.708 | GREEN editor | 35 passaram. |
+| 00:05:16–00:05:20 | RED apresentação | 4 falhas, 71 skips. |
+| 00:06:35–00:06:38 | GREEN apresentação | 5 passaram, 71 skips. |
+| 00:07:28 (referência recebida) | Full/build iniciais | PASS relatado, anterior ao reforço seguinte. |
+| 00:08:50.829–00:09:09.648 | Full após reforço de teste | 166 passaram/1 falhou por referência DOM obsoleta. |
+| 00:09:23–00:09:26 | Seleção após correção | 3 passaram. |
+| 00:09:51.891–00:10:10.636 | `npm test` final T025 | Exit 0, **167/167, dez ficheiros**. |
+| 00:09:51.932–00:09:57.640 | `npm run build` final T025 | Exit 0. |
+| 01:16:05–01:16:24 | `npm test`, handover mais recente após correções | **174/174 PASS** relatado; precisão disponível em segundos, sem milissegundos inventados. |
+| 01:16:05–01:16:10 | `npm run build`, mesmo handover | PASS relatado; diffcheck PASS também relatado. |
+
+TS E2E sem emissão PASS foi reportado antes da correção final de foco,
+com E2E inalterado; não é novo typecheck nesta tarefa. Node local relatado
+26.13.1/npm 11.2.0 difere do Node CI 22.12.0; sucesso local não certifica CI.
+
+### Ambiente T027, falhas T030 e correções posteriores
+
+**Tudo nesta subsecção é recebido, não operação desta tarefa.**
+Autorizado novo Compose exclusivo `matriz-review-002-e2e`, aplicação
+`http://127.0.0.1:18081`, DB loopback 55433 e volume novo com seed fictício.
+Preparação em 19-11 UTC: `config --quiet` **00:24:25.568–00:24:26.025**,
+build **00:24:26.026–00:24:42.703**, up **00:24:42.704–00:24:52.800**,
+todos exit 0 segundo preparador. Não foi fornecida aqui a linha completa
+de cada comando Compose; não se reproduz configuração expandida.
+SQL read-only **00:25:13.011–00:25:13.480**, exit 0, relatou V1–V5
+success/CHECK de quatro estados e seed 3 utilizadores/2 projetos/5 tarefas
+(2 DONE, 1 IN_PROGRESS, 2 TODO). Estes números são de preparação, não
+contagens atuais após E2E.
+
+Imagem **local**, não GHCR:
+`sha256:36db57e9afbd0b504b8949f64b4624e3ca054f2890c4bdb9e9a708ea0a936f04`;
+não contém as últimas correções da aplicação. Raiz 200 e health/readiness
+anónimos 401 são compatíveis com SecurityConfig por omissão sem perfil
+observability; healthcheck base usa raiz, não JDBC. Revisão
+`review-002-t027-ambiente` foi estática, com disponibilidade/SQL relatados:
+não prova autenticação, jornadas E2E, readiness JDBC ou persistência final.
+
+E2E autorizado às **00:29:59 UTC**; às **00:31:36 UTC** o autor pediu
+preservar três contas fictícias de registo, sem limpar/reiniciar contentores
+ou volumes. R1 de `review-002-e2e-scenarios`: filtros desmontam os controlos
+após mudança; correção aguarda End→DONE/GET/DOM e readquire foco antes de
+ArrowUp→IN_REVIEW/GET. `review-002-e2e-r1` aprovado; não é execução browser.
+
+**T030 full real relatado**, em `frontend`, **00:51:01.7907636–
+00:54:19.0025664 UTC**, `npm run test:e2e`,
+PLAYWRIGHT_BASE_URL=`http://127.0.0.1:18081`, workers=1, sem overrides
+de retries: **exit 1, 11 PASS, 2 FAIL, 0 skip**, contra imagem antiga.
+
+- Cenário novo de origem persistida: timeout 120000 ms no helper da linha
+  213 então chamado na 759, `getByLabel('Email')` após Sair, Ana ainda
+  autenticada. Linhas referem a execução antiga, não são âncoras do código final.
+- Dashboard novo: asserção estrita do viewBox então na linha 1045 falhou
+  em desktop 1440; 390/320 não foram alcançados. Não se declara cobertura móvel.
+- Outros 11 passaram, incluindo registo com três contas retidas e percursos
+  anteriores funcionais/guards/a11y nos estados exercitados. Não são 13 PASS.
+- Artefactos ignorados do runner em `frontend/test-results`: `.last-run.json`
+  failed e dois error-contexts segundo relato, sem HTML/trace/screenshots de
+  falha. Não são prova tracked/permanente; JSON isolado não prova totais.
+  Sem erro de teardown reportado e projetos próprios com 404, mas tentativa
+  read-only de conferir agregado posterior falhou por role incorreta: **não
+  há contagem final validada** nem inferência de eliminação das contas.
+
+**Diagnóstico/correções posteriores recebidos** e confirmados por duas
+revisões independentes **estáticas** aprovadas,
+`review-002-two-e2e-fixes` e `review-002-save-focus`:
+
+- Logout E2E aguarda POST 204, formulário de login e auth/me 401 antes de
+  navegar, para não abortar a sequência CSRF/logout; matcher de teclado/
+  `option.disabled` DOM corrigido sem relaxar a regra de revisão.
+- `getBBox` mediu overflow real de texto no gráfico: y negativo em 1440
+  **−0.1488**, 390 **−4.2138**, 320 **−3.5484**. Correção de baseline 42/
+  altura máxima 88 preserva asserção estrita não negativa. Estas medições
+  são diagnóstico recebido, não observação visual desta tarefa.
+- TaskDetail captura foco antes de busy e restaura após commit só se foco
+  está em BODY e controlo do mesmo editor continua ligado/habilitado; sem
+  timers nem roubar foco da toolbar. Regressões Enter/pending/409/422/base/
+  fecho/toolbar/Escape relatadas. jsdom simula BODY, **não prova browser**;
+  atribuir o instante exato do blur ao disabled continua inferência.
+
+Seleção E2E adicional histórica recebida: **01:07:28–01:07:46 UTC, exit 1,
+0 PASS/2 FAIL/0 skip**, ainda contra imagem antiga e **antes** da correção
+final de foco. Não representa resultado do código final. Os 174/174/build
+posteriores acima não a convertem em PASS browser. O **PASS E2E remoto
+do CI #22**, abaixo, tem proveniência separada e código final; não
+reclassifica retroativamente estas falhas da imagem local antiga.
+
+<a id="feature-002-ci-final"></a>
+
+### CI final e decisão visual — evidência recebida de 19-11-2026 UTC
+
+Fonte remota: relato identificado de **`verificar-002-ci-44436970582`**,
+transmitido no handover, não consulta de rede nem rerun deste autor documental.
+O agente consultou **REST público, sem credenciais**, às **01:51:27–28 UTC**:
+run, jobs e lista de runs responderam **HTTP 200**. Confirmou o repositório
+canónico público `Fibigor/matriz`, **CI #22**, run **44436970582**,
+**attempt 1**, evento **push**, workflow **`.github/workflows/ci.yml`**,
+branch **main**, SHA **`7c182edf7fe1c2cd1009743b029e3cd9d5759c12`** igual
+ao HEAD observado. Run **completed/success**.
+[Run](https://github.com/Fibigor/matriz/actions/runs/44436970582);
+[URL fornecido pelo autor](https://github.com/Fibigor/matriz/actions/runs/44436970582/job/135268652860).
+
+Run iniciado às **01:26:55Z**, último job terminou às **01:37:23Z**,
+run atualizado às **01:37:24Z**. A API não forneceu `run.completed_at`:
+atualização do run não é renomeada como fim de execução.
+
+| Job / URL pública | Início–fim UTC | Estado / passos corroborados |
+|---|---|---|
+| [Static analysis (Semgrep) — 135268156050](https://github.com/Fibigor/matriz/actions/runs/44436970582/job/135268156050) | 01:26:57–01:27:21 | completed/success; passo #4 success. |
+| [Backend tests — 135268155915](https://github.com/Fibigor/matriz/actions/runs/44436970582/job/135268155915) | 01:26:57–01:28:06 | completed/success; #4 Run backend tests success. |
+| [Frontend tests and build — 135268156134](https://github.com/Fibigor/matriz/actions/runs/44436970582/job/135268156134) | 01:26:57–01:27:26 | completed/success; #5 Run component tests e #6 Build frontend success. |
+| [End-to-end tests — 135268652860](https://github.com/Fibigor/matriz/actions/runs/44436970582/job/135268652860) | 01:28:08–01:37:23 | completed/success; #5 build da imagem, #12 Run end-to-end tests e #13 upload do relatório success. |
+
+**Nenhum dos quatro jobs foi skipped.** Só os passos condicionais E2E
+**#14/#15**, de diagnóstico em falha, foram skipped; não são jobs/testes
+omitidos. Às **01:51:53 UTC**, GET anónimo dos logs dos jobs backend,
+frontend e E2E devolveu **403 em cada pedido**, sem tentativa autenticada.
+Não houve acesso aos logs/artefactos nem confirmação de contagens remotas.
+Os números **68/174/13** pertencem, respetivamente, aos relatos locais e à
+preparação dos cenários; **não são totais verificados deste CI**.
+Upload success não significa conteúdo/retenção do relatório inspecionados.
+
+A imagem construída por este CI usa o código final do SHA acima, ao
+contrário da imagem local antiga dos RED. Assim, T030 tem prova browser
+remota PASS por metadados do job; continua sem novo full **local** final,
+sem totais/detalhe remoto por cenário e sem prova de reinício T033.
+Os nove diffs documentais são posteriores a esse SHA e não integram a
+imagem/execução: este pós-update não tornou o CI verde.
+
+Fonte humana **separada**: às **01:49:42 UTC**, o autor confirmou
+**«confirmo aprovação total visual»**, em resposta à pergunta sobre
+desktop, **390/320 px e teclado**. Regista-se aprovação total **T031**
+nesse âmbito, não inspeção visual realizada pelo agente, teste automatizado
+ou aceitação do cliente. Nem CI nem aprovação humana certificam todos os
+FR/SC ou ausência geral de problemas.
+
+### Bloqueios e critérios ainda não comprovados integralmente
+
+No preflight anterior, app-only build/recreate foi aprovado separadamente,
+mas **não executado naquela sessão**.
+Preflight recebido de **01:23:03.908 UTC**:
+`Test-Path Env:POSTGRES_PASSWORD` devolveu False, saída 3; nenhum Docker
+build/recreate ou E2E novo por esse executor após o bloqueio. Credencial original existia
+apenas em runtime no processo de preparação e não está disponível pelo
+método autorizado; sem pesquisa/divulgação de segredos ou substituição.
+Bloqueio **local operacional**, não defeito funcional demonstrado.
+Nenhuma operação de serviço é autorizada por esta escrita; volume/contas retidos.
+
+- **T030:** **PASS via CI confirmado independentemente**, com URL/SHA/run/
+  quatro jobs/horários identificados acima; totais remotos/detalhe por
+  cenário indisponíveis. Não é rerun local nem prova da imagem GHCR histórica.
+- **T031:** **aprovação total visual do autor recebida às 01:49:42 UTC**,
+  explicitamente no âmbito desktop/390/320/teclado. Decisão nova e separada
+  da automação, não reutilização da aprovação de 001.
+- **T032/T033:** aprovação específica da operação exata de reinício e
+  execução/prova antes/depois pendentes; app-only recreate não executado
+  não satisfaz estes gates nem demonstra sobrevivência de IN_REVIEW.
+- **T034/G3 bloqueado**; T041/G4 formal e T042/G5 não realizados.
+  `review-002-documentacao-antecipada` já aprovou o alinhamento limitado
+  T035–T040; o novo delta de três ficheiros aguarda revisão estreita,
+  sem fecho da feature.
+
+| FR da feature 002 / SC | Prova disponível | Limite de conclusão |
+|---|---|---|
+| FR-001 / SC-004/005 | Domínio/default/upgrade no backend relatado; labels/componentes e alinhamento canónico; CI final E2E PASS identificado e T031 total aprovada. | Metadados confirmam execução integrada, não contagens/cenários remotos; SC-004 ainda depende da prova de reinício. |
+| FR-002/003/004/010 / SC-001/002 | API/atomicidade/participante/abandono e base suja/componentes relatados PASS, G1/G2 e correções estáticas revistas; CI final E2E PASS e aprovação humana incluindo teclado. | Evidência disponível, sem logs/detalhe remoto por cenário nem fecho formal G3–G5. |
+| FR-005/006 / SC-003/004 | Quatro contagens globais/25% na API/componentes; história/status reconhecidos; CI final E2E PASS e aprovação humana desktop/390/320/teclado. | Não é nova medição geométrica/inspeção do agente nem certificação integral de SC; reinício e gates mantêm prova própria. |
+| FR-007 / SC-005 | Preservação V4→V5 e DONE antigas coberta nos testes backend relatados/revisão G1. | Comprovado nesse âmbito automatizado relatado, não nova certificação documental ou da feature inteira. |
+| FR-008 / SC-006 | BLOCKS/motivos/reabertura/races com proteção original alcançável relatados PASS; CI final E2E PASS identificado. | Sem detalhe remoto por cenário ou fecho automático dos gates. |
+| FR-009 / SC-004/005 | Persistência API/história/upgrade relatados e CI final E2E PASS confirmado. | Parcial; sem detalhe remoto por cenário de reload, reinício T033 permanece pendente. |
+
+Cobertura planeada FR/SC 100% na análise não é 100% de critérios executados/
+validados. [Matriz de testes](test-plan.md#feature-002-test-plan) e
+[estado ER-01–07](implementation-plan.md#feature-002--estado-em-revisão-19-11-2026)
+distinguem implementado/testado/revisto/pendente, sem duplicar spec.
+
+<a id="feature-002-doc-checks"></a>
+
+### T035–T040 — alterações e conferências documentais próprias
+
+- **T035:** enum/filtro/Task/TaskReference, PUT/422 status com mensagem
+  «Coloque a tarefa em revisão antes de a concluir.», Progress.required/
+  inReview/exemplo de quatro contagens/fórmula; endpoints/formatos/auth/
+  permissões preservados, entrega cliente/servidor coordenada.
+- **T036:** RF-05/06/08/09/15, RN-07/08 e complemento BLOCKS, critérios
+  US-06/08/09/15/18; criação TODO, revisão persistida e DONE→DONE/antigas,
+  sem novo papel. IDs canónicos/históricos preservados.
+- **T037:** README/dados/arquitetura atuais V1–V5, CHECK sem DML/backfill,
+  fluxos/base segura, quatro contagens globais e história localizada;
+  proveniência V1–V4/001/GHCR não reescrita.
+- **T038:** planos canónicos alinhados a ER/FR/SC, ambas as migrations,
+  proteções originais e gates separados, sem novo plano/backlog.
+- **T039:** este é o único destino canónico de consolidação da evidência
+  recebida e das verificações próprias; falhas e bloqueios mantidos.
+- **T040:** conferência local documental, sem suites de aplicação.
+  Resultados observados abaixo; não equivale a validação integral OpenAPI
+  ou revisão independente.
+
+Verificações **executadas na antecipação documental anterior**, na raiz Windows, em memória
+(here-string para `python -B -`, sem scripts/relatórios gravados):
+
+| Comando / conferência própria | Resultado observado |
+|---|---|
+| `git --no-pager status --short`; `git rev-parse HEAD`; `git diff --cached --name-only` | Inicialmente worktree/índice limpos, HEAD completo indicado acima; após escrita apenas os nove caminhos autorizados modificados e staged vazio. Não é comparação binária do índice. |
+| `python -B -c` com `importlib.util.find_spec` e versão de yaml | PyYAML **6.0.3** preexistente disponível; `openapi_spec_validator` indisponível, sem instalação. |
+| `python -B -`, parse YAML/refs/parâmetros/required e comparação com `git show HEAD:openapi.yaml` | **PASS**: **229 referências internas**, **30 operações**; rotas/verbs/operationId/servers/auth/versão preservados; parâmetros de caminho resolvidos, required/properties, Status em Task/TaskReference, inReview obrigatório, exemplo 4/25% e 422 status/mensagem conferidos. |
+| `python -B -`, loader YAML com recusa de chaves duplicadas | **PASS**, nenhuma chave duplicada, declaração OpenAPI 3.1.0 preservada. Não é validador integral OpenAPI/JSON Schema nem chamada HTTP. |
+| `python -B -`, leitura dos nove ficheiros e resolução de links/IDs/headings | **PASS 9/9** UTF-8/sem NUL/sem carácter de substituição/newline final; **198 referências locais, 63 fragmentos Markdown, zero erros**. Sem rede/renderização Mermaid ou inspeção visual. |
+| `python -B -`, comparação com `git show HEAD:` e pesquisa das regras substituídas | **PASS**: nove caminhos exatos, sem staged; blocos históricos de requirements/user-stories e conteúdo de verification desde `current-publication` preservados por comparação de texto normalizado. Sem regra vigente de três estados/conclusão livre encontrada nos cinco canónicos funcionais pesquisados. |
+| `git diff --check` | **PASS**, exit 0. Avisos Git de futura conversão LF→CRLF em user-stories/OpenAPI não são falhas de whitespace; nenhuma normalização/configuração aplicada. |
+
+**Revisão independente já recebida:** `review-002-documentacao-antecipada`
+**APROVOU os nove documentos, sem achados**, no âmbito limitado T035–T040,
+solicitando apenas este pós-update de CI/visual. Segundo o relato: leitura
+readonly UTF-8 9/9, parse YAML/229 referências/30 operações, diffcheck e
+índice vazio; consistência código/contrato confrontada por leitura. Não é
+execução própria deste delta, nem aprovação formal T041/G4 ou T042/G5.
+As contagens da tabela anterior pertencem à conferência anterior, não a
+uma nova verificação YAML nesta atualização de três Markdown.
+
+**Delta final autorizado:** reconcilia CI/T030 e aprovação total T031 nos
+três caminhos verification/test-plan/implementation-plan, sem alterar os
+outros seis, tasks.md ou marcadores. Apenas verificações documentais mínimas
+locais próprias; resultados abaixo. Pronto para **revisão estreita do novo
+delta de três ficheiros**, não G5 ou fecho.
+
+| Conferência própria do delta final, na raiz Windows | Resultado observado |
+|---|---|
+| `git diff --check` | PASS, exit 0; apenas avisos LF→CRLF dos diffs preexistentes user-stories/OpenAPI, sem normalização aplicada. |
+| `python -B -`, leitura estrita dos três Markdown e resolução local de links/IDs/headings | PASS **3/3** UTF-8/sem NUL/sem carácter de substituição/newline final; **92 referências locais, 34 fragmentos, zero erros**, sem rede. |
+| `python -B -`, comparação textual normalizada com `git show HEAD:` | PASS: verification desde `current-publication`, test-plan e implementation-plan desde o suplemento de 18-11 preservados. Duas tentativas de comparação falharam antes de ajustar o verificador: fronteira ampla incluía a nota de contexto 002 preexistente; comparação seguinte misturava CRLF/LF. Diagnóstico confirmou a diferença, sem editar os históricos para fazer passar. |
+| `Get-FileHash -Algorithm SHA256`, antes/depois | Hashes iguais dos seis canónicos fora do delta (README, architecture, database, requirements, user-stories, OpenAPI) e de tasks.md; diffs preexistentes preservados nesses caminhos. |
+| `git rev-parse HEAD`; `git diff --cached --name-only`; `git --no-pager status --short` | HEAD **7c182edf7fe1c2cd1009743b029e3cd9d5759c12** mantido, índice sem entradas staged, mesmos nove caminhos modificados; nesta atualização só três editados. |
+| Pesquisa textual dirigida (`rg`/`Select-String`) dos resumos/matrizes/planos | Pendências obsoletas de identidade CI/URL/SHA e âmbito visual reconciliadas; limites remotos de contagens/logs e T032/T033/gates formais conservados. Secções históricas mantêm o estado à data. |
+
+Skills seguidas por leitura dos `SKILL.md`: **contexto-matriz,
+validacao-matriz, speckit-implement**, sem mecanismo de invocação nativa;
+não se simula invocação. `.specify/feature.json` lido: seleciona 002;
+nenhum helper/resolvedor/hook executado, nenhuma persistência de estado.
+`.specify/extensions.yml` ausente na leitura. Nenhum ignore/config/CI/
+lock/AGENTS/skill/artefacto da feature alterado; sem novos ficheiros,
+Maven/npm/build/browser/rede/serviços/instalações ou operações Git de escrita.
+
+**Segurança/publicação preservadas:** exceção temporária exata
+`picomatch@4.0.7` / `CVE-2026-112366` / HIGH / frontend npm, dev-only,
+sem fix, até **2026-11-25T00:00:00Z exclusivo**, conforme política
+[inalterada](constraints.md#excecao-temporaria-ci). Não é remediação/scan
+limpo. Pré-release/tag/SHA/CI/run/digest de 18-11 abaixo continuam históricos,
+não uma publicação de 002 ou prova do novo commit.
+
+---
+
 ## Estado vigente — 18-11-2026
+
+**Resumo histórico de 001 e GHCR:** preservado integralmente; para feature
+002 prevalece o [estado de 19-11](#feature-002), não o fecho anterior.
 
 **Candidato académico `0.4.0-rc.1`, sem bump ou validação do cliente; publicação de teste GHCR confirmada.** A prerelease técnica não é release estável nem prontidão de produção. Este resumo e a secção [publicação atual](#current-publication) prevalecem sobre estados intermédios datados abaixo, preservados como cronologia; cada resultado distingue execução local, relato recebido e evidência histórica. As alterações documentais deste fecho são posteriores ao commit/imagem publicados e não integram o SHA publicado.
 

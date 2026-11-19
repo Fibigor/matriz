@@ -1,6 +1,6 @@
 # Matriz — Requisitos e âmbito funcional
 
-## Especificação em vigor — ficha 03, extensões V4 e registo académico
+## Especificação em vigor — ficha 03, extensões V4, registo e estado Em revisão
 
 Em 29-10-2026 o autor aprovou implementar integralmente o âmbito da ficha 03 e as regras abaixo. Esta secção substitui as exclusões e a responsabilidade única da ficha 01; o levantamento original é conservado no histórico no final, não é uma segunda especificação em vigor. Não se presume validação com o cliente ou autorização de produção.
 
@@ -8,23 +8,34 @@ Stack escolhida: Java 21/Spring Boot, React/TypeScript e PostgreSQL, monólito m
 
 **Suplemento vigente — 18-11-2026:** delta de usabilidade aprovado pelo autor: mínimo de registo 6, membros por email completo com compatibilidade `userId`, templates por ciclo e ações/seletores compactos. As regras abaixo incorporam esse delta. **T024 fechada, 28/28 tarefas**, full E2E **11/11 PASS às 11:55–11:56 UTC**, revisão independente `review-t024-full-closure` PASS; B5/T028 PASS documentados. Aprovação visual humana de 09:42:49Z separada. Backend 58/frontend 141/build anteriores e seleção 74/build da correção de foco não foram reexecutados nesta revisão. [Estado, proveniência e limites](verification.md#estado-vigente--18-11-2026).
 
+**Incremento vigente — feature 002, 19-11-2026:** implementação aprovada pelo
+autor em 18-11 às 23:33:19 UTC; revisão persistida obrigatória antes de nova
+conclusão substitui a regra anterior RF-08/RN-07. Alinhamento documental
+T035–T040 antecipado por aprovação excecional de 19-11 às 01:31:49 UTC,
+sem aprovação G3 ou fecho. [Spec e decisões](../specs/002-estado-em-revisao/spec.md),
+[modelo delta](../specs/002-estado-em-revisao/data-model.md) e
+[OpenAPI canónico](../openapi.yaml). Os limites de fase nos artefactos da
+feature são proveniência histórica. Implementado não significa aceitação:
+[evidência e gates pendentes](verification.md#feature-002).
+O fecho de 001 referido acima não valida 002 nem a imagem GHCR anterior.
+
 | ID atual | Requisito | Prioridade |
 |---|---|---|
 | RF-01 | Autenticar por email e palavra-passe de conta local ativa, consultar perfil e terminar sessão Matriz. | Must |
 | RF-02 | Criar projetos com proprietário inferido da sessão. | Must |
 | RF-03 | Listar, pesquisar pelo nome e consultar apenas projetos acessíveis, com paginação. | Must |
 | RF-04 | Gestor adiciona contas ativas por email completo conhecido e remove membros elegíveis; API mantém alternativa por userId exato, exclusivamente um critério por pedido. Participantes consultam nomes, funções e inatividade, sem IDs visíveis ou diretório de contas. | Must |
-| RF-05 | Criar/listar/consultar tarefas persistidas, com paginação e filtros por estado e prioridade. | Must |
-| RF-06 | Participantes editam título, descrição, estado e prioridade com controlo de versão. | Must |
+| RF-05 | Criar/listar/consultar tarefas persistidas, inicialmente TODO, com paginação e filtros pelos quatro estados TODO/IN_PROGRESS/IN_REVIEW/DONE e por prioridade. | Must |
+| RF-06 | Participantes editam título, descrição, estado e prioridade com controlo de versão e origem persistida segura para concluir (RN-07). | Must |
 | RF-07 | Gestor associa zero ou vários participantes ativos à tarefa, sem duplicados, e remove atribuições. | Must |
-| RF-08 | Transições TODO/IN_PROGRESS/DONE, sem responsável obrigatório, sujeitas às invariantes BLOCKS de RN-15. | Must |
-| RF-09 | Painel e projeto apresentam contagens globais e percentagem concluída, independentes da página/filtros. | Must |
+| RF-08 | Quatro estados TODO/IN_PROGRESS/IN_REVIEW/DONE; nova entrada DONE só desde IN_REVIEW imediatamente persistido, sem responsável/revisor obrigatório, sujeita a RN-07 e BLOCKS de RN-15. | Must |
+| RF-09 | Painel e projeto apresentam quatro contagens globais (todo/inProgress/inReview/done), total e percentagem só de DONE, independentes da página/filtros. | Must |
 | RF-10 | Gestor edita/elimina projetos; participantes eliminam tarefas; confirmar eliminação na interface. | Must |
 | RF-11 | Participantes adicionam/listam comentários com autor autenticado e data do servidor. | Must |
 | RF-12 | Identificar tarefas por chave global MAT-n estável; editar tipo, peso opcional e motivo de fecho opcional. | Must |
 | RF-13 | Participantes criam/listam/removem relações RELATED/BLOCKS/DUPLICATES com controlo das duas versões. | Must |
 | RF-14 | Adicionar/listar/descarregar anexos diretos ou de comentário; eliminar apenas como autor ou gestor participante. | Must |
-| RF-15 | Consultar histórico paginado, com autoria/data e alterações tipadas, sem API de edição/eliminação. | Must |
+| RF-15 | Consultar histórico paginado, com autoria/data e alterações tipadas; apresentar estados reconhecidos incluindo revisão, sem revisões retroativas nem API de edição/eliminação. | Must |
 | RF-16 | Editar/pré-visualizar Markdown básico, aplicar templates fixos e usar detalhe partilhado painel/página com rascunhos protegidos. | Must |
 | RF-17 | Criar conta pública académica ativa com nome, email e palavra-passe; confirmar apenas na UI e regressar ao login com mensagem, sem auto-login. | Must |
 
@@ -36,15 +47,15 @@ Stack escolhida: Java 21/Spring Boot, React/TypeScript e PostgreSQL, monólito m
 - **RN-04:** membros sem atribuições podem ser removidos; atribuições de tarefas concluídas também bloqueiam remoção. Remoção retira acesso nas operações seguintes. Só gestor adiciona por email completo normalizado como RN-20, sem pesquisa parcial/sugestões/convites. API conserva userId exato: exatamente uma propriedade presente, mesmo null conta como presença; ambos/nenhum dão 422 em email, critério escolhido null/vazio/inválido é recusado, campos desconhecidos dão 400. Conta inexistente/inativa recebe o mesmo 422 «Conta não elegível.» no campo escolhido. Repetição/concorrência email/email ou email/userId dá 204 e uma participação, sem alterar papel, joined_at ou versão; UI confirma participação de forma neutra, não uma segunda criação.
 - **RN-05:** tarefa pertence a um projeto fixo; estado inicial TODO, prioridade inicial MEDIUM, sem responsáveis. Prioridades LOW/MEDIUM/HIGH. Participantes podem criar, editar e eliminar qualquer tarefa do projeto.
 - **RN-06:** tarefa admite zero ou vários responsáveis. Só participantes ativos do mesmo projeto são elegíveis; o par tarefa/utilizador é único. Atribuição inválida preserva o estado anterior.
-- **RN-07:** não exigir estado intermédio ou atribuição para concluir; reabertura e conclusão respeitam RN-15.
-- **RN-08:** progresso global: 100 vezes concluídas/total, arredondamento inteiro com meios para cima; projeto sem tarefas apresenta 0% e “Sem tarefas”. Filtros afetam resultados/paginação, não os agregados globais.
+- **RN-07:** nova entrada em DONE exige IN_REVIEW imediatamente persistido. TODO/IN_PROGRESS podem ir a IN_REVIEW e revisão pode regressar a ambos, sem exigir passagem por IN_PROGRESS. Rascunho intermédio e revisão histórica abandonada não autorizam conclusão; TODO/IN_PROGRESS→DONE dá 422 no campo status, «Coloque a tarefa em revisão antes de a concluir.», sem mudar dados/versão/datas/histórico. Qualquer participante ativo autorizado, mesmo sem atribuição e a mesma pessoa que submeteu a revisão, pode rever/concluir; não há papel/revisor adicional. DONE→DONE é manutenção permitida; reabrir para qualquer não-DONE respeita RN-15 e limpa motivo. Tarefas DONE antigas não são convertidas nem recebem revisão fictícia.
+- **RN-08:** progresso global com `total = todo + inProgress + inReview + done`; 100 vezes done/total, arredondamento inteiro HALF_UP (meios para cima), só DONE no numerador. Uma tarefa de cada estado dá total 4 e 25%; projeto sem tarefas apresenta todas as contagens zero, 0% e “Sem tarefas”. Filtros afetam resultados/paginação, não os agregados globais.
 - **RN-09:** operações transacionais; nenhuma falha é anunciada como sucesso. Edições de projeto/tarefa e alterações de atribuição exigem versão atual, caso contrário 409. Atribuição repetida é idempotente quando a versão é atual. Falha de transporte pode deixar resultado incerto; não repetir escritas automaticamente.
 - **RN-10:** eliminar tarefa remove comentários/atribuições/relações/anexos/histórico; eliminar projeto remove também tarefas/participações. Extremos sobreviventes registam LINK_REMOVED sem mudar estado/versão/datas. Só remover após confirmação humana na interface. Não eliminar contas por esta API.
 - **RN-11:** comentários têm 1–2 000 pontos de código após remoção de espaços nas extremidades, autor/data definidos no servidor; Markdown básico seguro conforme RN-18. Não há edição/eliminação de comentário isolado nem upload posterior ao comentário.
 - **RN-12:** autenticação local usa hash scrypt e sessão no servidor com timeout inativo de 30 minutos; CSRF protege login, registo e escritas, erros de credenciais são genéricos e cinco falhas por email/endereço em 15 minutos bloqueiam novas tentativas durante 15 minutos. O limite de login é mantido em memória por instância e reiniciar o serviço limpa o estado; produção está diferida. Login aceita palavras-passe antigas curtas (não vazias) e até 200 pontos de código, sem trim. Registo segue RN-20–22; não há recuperação de palavra-passe.
 - **RN-13:** chave única global `MAT-n`, sequencial com lacunas permitidas; UUID continua identidade e projeto é fixo. Tipo TASK/BUG/IMPROVEMENT, inicial TASK; peso null ou 1/2/3/5/8/13, sem ponderação do progresso. Motivo null ou COMPLETED/CANCELLED/DUPLICATE/WONT_DO apenas em DONE; todos os DONE contam como concluídos.
 - **RN-14:** PUT continua a exigir título/estado/prioridade/versão; descrição omitida/null normaliza para vazio. Tipo/peso omitidos preservam; type null explícito no PUT é 422, weight null limpa. Motivo omitido preserva em DONE→DONE, entrada em DONE sem motivo dá null; reabertura limpa-o, motivo não null fora de DONE é 422. PUT aceite incrementa versão mesmo sem alteração efetiva; nesse caso não emite evento.
-- **RN-15:** RELATED simétrica com extremos canónicos por ID; BLOCKS/DUPLICATES dirigidas, mesmo projeto, sem auto-relação ou duplicação do mesmo tipo/direção. Tipos distintos podem coexistir; apenas BLOCKS proíbe ciclos. A BLOCKS B permite B iniciar/editar, mas entrar em DONE exige todos os bloqueadores diretos DONE; A não reabre com qualquer dependente direto DONE. Criar A não DONE BLOCKS B DONE é 422. Remover relação/eliminar bloqueador desbloqueia sem mudar estados.
+- **RN-15:** RELATED simétrica com extremos canónicos por ID; BLOCKS/DUPLICATES dirigidas, mesmo projeto, sem auto-relação ou duplicação do mesmo tipo/direção. Tipos distintos podem coexistir; apenas BLOCKS proíbe ciclos. A BLOCKS B permite B iniciar/editar/entrar em revisão mesmo bloqueada; entrar em DONE exige RN-07 e todos os bloqueadores diretos DONE. IN_REVIEW continua não-DONE, não liberta dependentes. A não reabre, inclusive para IN_REVIEW, com qualquer dependente direto DONE. Criar A não DONE BLOCKS B DONE é 422. Remover relação/eliminar bloqueador desbloqueia sem mudar estados.
 - **RN-16:** POST/DELETE de relação exigem versão da tarefa da rota e targetVersion do outro extremo, mesmo no POST repetido ou DELETE pelo extremo de entrada. Criação/remoção explícita incrementa ambas uma vez; POST duplicado atual dá 200 sem incremento/evento. Versão antiga é 409; auto-relação/ciclo/bloqueio semântico é 422. Lock da linha do projeto serializa verificações/escritas, com revalidação de conta ativa/participação após espera; histórico participa na mesma transação.
 - **RN-17:** anexos PostgreSQL BYTEA, até 5 diretos por tarefa e independentemente 5 por comentário, cada um 1–4 194 304 bytes. Multipart `files` repetidos; comentário aceita JSON `{content}` ou multipart `comment` application/json mais ficheiros opcionais, texto sempre obrigatório e lote/comentário/evento atómicos. PNG/JPEG/GIF/WebP/PDF/TXT/MD exigem extensão/MIME/validação limitada de conteúdo; UTF-8 estrito, sem NUL ou markup HTML/XML/SVG nos ficheiros textuais. Participante adiciona; só autor ou gestor ainda participante elimina; download revalida acesso e usa attachment/nosniff/no-store. Anexos/comentários não incrementam versão/updatedAt da tarefa.
 - **RN-18:** descrição/comentário mantêm limite de 2 000 pontos de código; react-markdown 10.1.0 apresenta títulos, listas, negrito, ênfase, citações e código, ligações HTTP/HTTPS, sem HTML/imagens/GFM. Três templates fixos TASK/BUG/IMPROVEMENT; substituir descrição não vazia exige confirmação; mudar tipo não aplica template. Cada tipo só pode ser aplicado uma vez por ciclo local de criação/edição: aplicação efetiva desativa/acinzenta o controlo, apagar texto ou regressar ao tipo não o reativa; cancelar confirmação não consome. Save, falha, refetch limpo/sujo, recuperação confirmada, maximização e resize conservam o conjunto; só nova criação após sucesso ou fecho/reabertura efetiva/outra tarefa o reinicia. Sem persistência/JSON/storage desse estado. Painel a partir da lista desktop (>960 px), página em acesso hash direto/móvel, mesmo detalhe; foco devolvido, Escape/inert no painel, adaptação ao redimensionamento e rascunhos protegidos na navegação.

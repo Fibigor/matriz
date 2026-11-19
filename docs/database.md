@@ -2,7 +2,28 @@
 
 Confronto estático em **17-11-2026** com [migrations V1–V4](../backend/src/main/resources/db/migration/), serviços JDBC e [OpenAPI](../openapi.yaml). [Arquitetura](architecture.md) e [índice/proveniência](architecture/README.md). A consolidação documental não altera a migration SQL V2.
 
-## Suplemento atual — 18-11-2026
+## Estado atual — feature 002, 19-11-2026
+
+Leitura estática do código sobre HEAD `7c182edf7fe1c2cd1009743b029e3cd9d5759c12`.
+A cadeia atual é **V1–V5**; a leitura V1–V4 datada acima conserva a sua
+proveniência. [V5__task_in_review.sql](../backend/src/main/resources/db/migration/V5__task_in_review.sql)
+apenas substitui `task_status_check` por TODO/IN_PROGRESS/IN_REVIEW/DONE.
+Sem DML, default novo, backfill, colunas, tabelas ou índices novos; V1–V4
+publicadas permanecem intactas. `task_close_reason_status` de V4 mantém-se.
+Identidades, chaves, versões, datas, relações e histórico antigos não são
+reescritos; DONE antiga não recebe revisão fictícia.
+
+O novo estado persiste no mesmo `task.status`; criação mantém DEFAULT TODO.
+Não há reviewerId, aprovação, timestamp dedicado ou tabela de revisão.
+O estado imediatamente persistido, não o histórico, autoriza nova entrada
+DONE; detalhes em [RN-07](requirements.md#regras-em-vigor) e
+[modelo delta 002](../specs/002-estado-em-revisao/data-model.md).
+[Evidência](verification.md#feature-002): upgrade populado V4→V5 e cadeia limpa
+cobertos no backend segundo os relatos; prova histórica V3→V4 isolada por
+target 4. Reinício/persistência operacional de 002 continuam pendentes;
+nenhuma migration foi executada por esta revisão documental antecipada.
+
+## Suplemento de usabilidade — 18-11-2026 (incremento anterior 001)
 
 Delta implementado com aprovação do autor, sem alteração de schema/migrations/seed/IDs: password **de entrada** passa a 6–200 pontos Unicode brutos sem trim/truncagem/composição; só `password_hash` scrypt persiste. Ajuda/erro curto «Mínimo de 6 caracteres»; excesso «Palavra-passe demasiado longa», sem máximo nos erros/UI de registo. Login curto/até 200 preservado. O parágrafo datado de registo de 17-11 abaixo conserva o mínimo histórico, não a regra vigente.
 
@@ -20,6 +41,7 @@ Delta implementado com aprovação do autor, sem alteração de schema/migration
 | V2 `retire_local_passwords` | Torna password_hash anulável para a integração OIDC anterior, sem apagar hashes. Estado histórico mantido na cadeia Flyway, não autenticação atual. |
 | V3 `local_email_password_auth` | Email VARCHAR(254), índice único case-insensitive parcial (email não null) e password_hash alargado a VARCHAR(255) para login local; contas ativas precisam de email/hash válidos. |
 | V4 `task_extensions` | Sequência/chave MAT, tipo/peso/motivo, task_link, task_attachment BYTEA, task_activity JSONB e integridade/índices associados. |
+| V5 `task_in_review` | Substitui apenas CHECK de status para aceitar IN_REVIEW; sem alteração de linhas/default/colunas, nem backfill. |
 
 V4 atribui `MAT-n` às tarefas existentes por `(created_at,id)`, prepara a próxima chave global, impõe NOT NULL/UNIQUE; lacunas são permitidas. Mantém UUID gerado pela aplicação (coluna física VARCHAR(80)), datas e versões; sem backfill de eventos. Sequência não é identidade substituta de `id`.
 
@@ -38,7 +60,7 @@ Login conserva hashes existentes/passwords antigas curtas e até 200 pontos de c
 | app_user | `id` PK, username único, display_name, email com unicidade case-insensitive, password_hash anulável, active. Hash não sai na API. Sem endpoint de eliminação de contas. |
 | project | `id` PK, name 1–120, description até 2 000, owner_user_id FK, version positiva, created_at TIMESTAMPTZ. Um único gestor derivado do proprietário, não papel global. |
 | participation | PK `(project_id,user_id)`, FKs para projeto/utilizador, joined_at. Inclui gestor; FK composta de project `(id,owner_user_id)` para participation é DEFERRABLE INITIALLY DEFERRED. |
-| task | `id` PK, project_id FK fixo, title 1–200, description até 2 000, status TODO/IN_PROGRESS/DONE, priority LOW/MEDIUM/HIGH, version positiva, created_at/updated_at; unique `(id,project_id)`. Inicial TODO/MEDIUM, versão 1. |
+| task | `id` PK, project_id FK fixo, title 1–200, description até 2 000, status TODO/IN_PROGRESS/IN_REVIEW/DONE (CHECK V5), priority LOW/MEDIUM/HIGH, version positiva, created_at/updated_at; unique `(id,project_id)`. Inicial TODO/MEDIUM, versão 1. |
 | task — V4 | task_key única global, type TASK/BUG/IMPROVEMENT inicial TASK, weight null ou 1/2/3/5/8/13, close_reason null ou COMPLETED/CANCELLED/DUPLICATE/WONT_DO só em DONE. |
 | task_assignment | PK `(task_id,user_id)`, project_id, assigned_at; FKs compostas para task `(id,project_id)` e participation `(project_id,user_id)`. Zero ou vários responsáveis, sem duplicação. |
 | task_comment | `id` PK, task_id FK, author_id FK app_user, content 1–2 000, created_at; unique `(id,task_id)` desde V4. Autor/data do servidor. |
@@ -151,10 +173,13 @@ erDiagram
 O SQL garante integridade referencial, enums, unicidade e limites físicos, mas **não** conta ativa, autorização, máximo de cinco anexos, aciclicidade BLOCKS ou estado dos bloqueadores. [TaskService](../backend/src/main/java/pt/matriz/tasks/TaskService.java), [TaskLinkService](../backend/src/main/java/pt/matriz/tasks/TaskLinkService.java) e [TaskAttachmentService](../backend/src/main/java/pt/matriz/tasks/TaskAttachmentService.java) validam essas regras em transação com lock do projeto e revalidação de participação/permissão/atividade da conta após espera.
 
 - Gestor gere membros/atribuições; remover membro com atribuições (mesmo DONE) é recusado, assim como remover gestor. FK não substitui verificação de elegibilidade ativa.
+- Nova entrada DONE só desde IN_REVIEW persistido, lido após lock/revalidação/versão e antes de UPDATE/evento. TODO e IN_PROGRESS entram diretamente em revisão e revisão pode regressar a ambos. Recusa 422 status não altera tarefa/versão/datas/história. DONE→DONE mantém motivo omitido; reabrir para qualquer não-DONE limpa-o. IN_REVIEW não admite motivo não null. Sem exigência de atribuição, papel novo ou pessoa distinta.
 - RELATED é simétrica com extremos canónicos; BLOCKS/DUPLICATES são dirigidas. Só BLOCKS impede ciclos; concluir exige bloqueadores diretos DONE; reabrir bloqueador com dependente direto DONE é recusado. Remover link/eliminar bloqueador não muda estados.
+- IN_REVIEW é não-DONE: bloqueador em revisão continua pendente; entrar em revisão é permitido mesmo bloqueada, mas concluir exige simultaneamente origem IN_REVIEW e bloqueadores DONE. Reabertura para revisão com dependente DONE e novo bloqueador IN_REVIEW para dependente DONE continuam recusados.
 - Versão otimista: PUT aceite incrementa tarefa mesmo sem mudança efetiva; sem mudança não há evento. Atribuição repetida atual não incrementa. Criação/remoção explícita de link exige ambas as versões e incrementa ambas uma vez; POST repetido com versões atuais não altera nada. Cascata de tarefa não incrementa extremo sobrevivente.
 - Comentários JSON/multipart e anexos são atómicos com eventos, sem mudar versão/updatedAt da tarefa; cinco diretos por tarefa e cinco por comentário, independentemente. Texto obrigatório; sem edição/eliminação isolada do comentário nem upload posterior.
 - Histórico guarda valores tipados, ator/data e flags de alteração de título/descrição, não cópias de textos. COMMENT_ADDED referencia comentário e metadados dos anexos num evento, sem duplicar uploads. Snapshots de link/anexo removido não têm FK ao recurso já removido.
+- Mudança efetiva de status para/de IN_REVIEW usa `TASK_UPDATED` e valores text existentes; revisão guardada e conclusão são duas gravações confirmadas. UI traduz apenas status reconhecido, não priority/type ou payload; DONE anterior não implica revisão passada.
 - Limites Unicode aplicados pelo código, sem truncagem; títulos/nomes/comentários normalizam espaços nas extremidades, descrição não. No contrato PUT, omissão/presença/null dos novos campos têm a semântica descrita na [arquitetura](architecture.md#regras-atuais-das-extensões).
 
 ## Eliminação, índices e dados derivados
@@ -163,7 +188,22 @@ Eliminar projeto remove tarefas/participações; o serviço remove primeiro atri
 
 Índices suportam `(project_id,created_at,id)` nas tarefas, participação por utilizador, atribuições por participante, comentários/links/anexos/atividade na ordenação da consulta. Não se afirma que estes índices provem desempenho sob carga.
 
-Contagens/progresso não são colunas duplicadas: agregam todas as tarefas do projeto, todo DONE conta, sem ponderar peso/motivo. Sem tarefas 0%; restantes 100×done/total arredondado com meios para cima (1/8→13%, 2/3→67%). Listagens em `REPEATABLE_READ`, paginação ordenada por `(created_at,id)`; filtros afetam `totalItems`, não agregados.
+Contagens/progresso não são colunas duplicadas: ProjectService agrega todas as
+tarefas do projeto, com `todo`, `inProgress`, `inReview`, `done` obrigatórios
+no DTO Progress. `total = todo + inProgress + inReview + done`; só DONE conta
+no numerador, sem ponderar peso/motivo. Sem tarefas: contagens zero e 0%;
+restantes 100×done/total arredondado HALF_UP (1/8→13%, 1/3→33%, 2/3→67%).
+Uma tarefa por estado dá 4/1/1/1/1 e 25%. Project.progress e ambos os locais
+de TaskPage (project.progress/progress) recebem estes globais. Listagens em
+`REPEATABLE_READ`, paginação ordenada por `(created_at,id)`; filtros afetam
+`totalItems`, não agregados.
+
+O editor conserva snapshot transitório do estado persistido associado à versão
+de base, não coluna/JSON/storage. Só base IN_REVIEW/DONE disponibiliza DONE;
+draft em revisão não basta. Inicialização, save confirmado, refetch limpo,
+recuperação explicitamente confirmada ou reconhecimento local correspondente
+à identidade/previousVersion podem atualizar a base. GET externo sobre
+rascunho sujo não a promove; erros conservam trabalho/base, guards e templates.
 
 RF-01/17→app_user; RF-02/03/04/10→project/participation; RF-05/06/08/09/10/12→task; RF-07→task_assignment; RF-11→task_comment; RF-13→task_link; RF-14→task_attachment; RF-15→task_activity. RF-16 usa strings existentes, sem nova tabela de templates.
 
