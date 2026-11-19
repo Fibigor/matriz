@@ -42,9 +42,26 @@ class InputsTest {
 
     @Test
     void roundsProgressHalfUpAndHandlesEmptyProjects() {
-        assertThat(Inputs.progress(0, 0, 0).completedPercent()).isZero();
-        assertThat(Inputs.progress(7, 0, 1).completedPercent()).isEqualTo(13);
-        assertThat(Inputs.progress(1, 0, 2).completedPercent()).isEqualTo(67);
-        assertThat(Inputs.progress(2, 1, 2).completedPercent()).isEqualTo(40);
+        assertThat(Inputs.progress(0, 0, 0, 0).completedPercent()).isZero();
+        assertThat(Inputs.progress(7, 0, 0, 1).completedPercent()).isEqualTo(13);
+        assertThat(Inputs.progress(1, 0, 0, 2).completedPercent()).isEqualTo(67);
+        assertThat(Inputs.progress(2, 1, 0, 2).completedPercent()).isEqualTo(40);
+        assertThat(Inputs.progress(0, 0, 2, 1).completedPercent()).isEqualTo(33);
+        assertThat(Inputs.progress(0, 0, 1, 0).completedPercent()).isZero();
+        assertThat(Inputs.progress(1, 1, 1, 1)).satisfies(progress -> {
+            assertThat(progress.total()).isEqualTo(4);
+            assertThat(progress.todo()).isEqualTo(1);
+            assertThat(progress.inProgress()).isEqualTo(1);
+            assertThat(progress.inReview()).isEqualTo(1);
+            assertThat(progress.done()).isEqualTo(1);
+            assertThat(progress.completedPercent()).isEqualTo(25);
+        });
+        assertThat(Inputs.progress(0, 0, 0, 0)).satisfies(progress -> {
+            assertThat(progress.total()).isZero();
+            assertThat(progress.todo()).isZero();
+            assertThat(progress.inProgress()).isZero();
+            assertThat(progress.inReview()).isZero();
+            assertThat(progress.done()).isZero();
+        });
     }
 }

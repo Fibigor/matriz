@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { api, write } from './api';
 import type { CloseReason, Priority, Project, Status, Task, TaskType, Weight } from './types';
 import { closeLabels, priorityLabels, statusLabels, typeLabels, weights } from './types';
@@ -13,40 +13,65 @@ import { TaskActivity } from './TaskActivity';
 import { TaskDetailToolbar } from './TaskDetailPanel';
 
 function TaskEditor({ task, base, changed, draft, localUpdate }: { task: Task; base: string; changed: () => void; draft: (dirty: boolean) => void; localUpdate?: LocalTaskUpdate }) {
-  const [values, setValues] = useState(task);
+  // Keep the persisted status and editable version in the same snapshot.
+  // Neither a draft selection nor an external GET over a dirty draft is a new base.
+  const [editor, setEditor] = useState({ values: task, persistedStatus: task.status });
+  const { values, persistedStatus } = editor;
+  const canComplete = persistedStatus === 'IN_REVIEW' || persistedStatus === 'DONE';
+  const reviewHintId = useId();
   const [dirty, setDirty] = useState(false);
   const [appliedTypes, setAppliedTypes] = useState<Set<TaskType>>(() => new Set());
   const mutation = useMutation();
+  const form = useRef<HTMLFormElement>(null);
+  const submitFocus = useRef<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    if (mutation.busy) return;
+    const target = submitFocus.current;
+    submitFocus.current = null;
+    // Disabling the focused control can leave focus on BODY. Wait for React to
+    // enable it again, and never override focus the user moved elsewhere.
+    if (document.activeElement === document.body && target?.isConnected
+      && form.current?.contains(target) && !target.matches(':disabled')) {
+      target.focus({ preventScroll: true });
+    }
+  }, [mutation.busy]);
   const received = useRef(task);
   useEffect(() => {
     if (!localUpdate) return;
     const { previousVersion, task: saved } = localUpdate;
     // Only the acknowledged local write can advance this draft's base.
     // A GET (including the preflight GET for links) is never such an acknowledgement.
-    setValues(current => current.id === saved.id && current.version === previousVersion && saved.version >= previousVersion
-      ? { ...current, version: saved.version, assignees: saved.assignees, updatedAt: saved.updatedAt }
+    setEditor(current => current.values.id === saved.id && current.values.projectId === saved.projectId
+      && current.values.version === previousVersion && saved.version >= previousVersion
+      ? { values: { ...current.values, version: saved.version, assignees: saved.assignees, updatedAt: saved.updatedAt }, persistedStatus: saved.status }
       : current);
   }, [localUpdate]);
   useEffect(() => {
     if (received.current !== task) {
       received.current = task;
-      if (!dirty) setValues(task);
+      if (!dirty) setEditor({ values: task, persistedStatus: task.status });
     }
   }, [task, dirty]);
   function change<K extends keyof Task>(field: K, value: Task[K]) {
-    setValues(current => ({ ...current, [field]: value, ...(field === 'status' && value !== 'DONE' ? { closeReason: null } : {}) }));
+    setEditor(current => ({ ...current, values: { ...current.values, [field]: value, ...(field === 'status' && value !== 'DONE' ? { closeReason: null } : {}) } }));
     setDirty(true); draft(true);
   }
   const fields = ['title', 'description', 'status', 'priority', 'type', 'weight', 'closeReason', 'version'];
   return <section className="card"><h2>Editar tarefa</h2><Feedback {...mutation} />
-    <form onSubmit={submit(() => void mutation.run(async () => {
-      if (codePoints(values.description) > 2000) throw new Error('Descrição: máximo 2000 caracteres Unicode.');
-      const saved = await write<Task>(base, 'PUT', {
-        title: values.title, description: values.description, status: values.status, priority: values.priority,
-        type: values.type, weight: values.weight, closeReason: values.status === 'DONE' ? values.closeReason : null, version: values.version,
+    <form ref={form} onSubmit={submit(() => {
+      if (mutation.busy) return;
+      const active = document.activeElement;
+      submitFocus.current = active instanceof HTMLElement && form.current?.contains(active)
+        && active.matches('input,textarea,select,button') ? active : null;
+      void mutation.run(async () => {
+        if (codePoints(values.description) > 2000) throw new Error('Descrição: máximo 2000 caracteres Unicode.');
+        const saved = await write<Task>(base, 'PUT', {
+          title: values.title, description: values.description, status: values.status, priority: values.priority,
+          type: values.type, weight: values.weight, closeReason: values.status === 'DONE' ? values.closeReason : null, version: values.version,
+        });
+        setEditor({ values: saved, persistedStatus: saved.status }); setDirty(false); draft(false); changed();
       });
-      setValues(saved); setDirty(false); draft(false); changed();
-    }))}>
+    })}>
       <fieldset className="form-fields" disabled={mutation.busy}>
       <label>Título *<input required value={values.title} onChange={event => change('title', event.target.value)} /></label>
       <label>Tipo<select value={values.type} onChange={event => change('type', event.target.value as TaskType)}>
@@ -63,9 +88,10 @@ function TaskEditor({ task, base, changed, draft, localUpdate }: { task: Task; b
         }
       }}>Aplicar template</button>
       <MarkdownEditor label="Descrição" value={values.description} onChange={value => change('description', value)} />
-      <label>Estado<select value={values.status} onChange={event => change('status', event.target.value as Status)}>
-        {Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+      <label>Estado<select value={values.status} aria-describedby={!canComplete ? reviewHintId : undefined} onChange={event => change('status', event.target.value as Status)}>
+        {Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value} disabled={value === 'DONE' && !canComplete}>{label}</option>)}
       </select></label>
+      {!canComplete && <p id={reviewHintId} className="form-note">Guarde a tarefa em revisão antes de a concluir.</p>}
       <label>Prioridade<select value={values.priority} onChange={event => change('priority', event.target.value as Priority)}>
         {Object.entries(priorityLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
       </select></label>
@@ -87,7 +113,8 @@ function TaskEditor({ task, base, changed, draft, localUpdate }: { task: Task; b
     </form>
     {mutation.error && <><p>O rascunho foi mantido. Pode copiá-lo antes de consultar a versão atual; substituir exige confirmação.</p><button disabled={mutation.busy} onClick={() => {
       if (window.confirm('Substituir o rascunho pela versão atual?')) void mutation.run(async () => {
-        setValues(await api<Task>(base)); setDirty(false); draft(false); changed();
+        const current = await api<Task>(base);
+        setEditor({ values: current, persistedStatus: current.status }); setDirty(false); draft(false); changed();
       }, 'Versão atual consultada.');
     }}>Consultar versão atual (substitui o rascunho)</button></>}
   </section>;

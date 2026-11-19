@@ -838,14 +838,19 @@ class ApiIntegrationTest {
                 .content("{\"version\":1}")).andExpect(status().isUnprocessableEntity());
         api.perform(post(path + "/comments").session(bruno).with(csrf()).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"content\":\"   \"}")).andExpect(status().isUnprocessableEntity());
+        JsonNode review = edit(path, bruno, "IN_REVIEW", "");
+        assertThat(readTask(path, bruno)).isEqualTo(review);
+        assertThat(eventCount(path, bruno)).isEqualTo(2);
         api.perform(put(path).session(bruno).with(csrf()).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"title\":\"Completed\",\"status\":\"DONE\",\"priority\":\"HIGH\",\"version\":1}"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.version").value(2));
+                .content("{\"title\":\"Completed\",\"status\":\"DONE\",\"priority\":\"HIGH\",\"version\":" + review.get("version").asLong() + "}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.version").value(3));
+        assertThat(readTask(path, bruno).get("status").asText()).isEqualTo("DONE");
+        assertThat(eventCount(path, bruno)).isEqualTo(3);
         api.perform(get(tasks).session(ana).param("priority", "LOW"))
                 .andExpect(jsonPath("$.items").isEmpty()).andExpect(jsonPath("$.progress.completedPercent").value(100));
         api.perform(get(tasks).session(ana).param("priority", "HIGH").param("status", "DONE"))
                 .andExpect(jsonPath("$.items[0].id").value(task.get("id").asText()));
-        api.perform(delete(path).session(bruno).with(csrf()).param("version", "2"))
+        api.perform(delete(path).session(bruno).with(csrf()).param("version", "3"))
                 .andExpect(status().isNoContent());
         api.perform(delete(root).session(ana).with(csrf()).param("version", "2"))
                 .andExpect(status().isNoContent());
@@ -930,6 +935,178 @@ class ApiIntegrationTest {
                 .get("pagination").get("totalItems").asLong();
     }
 
+    List<Map<String, Object>> taskHistory(String id) {
+        return db.queryForList("SELECT * FROM task_activity WHERE task_id=? ORDER BY created_at,id", id);
+    }
+
+    void rejectsWithoutReview(String path, MockHttpSession session) throws Exception {
+        JsonNode before = readTask(path, session);
+        String id = before.get("id").asText();
+        var stored = db.queryForMap("SELECT * FROM task WHERE id=?", id);
+        var history = taskHistory(id);
+        api.perform(editRequest(path, session, before, "DONE", ",\"closeReason\":\"COMPLETED\",\"weight\":13"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.detail").value("Coloque a tarefa em revisão antes de a concluir."))
+                .andExpect(jsonPath("$.errors[0].field").value("status"))
+                .andExpect(jsonPath("$.errors[0].message").value("Coloque a tarefa em revisão antes de a concluir."));
+        assertThat(readTask(path, session)).isEqualTo(before);
+        assertThat(db.queryForMap("SELECT * FROM task WHERE id=?", id)).isEqualTo(stored);
+        assertThat(taskHistory(id)).isEqualTo(history);
+    }
+
+    @Test
+    void directCompletionRequiresImmediatelyPersistedReviewWithoutAnyPartialWrite() throws Exception {
+        MockHttpSession ana = login("ana");
+        String root = taskRoot(ana);
+        for (String origin : List.of("TODO", "IN_PROGRESS")) {
+            String path = root + "/" + newTask(root, ana, "").get("id").asText();
+            if (origin.equals("IN_PROGRESS")) edit(path, ana, origin, "");
+            rejectsWithoutReview(path, ana);
+        }
+    }
+
+    @Test
+    void activeUnassignedMemberCanReviewReturnAndCompleteTheirOwnReview() throws Exception {
+        MockHttpSession ana = login("ana"), bruno = login("bruno");
+        String root = taskRoot(ana), project = root.substring(0, root.length()-6);
+        api.perform(memberRequest(project.substring(project.lastIndexOf('/')+1), ana, "{\"userId\":\"user-bruno\"}"))
+                .andExpect(status().isNoContent());
+        for (String origin : List.of("TODO", "IN_PROGRESS")) {
+            String path = root + "/" + newTask(root, ana, "").get("id").asText();
+            if (origin.equals("IN_PROGRESS")) edit(path, bruno, origin, "");
+            JsonNode before = readTask(path, bruno);
+            long events = eventCount(path, bruno);
+            JsonNode review = edit(path, bruno, "IN_REVIEW", "");
+            assertThat(review.get("version").asLong()).isEqualTo(before.get("version").asLong()+1);
+            assertThat(review.get("assignees").isEmpty()).isTrue();
+            assertThat(readTask(path, login("bruno"))).isEqualTo(review);
+            assertThat(eventCount(path, bruno)).isEqualTo(events+1);
+            JsonNode done = body(api.perform(editRequest(path, bruno, review, "DONE", ""))
+                    .andExpect(status().isOk()).andReturn());
+            assertThat(done.get("version").asLong()).isEqualTo(review.get("version").asLong()+1);
+            assertThat(done.get("closeReason").isNull()).isTrue();
+            assertThat(readTask(path, bruno)).isEqualTo(done);
+            assertThat(eventCount(path, bruno)).isEqualTo(events+2);
+            JsonNode history = body(api.perform(get(path + "/activity").session(bruno)).andReturn()).get("items");
+            JsonNode change = history.get(history.size()-2).get("changes").get(0);
+            assertThat(change.get("oldValue").get("value").asText()).isEqualTo(origin);
+            assertThat(change.get("newValue").get("kind").asText()).isEqualTo("text");
+            assertThat(change.get("newValue").get("value").asText()).isEqualTo("IN_REVIEW");
+            assertThat(history.get(history.size()-1).get("actor").get("id").asText()).isEqualTo("user-bruno");
+        }
+    }
+
+    @Test
+    void abandonedReviewNeverAuthorizesLaterDirectCompletion() throws Exception {
+        MockHttpSession ana = login("ana");
+        String root = taskRoot(ana);
+        for (String destination : List.of("TODO", "IN_PROGRESS")) {
+            String path = root + "/" + newTask(root, ana, "").get("id").asText();
+            edit(path, ana, "IN_REVIEW", "");
+            edit(path, ana, destination, "");
+            rejectsWithoutReview(path, ana);
+        }
+    }
+
+    @Test
+    void reviewCompletionPreservesVersionCsrfAndAccessPrecedenceAndPostLockRevalidation() throws Exception {
+        MockHttpSession ana = login("ana"), bruno = login("bruno"), carla = login("carla");
+        for (String change : List.of("inactive", "revoked")) {
+            String root = taskRoot(ana), project = root.substring(0, root.length()-6);
+            String projectId = project.substring(project.lastIndexOf('/')+1);
+            api.perform(memberRequest(projectId, ana, "{\"userId\":\"user-bruno\"}")).andExpect(status().isNoContent());
+            String path = root + "/" + newTask(root, ana, "").get("id").asText();
+            JsonNode old = readTask(path, ana), review = edit(path, bruno, "IN_REVIEW", "");
+            api.perform(editRequest(path, bruno, old, "DONE", "")).andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.detail").value("Os dados foram alterados. Consulte a versão atual antes de tentar novamente."));
+            api.perform(editRequest(path, bruno, review, "DONE", "").with(csrf().useInvalidToken()))
+                    .andExpect(status().isForbidden());
+            api.perform(editRequest(path, carla, review, "DONE", "")).andExpect(status().isNotFound());
+            String id = review.get("id").asText();
+            var stored = db.queryForMap("SELECT * FROM task WHERE id=?", id);
+            var history = taskHistory(id);
+            try (var pool = Executors.newSingleThreadExecutor()) {
+                var write = memberTransaction().execute(tx -> {
+                    db.queryForObject("SELECT id FROM project WHERE id=? FOR UPDATE", String.class, projectId);
+                    int pid = db.queryForObject("SELECT pg_backend_pid()", Integer.class);
+                    var future = pool.submit(() -> api.perform(editRequest(path, bruno, review, "DONE", ""))
+                            .andReturn().getResponse().getStatus());
+                    awaitMemberLock(pid, "%FOR UPDATE OF p%");
+                    if (change.equals("inactive")) db.update("UPDATE app_user SET active=false WHERE id='user-bruno'");
+                    else db.update("DELETE FROM participation WHERE project_id=? AND user_id='user-bruno'", projectId);
+                    return future;
+                });
+                assertThat(write.get(15, TimeUnit.SECONDS)).isEqualTo(change.equals("inactive") ? 401 : 404);
+            } finally {
+                db.update("UPDATE app_user SET active=true WHERE id='user-bruno'");
+            }
+            assertThat(readTask(path, ana)).isEqualTo(review);
+            assertThat(db.queryForMap("SELECT * FROM task WHERE id=?", id)).isEqualTo(stored);
+            assertThat(taskHistory(id)).isEqualTo(history);
+        }
+    }
+
+    void assertProgress(JsonNode progress, long total, long todo, long doing, long review, long done, int percent) {
+        assertThat(progress.get("total").asLong()).isEqualTo(total);
+        assertThat(progress.get("todo").asLong()).isEqualTo(todo);
+        assertThat(progress.get("inProgress").asLong()).isEqualTo(doing);
+        assertThat(progress.get("inReview").asLong()).isEqualTo(review);
+        assertThat(progress.get("done").asLong()).isEqualTo(done);
+        assertThat(progress.get("completedPercent").asInt()).isEqualTo(percent);
+    }
+
+    @Test
+    void fourStateProgressIsGlobalAcrossProjectDtosFiltersPrioritiesAndPagination() throws Exception {
+        MockHttpSession ana = login("ana");
+        String root = taskRoot(ana), project = root.substring(0, root.length()-6);
+        String projectId = project.substring(project.lastIndexOf('/')+1);
+        assertProgress(body(api.perform(get(project).session(ana)).andReturn()).get("progress"), 0, 0, 0, 0, 0, 0);
+        JsonNode empty = body(api.perform(get(root).session(ana)).andReturn());
+        assertProgress(empty.get("progress"), 0, 0, 0, 0, 0, 0);
+        assertProgress(empty.get("project").get("progress"), 0, 0, 0, 0, 0, 0);
+        String reviewPath = null;
+        for (String state : List.of("TODO", "IN_PROGRESS", "IN_REVIEW", "DONE")) {
+            String path = root + "/" + newTask(root, ana, ",\"priority\":\"HIGH\",\"weight\":13").get("id").asText();
+            if (state.equals("DONE")) {
+                edit(path, ana, "IN_REVIEW", "");
+                edit(path, ana, "DONE", ",\"closeReason\":\"CANCELLED\"");
+            } else if (!state.equals("TODO")) edit(path, ana, state, "");
+            if (state.equals("IN_REVIEW")) reviewPath = path;
+        }
+        assertThat(readTask(reviewPath, login("ana")).get("status").asText()).isEqualTo("IN_REVIEW");
+        api.perform(get(root).session(ana).param("status", "UNKNOWN")).andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.errors[0].field").value("status"));
+        api.perform(editRequest(reviewPath, ana, readTask(reviewPath, ana), "UNKNOWN", ""))
+                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.errors[0].field").value("status"));
+        for (String priority : List.of("HIGH", "LOW")) {
+            for (int page : List.of(1, 2)) {
+                JsonNode result = body(api.perform(get(root).session(ana).param("status", "IN_REVIEW")
+                                .param("priority", priority).param("page", String.valueOf(page)).param("pageSize", "1"))
+                        .andExpect(status().isOk()).andReturn());
+                assertProgress(result.get("progress"), 4, 1, 1, 1, 1, 25);
+                assertProgress(result.get("project").get("progress"), 4, 1, 1, 1, 1, 25);
+                assertThat(result.get("pagination").get("totalItems").asInt()).isEqualTo(priority.equals("HIGH") ? 1 : 0);
+                assertThat(result.get("items").size()).isEqualTo(priority.equals("HIGH") && page == 1 ? 1 : 0);
+                if (!result.get("items").isEmpty()) assertThat(result.get("items").get(0).get("status").asText()).isEqualTo("IN_REVIEW");
+            }
+        }
+        JsonNode whole = body(api.perform(get(root).session(ana).param("pageSize", "2")).andReturn());
+        assertThat(whole.get("items").size()).isEqualTo(2);
+        assertThat(whole.get("pagination").get("totalItems").asInt()).isEqualTo(4);
+        assertProgress(whole.get("progress"), 4, 1, 1, 1, 1, 25);
+        assertProgress(body(api.perform(get(project).session(ana)).andReturn()).get("progress"), 4, 1, 1, 1, 1, 25);
+        JsonNode listed = body(api.perform(get("/api/projects").session(ana).param("pageSize", "100")).andReturn()).get("items");
+        boolean found = false;
+        for (JsonNode item : listed) if (item.get("id").asText().equals(projectId)) {
+            found = true;
+            assertProgress(item.get("progress"), 4, 1, 1, 1, 1, 25);
+        }
+        assertThat(found).isTrue();
+        JsonNode history = body(api.perform(get(reviewPath + "/activity").session(ana)).andReturn()).get("items");
+        assertThat(history.size()).isEqualTo(2);
+        assertThat(history.get(1).get("changes").get(0).get("newValue").get("value").asText()).isEqualTo("IN_REVIEW");
+    }
+
     MockMultipartFile file(String name, String mime, byte[] bytes) { return new MockMultipartFile("files", name, mime, bytes); }
     MockMultipartFile textFile(String name) { return file(name, "text/plain", "Texto 🚀".getBytes(StandardCharsets.UTF_8)); }
 
@@ -1007,6 +1184,7 @@ class ApiIntegrationTest {
         for (String reason : new String[]{"COMPLETED","CANCELLED","DUPLICATE","WONT_DO"}) {
             String path = root + "/" + newTask(root, ana, "").get("id").asText();
             paths.add(path);
+            edit(path, ana, "IN_REVIEW", "");
             JsonNode done = edit(path, ana, "DONE", ",\"closeReason\":\"" + reason + "\"");
             assertThat(done.get("closeReason").asText()).isEqualTo(reason);
             assertThat(edit(path, ana, "DONE", "").get("closeReason").asText()).isEqualTo(reason);
@@ -1019,6 +1197,7 @@ class ApiIntegrationTest {
         assertThat(edit(path, ana, "IN_PROGRESS", "").get("closeReason").isNull()).isTrue();
         JsonNode history = body(api.perform(get(path + "/activity").session(ana)).andReturn());
         assertThat(history.toString()).contains("\"field\":\"closeReason\"", "\"value\":\"COMPLETED\"");
+        edit(path, ana, "IN_REVIEW", "");
         assertThat(edit(path, ana, "DONE", "").get("closeReason").isNull()).isTrue();
         assertThat(edit(path, ana, "DONE", ",\"closeReason\":null").get("closeReason").isNull()).isTrue();
         api.perform(editRequest(path, ana, readTask(path, ana), "DONE", ",\"closeReason\":\"OTHER\""))
@@ -1026,6 +1205,47 @@ class ApiIntegrationTest {
         edit(path, ana, "TODO", "");
         api.perform(get(root).session(ana)).andExpect(jsonPath("$.progress.done").value(3))
                 .andExpect(jsonPath("$.progress.completedPercent").value(75));
+    }
+
+    @Test
+    void legacyDoneMaintenanceAndEveryReopeningPreserveReasonAndActivityRules() throws Exception {
+        MockHttpSession ana = login("ana");
+        String root = taskRoot(ana);
+        for (String destination : List.of("TODO", "IN_PROGRESS", "IN_REVIEW")) {
+            JsonNode task = newTask(root, ana, "");
+            String id = task.get("id").asText(), path = root + "/" + id;
+            db.update("UPDATE task SET status='DONE',close_reason='CANCELLED',version=9 WHERE id=?", id);
+            api.perform(put(path).session(ana).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"title\":\"Legacy edited\",\"description\":\"Kept closed\",\"status\":\"DONE\",\"priority\":\"HIGH\",\"version\":9}"))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.closeReason").value("CANCELLED"))
+                    .andExpect(jsonPath("$.status").value("DONE")).andExpect(jsonPath("$.version").value(10));
+            long events = eventCount(path, ana);
+            JsonNode before = readTask(path, ana);
+            JsonNode same = edit(path, ana, "DONE", "");
+            assertThat(same.get("closeReason").asText()).isEqualTo("CANCELLED");
+            assertThat(same.get("version").asLong()).isEqualTo(11);
+            assertThat(eventCount(path, ana)).isEqualTo(events);
+            assertThat(same.get("createdAt")).isEqualTo(before.get("createdAt"));
+            JsonNode reopened = edit(path, ana, destination, "");
+            assertThat(reopened.get("closeReason").isNull()).isTrue();
+            assertThat(reopened.get("status").asText()).isEqualTo(destination);
+            api.perform(get(root).session(ana)).andExpect(jsonPath("$.progress.done").value(0))
+                    .andExpect(jsonPath("$.progress.completedPercent").value(0));
+            if (destination.equals("IN_REVIEW")) {
+                var stored = db.queryForMap("SELECT * FROM task WHERE id=?", id);
+                var history = taskHistory(id);
+                api.perform(editRequest(path, ana, reopened, "IN_REVIEW", ",\"closeReason\":\"COMPLETED\""))
+                        .andExpect(status().isUnprocessableEntity())
+                        .andExpect(jsonPath("$.errors[0].field").value("closeReason"));
+                assertThat(db.queryForMap("SELECT * FROM task WHERE id=?", id)).isEqualTo(stored);
+                assertThat(taskHistory(id)).isEqualTo(history);
+                long version = reopened.get("version").asLong();
+                assertThat(edit(path, ana, "IN_REVIEW", "").get("version").asLong()).isEqualTo(version+1);
+                assertThat(taskHistory(id)).isEqualTo(history);
+                assertThat(edit(path, ana, "DONE", "").get("closeReason").isNull()).isTrue();
+                edit(path, ana, "TODO", "");
+            } else rejectsWithoutReview(path, ana);
+        }
     }
 
     @Test
@@ -1103,17 +1323,30 @@ class ApiIntegrationTest {
         String c = root + "/" + newTask(root, ana, "").get("id").asText();
         link(a, c, ana, "BLOCKS");
         link(b, c, ana, "BLOCKS");
+        rejectsWithoutReview(c, ana);
         edit(c, ana, "IN_PROGRESS", ""); // starting and editing blocked work is allowed
+        edit(c, ana, "IN_REVIEW", "");
+        edit(a, ana, "IN_REVIEW", "");
         edit(a, ana, "DONE", ",\"closeReason\":\"CANCELLED\"");
+        edit(b, ana, "IN_REVIEW", "");
+        JsonNode pending = body(api.perform(get(b + "/links").session(ana)).andReturn()).get("items").get(0);
+        assertThat(pending.get("sourceTask").get("status").asText()).isEqualTo("IN_REVIEW");
         api.perform(editRequest(c, ana, readTask(c, ana), "DONE", "")).andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.errors[0].field").value("status"));
+                .andExpect(jsonPath("$.errors[0].field").value("status"))
+                .andExpect(jsonPath("$.detail").value("Conclua primeiro todos os bloqueadores diretos."));
         edit(b, ana, "DONE", "");
         edit(c, ana, "DONE", ",\"closeReason\":\"DUPLICATE\"");
-        api.perform(editRequest(a, ana, readTask(a, ana), "TODO", "")).andExpect(status().isUnprocessableEntity());
+        api.perform(editRequest(a, ana, readTask(a, ana), "TODO", "")).andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.detail").value("Reabra primeiro os dependentes diretos concluídos."));
+        api.perform(editRequest(a, ana, readTask(a, ana), "IN_REVIEW", "")).andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.errors[0].field").value("status"))
+                .andExpect(jsonPath("$.detail").value("Reabra primeiro os dependentes diretos concluídos."));
         edit(a, ana, "DONE", ""); // editing a closed blocker is allowed
         String d = root + "/" + newTask(root, ana, "").get("id").asText();
+        edit(d, ana, "IN_REVIEW", "");
         api.perform(linkRequest(d, ana, "BLOCKS", readTask(d, ana), readTask(c, ana)))
-                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.errors[0].field").value("targetTaskId"));
+                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.errors[0].field").value("targetTaskId"))
+                .andExpect(jsonPath("$.detail").value("Uma tarefa concluída não pode ficar bloqueada por trabalho não concluído."));
         link(d, c, ana, "RELATED"); // non-blocking types do not restrict closure
         edit(c, ana, "TODO", "");
         edit(a, ana, "TODO", "");
@@ -1124,6 +1357,8 @@ class ApiIntegrationTest {
         api.perform(delete(c + "/links/" + block.get("id").asText()).session(ana).with(csrf())
                 .param("version", readTask(c, ana).get("version").asText()).param("targetVersion", readTask(a, ana).get("version").asText()))
                 .andExpect(status().isOk());
+        assertThat(readTask(c, ana).get("status").asText()).isEqualTo("TODO");
+        edit(c, ana, "IN_REVIEW", "");
         edit(c, ana, "DONE", ""); // remaining blocker B is DONE
         api.perform(get(root).session(ana).param("status", "TODO")).andExpect(jsonPath("$.progress.done").value(2));
     }
@@ -1154,12 +1389,24 @@ class ApiIntegrationTest {
         String root = taskRoot(ana);
         String a = root + "/" + newTask(root, ana, "").get("id").asText();
         String b = root + "/" + newTask(root, ana, "").get("id").asText();
+        edit(a, ana, "IN_REVIEW", "");
         edit(a, ana, "DONE", "");
         link(a, b, ana, "BLOCKS");
+        edit(b, ana, "IN_REVIEW", "");
         JsonNode beforeA = readTask(a, ana), beforeB = readTask(b, ana);
         List<Integer> results = race(
-                () -> api.perform(editRequest(a, ana, beforeA, "TODO", "")).andReturn().getResponse().getStatus(),
-                () -> api.perform(editRequest(b, ana, beforeB, "DONE", "")).andReturn().getResponse().getStatus());
+                () -> {
+                    MvcResult result = api.perform(editRequest(a, ana, beforeA, "IN_REVIEW", "")).andReturn();
+                    if (result.getResponse().getStatus() == 422) assertThat(body(result).get("detail").asText())
+                            .isEqualTo("Reabra primeiro os dependentes diretos concluídos.");
+                    return result.getResponse().getStatus();
+                },
+                () -> {
+                    MvcResult result = api.perform(editRequest(b, ana, beforeB, "DONE", "")).andReturn();
+                    if (result.getResponse().getStatus() == 422) assertThat(body(result).get("detail").asText())
+                            .isEqualTo("Conclua primeiro todos os bloqueadores diretos.");
+                    return result.getResponse().getStatus();
+                });
         assertThat(results).containsExactlyInAnyOrder(200, 422);
         JsonNode afterA = readTask(a, ana), afterB = readTask(b, ana);
         assertThat(!"DONE".equals(afterB.get("status").asText()) || "DONE".equals(afterA.get("status").asText())).isTrue();
@@ -1359,35 +1606,38 @@ class ApiIntegrationTest {
         api.perform(post(project + "/members").session(ana).with(csrf()).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"userId\":\"user-bruno\"}")).andExpect(status().isNoContent());
         String path = root + "/" + newTask(root, ana, "").get("id").asText();
+        JsonNode review = edit(path, bruno, "IN_REVIEW", "");
         api.perform(put(path).session(bruno).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("""
                 {"title":"Private new title","description":"Private new description","status":"DONE","priority":"HIGH",
-                "type":"IMPROVEMENT","weight":13,"closeReason":"WONT_DO","version":1}
-                """)).andExpect(status().isOk());
+                "type":"IMPROVEMENT","weight":13,"closeReason":"WONT_DO","version":%d}
+                """.formatted(review.get("version").asLong()))).andExpect(status().isOk());
         api.perform(put(path + "/assignments/user-bruno").session(ana).with(csrf()).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"version\":2}")).andExpect(status().isOk());
+                .content("{\"version\":3}")).andExpect(status().isOk());
         api.perform(put(path + "/assignments/user-bruno").session(ana).with(csrf()).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"version\":3}")).andExpect(status().isOk()).andExpect(jsonPath("$.version").value(3));
-        api.perform(delete(path + "/assignments/user-bruno").session(ana).with(csrf()).param("version", "3"))
-                .andExpect(status().isOk());
+                .content("{\"version\":4}")).andExpect(status().isOk()).andExpect(jsonPath("$.version").value(4));
         api.perform(delete(path + "/assignments/user-bruno").session(ana).with(csrf()).param("version", "4"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.version").value(4));
+                .andExpect(status().isOk());
+        api.perform(delete(path + "/assignments/user-bruno").session(ana).with(csrf()).param("version", "5"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.version").value(5));
         JsonNode all = body(api.perform(get(path + "/activity").session(ana).param("pageSize", "100"))
                 .andExpect(status().isOk()).andReturn());
-        assertThat(all.get("items").size()).isEqualTo(4);
-        JsonNode updated = all.get("items").get(1);
+        assertThat(all.get("items").size()).isEqualTo(5);
+        JsonNode updated = all.get("items").get(2);
         assertThat(updated.get("actor").get("id").asText()).isEqualTo("user-bruno");
         assertThat(updated.get("titleChanged").asBoolean()).isTrue();
         assertThat(updated.get("descriptionChanged").asBoolean()).isTrue();
         assertThat(updated.get("changes").size()).isEqualTo(5);
+        assertThat(updated.get("changes").get(0).get("oldValue").get("value").asText()).isEqualTo("IN_REVIEW");
+        assertThat(updated.get("changes").get(0).get("newValue").get("value").asText()).isEqualTo("DONE");
         assertThat(updated.toString()).contains("\"kind\":\"text\"", "\"kind\":\"number\"");
-        JsonNode assigned = all.get("items").get(2).get("changes").get(0);
+        JsonNode assigned = all.get("items").get(3).get("changes").get(0);
         assertThat(assigned.get("field").asText()).isEqualTo("assignees");
         assertThat(assigned.get("oldValue").get("kind").asText()).isEqualTo("userIds");
         assertThat(assigned.get("oldValue").get("userIds").isEmpty()).isTrue();
         assertThat(assigned.get("newValue").get("userIds").get(0).asText()).isEqualTo("user-bruno");
         assertThat(all.toString()).doesNotContain("Private new title", "Private new description");
         List<String> order = new ArrayList<>();
-        for (int page = 1; page <= 4; page++) {
+        for (int page = 1; page <= 5; page++) {
             JsonNode item = body(api.perform(get(path + "/activity").session(bruno).param("page", String.valueOf(page))
                     .param("pageSize", "1")).andExpect(status().isOk()).andReturn()).get("items").get(0);
             assertThat(item).isEqualTo(all.get("items").get(page-1));
@@ -1395,8 +1645,8 @@ class ApiIntegrationTest {
             assertThat(java.time.Instant.parse(item.get("createdAt").asText())).isBeforeOrEqualTo(java.time.Instant.now());
         }
         assertThat(order).isSorted();
-        api.perform(get(path + "/activity").session(ana).param("page", "5").param("pageSize", "1"))
-                .andExpect(jsonPath("$.items").isEmpty()).andExpect(jsonPath("$.pagination.totalItems").value(4));
+        api.perform(get(path + "/activity").session(ana).param("page", "6").param("pageSize", "1"))
+                .andExpect(jsonPath("$.items").isEmpty()).andExpect(jsonPath("$.pagination.totalItems").value(5));
         api.perform(get(path + "/activity").session(ana).param("page", "0")).andExpect(status().isBadRequest());
         api.perform(post(path + "/activity").session(ana).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isMethodNotAllowed());
@@ -1432,6 +1682,7 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.items[2].relation.id").value(relation.get("id").asText()))
                 .andExpect(jsonPath("$.items[2].relation.otherTaskId").value(id))
                 .andExpect(jsonPath("$.items[2].relation.otherTaskKey").value(relation.get("sourceTask").get("key").asText()));
+        edit(b, ana, "IN_REVIEW", "");
         edit(b, ana, "DONE", "");
         api.perform(delete(project).session(ana).with(csrf()).param("version", "1")).andExpect(status().isNoContent());
         assertThat(db.queryForObject("SELECT count(*) FROM task_activity WHERE task_id=?", Long.class, otherId)).isZero();
@@ -1465,16 +1716,57 @@ class ApiIntegrationTest {
         String root = taskRoot(ana);
         JsonNode a = newTask(root, ana, ""), b = newTask(root, ana, "");
         String ap = root + "/" + a.get("id").asText(), bp = root + "/" + b.get("id").asText();
+        JsonNode reviewB = edit(bp, ana, "IN_REVIEW", "");
         List<Integer> results = race(
-                () -> api.perform(linkRequest(ap, ana, "BLOCKS", a, b)).andReturn().getResponse().getStatus(),
-                () -> api.perform(editRequest(bp, ana, b, "DONE", "")).andReturn().getResponse().getStatus());
+                () -> api.perform(linkRequest(ap, ana, "BLOCKS", a, reviewB)).andReturn().getResponse().getStatus(),
+                () -> api.perform(editRequest(bp, ana, reviewB, "DONE", "")).andReturn().getResponse().getStatus());
         assertThat(results.stream().filter(code -> code == 200 || code == 201).count()).isEqualTo(1);
         assertThat(results.stream().filter(code -> code == 409).count()).isEqualTo(1);
         JsonNode links = body(api.perform(get(bp + "/links").session(ana)).andReturn()).get("items");
         assertThat(!"DONE".equals(readTask(bp, ana).get("status").asText()) || links.isEmpty()).isTrue();
         if (links.isEmpty()) api.perform(linkRequest(ap, ana, "BLOCKS", readTask(ap, ana), readTask(bp, ana)))
-                .andExpect(status().isUnprocessableEntity());
-        else api.perform(editRequest(bp, ana, readTask(bp, ana), "DONE", "")).andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.errors[0].field").value("targetTaskId"))
+                .andExpect(jsonPath("$.detail").value("Uma tarefa concluída não pode ficar bloqueada por trabalho não concluído."));
+        else api.perform(editRequest(bp, ana, readTask(bp, ana), "DONE", "")).andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.errors[0].field").value("status"))
+                .andExpect(jsonPath("$.detail").value("Conclua primeiro todos os bloqueadores diretos."));
+    }
+
+    String taskConstraint(JdbcTemplate database, String name) {
+        return database.queryForObject("""
+                SELECT pg_get_constraintdef(oid) FROM pg_constraint
+                WHERE conrelid='task'::regclass AND conname=?
+                """, String.class, name);
+    }
+
+    @Test
+    void reviewDomainPreservesV4CatalogAndExpandsOnlyStatusOnCleanChain() throws Exception {
+        String schema = "domain_" + java.util.UUID.randomUUID().toString().replace("-", "");
+        var source = new org.springframework.jdbc.datasource.DriverManagerDataSource(
+                DATABASE.getJdbcUrl() + "&currentSchema=" + schema, DATABASE.getUsername(), DATABASE.getPassword());
+        var v4 = org.flywaydb.core.Flyway.configure().dataSource(source).schemas(schema).defaultSchema(schema).target("4").load();
+        v4.migrate();
+        JdbcTemplate isolated = new JdbcTemplate(source);
+        assertThat(taskConstraint(isolated, "task_status_check"))
+                .isEqualTo("CHECK (((status)::text = ANY ((ARRAY['TODO'::character varying, 'IN_PROGRESS'::character varying, 'DONE'::character varying])::text[])))");
+        String reason = taskConstraint(isolated, "task_close_reason_status");
+        assertThat(reason).isEqualTo("CHECK (((close_reason IS NULL) OR ((status)::text = 'DONE'::text)))");
+        assertThat(taskConstraint(db, "task_status_check")).contains("'IN_REVIEW'::character varying");
+        assertThat(taskConstraint(db, "task_close_reason_status")).isEqualTo(reason);
+        assertThat(db.queryForObject("SELECT count(*) FROM flyway_schema_history WHERE version='5' AND success", Integer.class))
+                .isEqualTo(1);
+        MockHttpSession session = login("ana");
+        String root = taskRoot(session);
+        JsonNode task = newTask(root, session, "");
+        assertThat(task.get("status").asText()).isEqualTo("TODO");
+        String id = task.get("id").asText();
+        db.update("UPDATE task SET status='IN_REVIEW' WHERE id=?", id);
+        assertThat(db.queryForObject("SELECT status FROM task WHERE id=?", String.class, id)).isEqualTo("IN_REVIEW");
+        assertThatThrownBy(() -> db.update("UPDATE task SET status='UNKNOWN' WHERE id=?", id))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> db.update("UPDATE task SET close_reason='COMPLETED' WHERE id=?", id))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
     }
 
     @Test
@@ -1501,7 +1793,7 @@ class ApiIntegrationTest {
                     """);
         });
         var before = isolated.queryForList("SELECT id,project_id,title,status,version,created_at,updated_at FROM task ORDER BY id");
-        var flyway4 = org.flywaydb.core.Flyway.configure().dataSource(source).schemas(schema).defaultSchema(schema).load();
+        var flyway4 = org.flywaydb.core.Flyway.configure().dataSource(source).schemas(schema).defaultSchema(schema).target("4").load();
         assertThat(flyway4.migrate().migrationsExecuted).isEqualTo(1);
         assertThat(isolated.queryForList("SELECT id,project_id,title,status,version,created_at,updated_at FROM task ORDER BY id")).isEqualTo(before);
         assertThat(isolated.queryForList("SELECT task_key FROM task ORDER BY created_at,id", String.class))
@@ -1513,6 +1805,64 @@ class ApiIntegrationTest {
         assertThat(isolated.queryForObject("SELECT task_key FROM task WHERE id='next'", String.class)).isEqualTo("MAT-4");
         assertThat(flyway4.migrate().migrationsExecuted).isZero();
         assertThatThrownBy(() -> isolated.update("UPDATE task SET task_key='MAT-1' WHERE id='next'"))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void populatedV4UpgradePreservesEveryTaskAttributeRelationAndHistoricalByteWithoutBackfill() {
+        String schema = "upgrade_" + java.util.UUID.randomUUID().toString().replace("-", "");
+        var source = new org.springframework.jdbc.datasource.DriverManagerDataSource(
+                DATABASE.getJdbcUrl() + "&currentSchema=" + schema, DATABASE.getUsername(), DATABASE.getPassword());
+        var v4 = org.flywaydb.core.Flyway.configure().dataSource(source).schemas(schema).defaultSchema(schema).target("4").load();
+        v4.migrate();
+        JdbcTemplate isolated = new JdbcTemplate(source);
+        new org.springframework.transaction.support.TransactionTemplate(
+                new org.springframework.jdbc.datasource.DataSourceTransactionManager(source)).executeWithoutResult(tx -> {
+            isolated.update("INSERT INTO app_user(id,username,display_name) VALUES ('u','upgrade-user','Test')");
+            isolated.update("INSERT INTO project(id,name,description,owner_user_id,version,created_at) VALUES ('p','Upgrade','Kept','u',7,'2020-01-01Z')");
+            isolated.update("INSERT INTO participation(project_id,user_id,joined_at) VALUES ('p','u','2020-01-02Z')");
+            isolated.update("""
+                    INSERT INTO task(id,project_id,title,description,status,priority,type,weight,close_reason,version,created_at,updated_at) VALUES
+                    ('a','p','A','First','TODO','LOW','TASK',1,null,3,'2020-01-03Z','2020-02-01Z'),
+                    ('b','p','B','Second','IN_PROGRESS','HIGH','BUG',8,null,5,'2020-01-04Z','2020-02-02Z'),
+                    ('c','p','C','Third','DONE','MEDIUM','IMPROVEMENT',13,'WONT_DO',9,'2020-01-05Z','2020-02-03Z')
+                    """);
+            isolated.update("INSERT INTO task_assignment(task_id,project_id,user_id,assigned_at) VALUES ('b','p','u','2020-02-04Z')");
+            isolated.update("INSERT INTO task_comment(id,task_id,author_id,content,created_at) VALUES ('comment','b','u','Kept','2020-02-05Z')");
+            isolated.update("""
+                    INSERT INTO task_link(id,project_id,type,source_task_id,target_task_id,created_by,created_at) VALUES
+                    ('l1','p','RELATED','a','c','u','2020-02-06Z'),
+                    ('l2','p','BLOCKS','a','b','u','2020-02-07Z'),
+                    ('l3','p','DUPLICATES','b','c','u','2020-02-08Z')
+                    """);
+            isolated.update("""
+                    INSERT INTO task_attachment(id,task_id,comment_id,filename,content_type,size_bytes,data,author_id,created_at)
+                    VALUES ('file','b','comment','kept.txt','text/plain',3,decode('616263','hex'),'u','2020-02-09Z')
+                    """);
+            isolated.update("""
+                    INSERT INTO task_activity(id,task_id,actor_id,created_at,type,payload) VALUES
+                    ('event','b','u','2020-02-10Z','TASK_UPDATED',
+                    '{"changes":[{"field":"status","oldValue":{"kind":"text","value":"TODO"},"newValue":{"kind":"text","value":"IN_PROGRESS"}}],
+                    "titleChanged":false,"descriptionChanged":false,"commentId":null,"relation":null,"attachment":null,"attachments":[]}'::jsonb)
+                    """);
+        });
+        var tables = List.of("project", "participation", "task", "task_assignment", "task_comment", "task_link", "task_attachment", "task_activity");
+        var before = new java.util.LinkedHashMap<String, List<String>>();
+        for (String table : tables) before.put(table, isolated.queryForList("SELECT row_to_json(t)::text FROM " + table + " t ORDER BY 1", String.class));
+        var oldMigrations = isolated.queryForList("SELECT * FROM flyway_schema_history WHERE version<>'5' ORDER BY installed_rank");
+        String reason = taskConstraint(isolated, "task_close_reason_status");
+        assertThat(taskConstraint(isolated, "task_status_check")).doesNotContain("IN_REVIEW");
+        var v5 = org.flywaydb.core.Flyway.configure().dataSource(source).schemas(schema).defaultSchema(schema).load();
+        assertThat(v5.migrate().migrationsExecuted).isEqualTo(1);
+        assertThat(v5.migrate().migrationsExecuted).isZero();
+        for (String table : tables) assertThat(isolated.queryForList("SELECT row_to_json(t)::text FROM " + table + " t ORDER BY 1", String.class))
+                .as(table).isEqualTo(before.get(table));
+        assertThat(isolated.queryForList("SELECT * FROM flyway_schema_history WHERE version<>'5' ORDER BY installed_rank")).isEqualTo(oldMigrations);
+        assertThat(taskConstraint(isolated, "task_close_reason_status")).isEqualTo(reason);
+        assertThat(taskConstraint(isolated, "task_status_check")).contains("'TODO'", "'IN_PROGRESS'", "'IN_REVIEW'", "'DONE'");
+        isolated.update("UPDATE task SET status='IN_REVIEW' WHERE id='b'");
+        assertThat(isolated.queryForObject("SELECT status FROM task WHERE id='b'", String.class)).isEqualTo("IN_REVIEW");
+        assertThatThrownBy(() -> isolated.update("UPDATE task SET close_reason='COMPLETED' WHERE id='b'"))
                 .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
     }
 
@@ -1584,22 +1934,30 @@ class ApiIntegrationTest {
         String root = taskRoot(ana);
         JsonNode a = newTask(root, ana, ""), b = newTask(root, ana, "");
         String path = root + "/" + a.get("id").asText(), other = root + "/" + b.get("id").asText();
+        JsonNode reviewA = edit(path, ana, "IN_REVIEW", "");
+        var stored = db.queryForMap("SELECT * FROM task WHERE id=?", a.get("id").asText());
+        var history = taskHistory(a.get("id").asText());
+        var otherHistory = taskHistory(b.get("id").asText());
         // A real database constraint, not mocked persistence, causes failure at the final activity write.
         db.execute("ALTER TABLE task_activity ADD CONSTRAINT test_activity_failure CHECK (task_id <> '" +
                 a.get("id").asText() + "') NOT VALID");
         try {
-            api.perform(editRequest(path, ana, a, "DONE", "")).andExpect(status().isServiceUnavailable());
+            api.perform(editRequest(path, ana, reviewA, "DONE", "")).andExpect(status().isServiceUnavailable())
+                    .andExpect(jsonPath("$.detail").value("Não foi possível concluir a operação."));
             api.perform(upload(path, textFile("rollback.txt")).session(ana).with(csrf())).andExpect(status().isServiceUnavailable());
             api.perform(multipart(path + "/comments").file(new MockMultipartFile("comment", "", "application/json",
                     "{\"content\":\"Rollback\"}".getBytes(StandardCharsets.UTF_8))).file(textFile("rollback.txt"))
                     .session(ana).with(csrf())).andExpect(status().isServiceUnavailable());
-            api.perform(linkRequest(other, ana, "RELATED", b, a)).andExpect(status().isServiceUnavailable());
-            assertThat(readTask(path, ana)).isEqualTo(a);
+            api.perform(linkRequest(other, ana, "RELATED", b, reviewA)).andExpect(status().isServiceUnavailable());
+            assertThat(readTask(path, ana)).isEqualTo(reviewA);
             assertThat(readTask(other, ana)).isEqualTo(b);
+            assertThat(db.queryForMap("SELECT * FROM task WHERE id=?", a.get("id").asText())).isEqualTo(stored);
+            assertThat(taskHistory(a.get("id").asText())).isEqualTo(history);
+            assertThat(taskHistory(b.get("id").asText())).isEqualTo(otherHistory);
             api.perform(get(path + "/attachments").session(ana)).andExpect(jsonPath("$.items").isEmpty());
             api.perform(get(path + "/comments").session(ana)).andExpect(jsonPath("$.items").isEmpty());
             api.perform(get(path + "/links").session(ana)).andExpect(jsonPath("$.items").isEmpty());
-            assertThat(eventCount(path, ana)).isEqualTo(1);
+            assertThat(eventCount(path, ana)).isEqualTo(2);
             assertThat(eventCount(other, ana)).isEqualTo(1);
         } finally {
             db.execute("ALTER TABLE task_activity DROP CONSTRAINT test_activity_failure");

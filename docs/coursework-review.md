@@ -2,7 +2,26 @@
 
 ## Estado, método e alcance
 
-**Atualização vigente — 18-11-2026:** âmbito académico atual RF-01–17/US-01–20 e **30 operações** OpenAPI, incluindo registo aprovado em 17-11 e usabilidade de 18-11. Candidato `0.4.0-rc.1`, sem imagem GHCR comprovada; houve prerelease de teste do autor às 22:09, falhada no gate. **T024 fechada, 28/28**, full E2E **11/11 PASS às 11:55–11:56 UTC**, revisão `review-t024-full-closure` PASS; B5/T028 PASS documentados. Visual humano aprovado às 09:42:49Z separadamente. Backend 58/frontend 141/build anteriores e seleção 74/build da correção de foco não foram reexecutados nesta revisão. [Estado e proveniência](verification.md#estado-vigente--18-11-2026).
+**Atualização vigente — 18-11-2026:** âmbito académico atual RF-01–17/US-01–20 e **30 operações** OpenAPI, incluindo registo aprovado em 17-11 e usabilidade de 18-11. Candidato `0.4.0-rc.1`; **C EXECUTADO, publicação de teste GHCR confirmada**, não release estável ou validação do cliente. **T024 fechada, 28/28**, full E2E **11/11 PASS às 11:55–11:56 UTC**, revisão `review-t024-full-closure` PASS; B5/T028 PASS documentados. Visual humano aprovado às 09:42:49Z separadamente. Backend 58/frontend 141/build anteriores e seleção 74/build da correção de foco não foram reexecutados nesta revisão. [Estado e proveniência](verification.md#estado-vigente--18-11-2026).
+
+**Publicação atual confirmada por evidência recebida:** o agente readonly
+`confirmar-publicacao-ghcr-final`, após relato do autor às **22:47:49 UTC**,
+verificou por APIs públicas/HTML/refs sem autenticação a
+[release 450638723](https://github.com/Fibigor/matriz/releases/tag/test-ghcr-20261118T223030Z),
+publicada às **22:32:03 UTC**, prerelease true/draft false, no SHA
+`181b267bc3e5e44d173aa82614cf23054b63f94d`; o
+[run 44412481407 attempt 2](https://github.com/Fibigor/matriz/actions/runs/44412481407/attempts/2)
+teve **SUCCESS** e o [CI push 44411086996](https://github.com/Fibigor/matriz/actions/runs/44411086996)
+do mesmo SHA teve os quatro jobs **SUCCESS**. Imagem/tag/digest principal
+explicitamente observados no
+[package público](https://github.com/users/Fibigor/packages/container/matriz/1593157715):
+`ghcr.io/fibigor/matriz`, tag
+`test-450638723-sha-181b267bc3e5e44d173aa82614cf23054b63f94d`,
+referência imutável
+`ghcr.io/fibigor/matriz@sha256:3e8c10bb86911d409ac4acf8a183a1814d70627d5c21902776800e671078b2ca`.
+Não são consultas ou execuções próprias deste fecho. O novo texto documental
+é posterior ao commit/imagem e **não integra esse SHA**.
+[Horários, fontes e lacunas](verification.md#current-publication).
 
 O log remoto das 14:08 de 18-11 fornecido pelo autor reporta um HIGH picomatch e bloqueio antes dos E2E; a exceção CI temporária posterior está em [constraints](constraints.md#restrições-em-vigor--ficha-03-extensões-v4-e-registo-académico). Não é scan limpo. O relatório final preexistente relata CI SUCCESS às 18:46:03 UTC, mas o URL aponta para outro nome de repositório; proveniência não reconciliada nesta tarefa. [Ressalva e cobertura A/B/C](verification.md#documentacao-abc-20261118). A matriz pedagógica e os inventários abaixo preservam a análise de 17-11; as execuções de 12/13-11 não se tornam atuais. Não houve nova leitura dos PDFs/anexos neste lote.
 
@@ -14,7 +33,7 @@ soma aos 58 anteriores. C está **CONFIGURADO e validado localmente por relato**
 sem build/publicação GHCR comprovados. Revisão independente B/C e desta edição
 pendente; gates anteriores não a substituem.
 
-**Estado posterior, aprovação de 22:12:55 UTC:** a correção JSON tem seleção
+**Histórico posterior, aprovação de 22:12:55 UTC, antes da publicação atual:** a correção JSON tem seleção
 6/6 e backend full 60/60 PASS locais, revisão `review-ci-json-isolation` PASS
 documentados, não reexecutados aqui. O autor confirmou commit/push manual para
 `a5fc8efe56c1bb41d7106d7ba9438cb7e74bb5ff` e reportou CI verde. A consulta
@@ -24,7 +43,7 @@ publicada pelo autor às 22:09 nessa SHA, foi conferida pelo agente anterior
 por páginas públicas/ref. O log do autor às 22:10 identifica HTTP 403 rate limit
 no gate de `prepare` do [run 44408725656](https://github.com/Fibigor/matriz/actions/runs/44408725656),
 sem imagem GHCR publicada. Não são consultas próprias desta tarefa.
-Correção atual de autenticação apenas local, com revisão independente
+Naquela fase, correção de autenticação apenas local, com revisão independente
 **`review-ghcr-api-auth` PASS**, conforme relato do Revisor Matriz recebido
 neste fecho: APROVADO sem achados contra HEAD
 `a5fc8efe56c1bb41d7106d7ba9438cb7e74bb5ff` e patch local.
@@ -121,11 +140,11 @@ Fonte: **P13**, pp. 1–6. Desafios opcionais separados dos requisitos base.
 | Docker/Compose/config/volume/healthchecks, p. 2 | [Dockerfile](../Dockerfile), [Compose](../compose.yaml), override observability | Build multi-stage estáticos+API no mesmo JAR; DB/volume; health `/` base; readiness opt-in; resultados locais T6/13-11 documentados. | Health `/` não comprova DB; liveness ≠ readiness. Nenhum serviço iniciado nesta tarefa. |
 | Acesso/comunicação/persistência/recriação/logs, p. 3 | README/verification, configuração e serviços | Relatos de recriação app/db no mesmo volume, SQL/HTTP/bytehashes e outage/recovery em 13-11. | Não é backup/restore, capacidade ou inspeção atual de contentores. Não abrir logs externos sob pretexto de portabilidade. |
 | CI push/PR, permissões mínimas, testes antes de Docker, p. 3 | [.github/workflows/ci.yml](../.github/workflows/ci.yml) | `contents: read`; jobs Semgrep/backend/frontend antes do job integrado; build único e gates antes de E2E na mesma imagem. | Configuração estática ≠ execução remota; preservar workflow. Nenhuma ação remota autorizada. |
-| Prova Actions e falha controlada, p. 3 | Run histórico ficha 04; fixtures locais do gate descritas em verification; relato remoto preexistente no relatório final | Fixtures clean/HIGH/CRITICAL/erro/cobertura são resultados locais documentados. Relato SUCCESS de 18:46:03 UTC tem ressalva de repositório/proveniência na nota A/B/C. | **Pendente** reconciliar prova positiva para este repositório/commit final, falha controlada e artefactos/upload em falha/retenção reais. Fixtures/lint não substituem prova remota. |
-| README/arquitetura Mermaid/OpenAPI/changelog/candidato SemVer, p. 4 | Canónicos completos de arquitetura/dados/UI, OpenAPI, CHANGELOG, RELEASE_NOTES, ADRs | Candidato `0.4.0-rc.1`; suplementos 13-11 sem apagar baseline 12-11; versões/hashes de arquivo em 17-11. | Sem bump/tag; OpenAPI integral e renderização Mermaid não certificados. Produção/release final não exigidas para declarar os artefactos existentes. |
+| Prova Actions e falha controlada, p. 3 | Run histórico ficha 04; fixtures locais do gate; [confirmação atual recebida](verification.md#current-publication) | CI push **44411086996**, SHA `181b267…`, quatro jobs SUCCESS, verificado externamente pelo confirmador readonly; não execução deste fecho. Fixtures clean/HIGH/CRITICAL/erro/cobertura mantêm proveniência local. | Prova positiva atual confirmada; **pendentes** falha controlada e artefactos/upload em falha/retenção reais. Fixtures/lint não substituem essa prova. |
+| README/arquitetura Mermaid/OpenAPI/changelog/candidato SemVer, p. 4 | Canónicos completos de arquitetura/dados/UI, OpenAPI, CHANGELOG, RELEASE_NOTES, ADRs | Candidato `0.4.0-rc.1`; suplementos 13-11 sem apagar baseline 12-11; versões/hashes de arquivo em 17-11. | Sem bump; prerelease técnica GHCR publicada, não release estável. OpenAPI integral e renderização Mermaid não certificados. Produção/release final não exigidas para declarar os artefactos existentes. |
 | Validação final e revisão, p. 5 | [Final local documentado](verification.md#validação-final-local-das-extensões--execução-de-13-11-2026) | 41/43/6; Trivy 294 npm/63 JAR, 0 HIGH/CRITICAL; Semgrep 135/47/0; actionlint 1.7.7 PASS; migração/persistência/readiness relatadas. | São resultados documentados, não executados nem certificados por esta escrita; revisão independente/humana/cliente pendente. |
 | Relatório breve: alterações/testes/CI/problemas/IA/limites, p. 6 | Verification, release notes, plano e esta matriz | Relatos separam falhas de harness, correções, fontes e limitações; uso de IA e decisão do autor identificados. | Arquivo portável/sanitizado das evidências externas exige decisão própria; não fabricar novos reports. |
-| Desafios opcionais A/B/C: scan dependências/observabilidade/GHCR | CI/Trivy, perfil observability/teste e [release.yml](../.github/workflows/release.yml) existentes | Cobertura e limites separados abaixo. | C configurado não é publicação demonstrada; executar remotamente exige aprovação própria. Desafios continuam opcionais, não lacunas obrigatórias nem autorização de deploy. |
+| Desafios opcionais A/B/C: scan dependências/observabilidade/GHCR | CI/Trivy, perfil observability/teste e [release.yml](../.github/workflows/release.yml) existentes | Cobertura e limites separados abaixo; C com publicação de teste confirmada por evidência externa recebida. | Não é release estável ou autorização de deploy. Novas execuções remotas exigem aprovação própria; desafios continuam opcionais, não lacunas obrigatórias. |
 
 ### Cobertura dos desafios opcionais A/B/C — 18-11-2026
 
@@ -133,7 +152,7 @@ Fonte: **P13**, pp. 1–6. Desafios opcionais separados dos requisitos base.
 |---|---|---|
 | **A — scan de dependências** | Trivy já integrado no CI; política da exceção exata picomatch/HIGH preservada. | Implementado, **risco aceite não remediado**, não scan limpo. Exceção só frontend npm `picomatch@4.0.7`/`CVE-2026-112366`, todas as ocorrências dev, sem fix, até `2026-11-25T00:00:00Z` exclusivo; outros findings/erros/cobertura bloqueiam. Nenhum scan novo nesta revisão. |
 | **B — observabilidade e logs JSON** | Consola ECS nativa Boot só no perfil opt-in; correção do isolamento global nos testes com assertions reais preservadas. Seleção **6/6**, full backend **60/60** locais e revisão **`review-ci-json-isolation` PASS** documentados, incluindo nova classe default textual no mesmo ficheiro. | Não reexecutados aqui nem somados aos resultados anteriores das 21:09/58 testes. Não prova outro processo default nem formatos independentes concorrentes. Health/CSRF/sessão/autorização preservados; bloqueio do JDBC health indicator, **não paragem real da DB**. |
-| **C — imagem GHCR de prerelease** | Release published só prerelease não draft; commit exato; último CI push e quatro jobs SUCCESS, revalidados por run/attempt após jobs e antes de build/push. Imagem lowercase, tag `test-<release-id>-sha-<commit>`, sem latest; `packages: write` só em `publish`, login GITHUB_TOKEN e summary digest/commit. | **CONFIGURADO**, prerelease real falhada por 403 sem imagem publicada. Autenticação corrigida apenas localmente, revisão independente `review-ghcr-api-auth` PASS por relato. Os 41 casos/dois bash/cinco digest do engenheiro e o PASS F1 são históricos, não execução desta correção. |
+| **C — imagem GHCR de prerelease** | **EXECUTADO / publicação de teste confirmada**, release **450638723**, run **44412481407 attempt 2 SUCCESS**, SHA `181b267…`, após CI de quatro jobs SUCCESS. Imagem/tag/digest principal observados no package público; referências concretas no início. Gates/autenticação/permissões do workflow preservados. | Não release estável/produção/aceitação do cliente. Summary literal inacessível (login/API logs 403), sem pull/manifest testado; tentativa 1 não investigada. Falha 403 da release anterior e revisões locais continuam históricas. |
 
 No C, API CI agora autenticada com token automático apenas no ambiente dos dois
 passos de verificação; `contents: read` e `actions: read` explícitos nos dois
@@ -170,8 +189,8 @@ Exemplos A01–A28 apoiam prompts de desenho, implementação, estados, bugs/ref
 
 | Prioridade/tema | Estado e próximo responsável |
 |---|---|
-| CI atual positiva/negativa | Autor esclareceu o alias para `Fibigor/matriz` e reportou CI verde de `a5fc8efe…`, sem confirmação independente dos quatro jobs (403 público às 22:07). Novo CI da SHA de autenticação ainda pendente; falha controlada e artefactos/retenção reais não demonstrados. `checksPass` do Render pode disparar deploy; sem ações remotas nesta tarefa. |
-| GHCR C | Com revisão local da autenticação PASS e aprovação separada, autor trata commit/push da nova SHA (pode acionar Render), confirma novo CI quatro jobs verde e cria **nova tag/nova prerelease** nessa SHA. Rerun da antiga usa workflow antigo: não apagar/mover a anterior nem converter para stable. Recolher run/digest/commit reais se houver publicação, sem presumir scan/igualdade da imagem reconstruída. Nada remoto executado nesta correção. |
+| CI atual positiva/negativa | Positiva atual confirmada externamente: CI **44411086996**, SHA `181b267…`, quatro jobs SUCCESS. Falha controlada e artefactos/retenção reais não demonstrados. `checksPass` do Render pode disparar deploy; sem ações remotas nesta tarefa. |
+| GHCR C | **Publicação de teste confirmada**, run/digest/commit identificados [na evidência atual](verification.md#current-publication). Não é necessário obter o summary para comprovar a publicação; a sua leitura literal continua lacuna, tal como pull/manifest não testados. CI testa commit, não o digest reconstruído; sem presunção de novo scan/igualdade de imagem, produção ou aceite do cliente. Nada remoto executado neste fecho documental. |
 | Revisão/aceitação | B5/T028, `review-t024-full-closure`, F1 e `review-ci-json-isolation` PASS com âmbitos próprios; aprovação visual humana de 09:42:49Z separada. Revisão independente da autenticação `review-ghcr-api-auth` PASS por relato recebido; cliente ainda não validou âmbito/regras. Não estender gates anteriores a toda a entrega ou chamar auto-verificação de revisão independente. |
 | Evidência portável | Relatórios anteriores apontam para pasta de sessão externa. Autor decide seleção, sanitização, autorização e entrega; não se copiam logs nem se inventam manifests novos aqui. |
 | Capacidade/recuperação/retention | BYTEA e história fazem crescer DB/backups. Definir capacidade, backups/restore, âmbito/evento inicial/policy e base legal antes de dados reais. Um ano é pressuposto; expiração da infraestrutura não é retenção da aplicação. Sem purga automática. |

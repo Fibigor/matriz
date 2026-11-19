@@ -19,7 +19,7 @@ import static pt.matriz.common.ApiModels.*;
 
 @Service
 public class TaskService {
-    private static final Set<String> STATES = Set.of("TODO", "IN_PROGRESS", "DONE");
+    private static final Set<String> STATES = Set.of("TODO", "IN_PROGRESS", "IN_REVIEW", "DONE");
     private static final Set<String> PRIORITIES = Set.of("LOW", "MEDIUM", "HIGH");
     private static final Set<String> TYPES = Set.of("TASK", "BUG", "IMPROVEMENT");
     private static final Set<String> REASONS = Set.of("COMPLETED", "CANCELLED", "DUPLICATE", "WONT_DO");
@@ -213,6 +213,9 @@ public class TaskService {
     }
 
     private void checkTransition(String id, String before, String after) {
+        if ("DONE".equals(after) && !"DONE".equals(before) && !"IN_REVIEW".equals(before)) {
+            throw Inputs.invalid("status", "Coloque a tarefa em revisão antes de a concluir.");
+        }
         if (!"DONE".equals(before) && "DONE".equals(after) && Boolean.TRUE.equals(db.queryForObject("""
                 SELECT EXISTS(SELECT 1 FROM task_link l JOIN task t ON t.id=l.source_task_id
                 WHERE l.target_task_id=? AND l.type='BLOCKS' AND t.status<>'DONE')

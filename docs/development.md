@@ -236,13 +236,32 @@ A regra local recusa CORS Java wildcard. Não equivale a pentest/auditoria integ
 
 ### Prerelease de teste — GHCR
 
-O [release.yml](../.github/workflows/release.yml) está **CONFIGURADO**, com
-correção de autenticação ainda local em 18-11-2026. A prerelease de teste criada
-pelo autor às 22:09 UTC falhou no gate com HTTP 403, antes de publicar imagem;
-não há publicação GHCR comprovada. A evidência e a validação desta correção,
-com revisão independente **PASS** segundo relato do Revisor Matriz
-`review-ghcr-api-auth` (não execução deste fecho nem prova remota), estão em
-[verification](verification.md#correcao-release-auth-20261118).
+O [release.yml](../.github/workflows/release.yml) foi **EXECUTADO, com publicação
+de teste GHCR confirmada** em 18-11-2026. Segundo evidência recebida do agente
+readonly `confirmar-publicacao-ghcr-final`, a
+[prerelease test-ghcr-20261118T223030Z](https://github.com/Fibigor/matriz/releases/tag/test-ghcr-20261118T223030Z)
+publicou a imagem após CI verde do commit
+`181b267bc3e5e44d173aa82614cf23054b63f94d`; o
+[run 44412481407, attempt 2](https://github.com/Fibigor/matriz/actions/runs/44412481407/attempts/2)
+terminou com sucesso. A falha HTTP 403 da release anterior e a revisão local
+`review-ghcr-api-auth` PASS permanecem
+[históricas](verification.md#correcao-release-auth-20261118).
+
+Referências observadas explicitamente na
+[página pública do package](https://github.com/users/Fibigor/packages/container/matriz/1593157715):
+
+- Imagem: `ghcr.io/fibigor/matriz`.
+- Tag: `test-450638723-sha-181b267bc3e5e44d173aa82614cf23054b63f94d`.
+- Referência imutável: `ghcr.io/fibigor/matriz@sha256:3e8c10bb86911d409ac4acf8a183a1814d70627d5c21902776800e671078b2ca`.
+
+Para identificar esta versão, preferir a referência por digest à tag; isto não
+é instrução de pull/deploy. Nenhum pull, leitura de manifest ou acesso de runtime
+foi testado neste fecho. O summary literal do run não foi acessível ao confirmador;
+isso não bloqueia a confirmação por package/API/refs.
+[Fontes, horários e lacunas](verification.md#current-publication).
+Este texto documental é posterior ao commit/imagem publicados e não integra
+esse SHA. Mantém-se o candidato académico `0.4.0-rc.1`, sem release estável,
+validação do cliente ou prontidão de produção.
 
 1. Identificar o commit exato da tag da release. O workflow recebe apenas
    `release: published`; ambos os jobs exigem `prerelease == true` e
@@ -278,10 +297,11 @@ com revisão independente **PASS** segundo relato do Revisor Matriz
    Login GHCR via `docker/login-action` com `github.actor`/`GITHUB_TOKEN`, sem PAT
    ou segredo novo; checkout sem credenciais persistidas e build com
    `github-token: ''`.
-5. Se executado com sucesso, o summary regista imagem/tag, referência
+5. O passo de summary está configurado para registar imagem/tag, referência
    `image@sha256:…`, commit e run CI revalidado em `publish`; digest tem de corresponder a
-   `sha256:` seguido de 64 hexadecimais minúsculos. Não há digest publicado
-   conhecido nesta tarefa. Uma falha no summary não desfaz um push já ocorrido.
+   `sha256:` seguido de 64 hexadecimais minúsculos. O passo teve sucesso no
+   attempt 2 confirmado; o seu texto não foi lido. O digest acima foi observado
+   no package, não transcrito do summary. Uma falha no summary não desfaz um push já ocorrido.
 
 As consultas revalidam CI do mesmo **commit** nos instantes observados, mas
 permanece uma janela externa após a última consulta, durante build/push.
@@ -298,7 +318,12 @@ pode também ter efeitos Render por `checksPass`; não criar tag/release nem
 acionar workflows apenas para conferir documentação. Validações locais relatadas
 e ferramentas indisponíveis estão em [verification](verification.md#documentacao-abc-20261118).
 
-Com revisão local desta correção PASS, o autor trata commit/push da **nova SHA**, mediante
+**Histórico — correção do rate limit:** o procedimento abaixo foi definido após
+a revisão local PASS e está **ultrapassado pela publicação de teste GHCR já
+confirmada acima**; não exige nova release agora. Conserva-se como referência
+para futuras correções, sempre sujeitas às aprovações indicadas.
+
+Nesse procedimento, cabe ao autor tratar commit/push da **nova SHA**, mediante
 aprovação separada (pode acionar Render). Confirmar o novo último CI push com os
 quatro jobs verdes e só depois criar **nova tag e nova prerelease** apontando
 exatamente à SHA corrigida, sob aprovação própria. Reexecutar a release antiga

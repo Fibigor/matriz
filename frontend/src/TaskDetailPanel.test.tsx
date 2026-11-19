@@ -1,13 +1,129 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TaskDetailPanel } from './TaskDetailPanel';
+import { TaskDetail } from './TaskDetail';
 import App from './App';
-import { api } from './api';
+import { api, ApiError, write } from './api';
 import type { Project, Task } from './types';
 vi.mock('./api', async () => ({ ...await vi.importActual<typeof import('./api')>('./api'), api: vi.fn(), write: vi.fn() }));
 
 describe('Painel de detalhe', () => {
+  it('Guardar pendente recupera foco em revisão e conclusão; Escape fecha e devolve ao link', async () => {
+    vi.resetAllMocks();
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })));
+    window.history.replaceState(null, '', '#/projects/p');
+    const project: Project = { id: 'p', name: 'Projeto foco', description: '', ownerUserId: 'u', currentRole: 'MEMBER', version: 1, createdAt: '',
+      progress: { total: 1, todo: 1, inProgress: 0, inReview: 0, done: 0, completedPercent: 0 } };
+    let current: Task = { id: 't', projectId: 'p', key: 'MAT-1', title: 'Tarefa foco', description: '', type: 'TASK', weight: null,
+      closeReason: null, status: 'TODO', priority: 'MEDIUM', assignees: [], version: 1, createdAt: '', updatedAt: '' };
+    const pagination = { page: 1, pageSize: 20, totalItems: 1, totalPages: 1 };
+    vi.mocked(api).mockImplementation(async path => {
+      if (path === '/auth/me') return { id: 'u', displayName: 'Ana' };
+      if (path === '/projects/p') return project;
+      if (path === '/projects/p/tasks/t') return current;
+      if (path.includes('/tasks?')) return { project, items: [current], pagination, progress: project.progress };
+      if (path.endsWith('/members')) return [];
+      if (path.endsWith('/attachments')) return { items: [] };
+      return { items: [], pagination: { ...pagination, totalItems: 0, totalPages: 0 } };
+    });
+    const confirmation = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const { unmount } = render(<App />);
+    const origin = await screen.findByRole('link', { name: 'Tarefa foco' });
+    await userEvent.click(origin);
+    await screen.findByRole('heading', { name: 'Tarefa foco' });
+    for (const status of ['IN_REVIEW', 'DONE'] as const) {
+      await userEvent.selectOptions(screen.getByLabelText('Estado'), status);
+      let resolve!: (saved: Task) => void;
+      vi.mocked(write).mockImplementationOnce(() => new Promise(confirm => { resolve = confirm; }));
+      const button = screen.getByRole('button', { name: 'Guardar tarefa' });
+      await userEvent.click(button);
+      expect(button).toBeDisabled();
+      // JSDOM cannot blur a disabled button. Model loss to BODY while pending,
+      // not recovery: no test focuses the editor after the response.
+      document.body.tabIndex = -1;
+      document.body.focus();
+      document.body.removeAttribute('tabindex');
+      expect(document.body).toHaveFocus();
+      fireEvent.submit(button.closest('form')!);
+      expect(write).toHaveBeenCalledTimes(status === 'IN_REVIEW' ? 1 : 2);
+      current = { ...current, status, version: current.version + 1 };
+      await act(async () => resolve(current));
+      await screen.findByText('Alteração guardada.');
+      expect(button).toBeEnabled();
+      expect(button).toHaveFocus();
+      expect(within(screen.getByLabelText('Estado')).getByRole('option', { name: 'Concluída' })).toBeEnabled();
+    }
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    // Saving refreshes the list; the panel also restores the matching task link
+    // when the original node was replaced by that refresh.
+    expect(await screen.findByRole('link', { name: 'Tarefa foco' })).toHaveFocus();
+    expect(confirmation).not.toHaveBeenCalled();
+    unmount(); confirmation.mockRestore(); vi.unstubAllGlobals();
+    window.history.replaceState(null, '', '#/');
+  });
+  it.each(['DONE', 'IN_REVIEW'] as const)('mantém manutenção/reabertura e erro BLOCKS alcançável no painel com base %s', async status => {
+    vi.resetAllMocks();
+    const current: Task = { id: 't', projectId: 'p', key: 'MAT-1', title: 'Compatibilidade painel', description: '', status,
+      type: 'TASK', weight: null, closeReason: status === 'DONE' ? 'CANCELLED' : null,
+      priority: 'MEDIUM', assignees: [], version: 3, createdAt: '', updatedAt: '' };
+    const empty = { items: [], pagination: { page: 1, pageSize: 20, totalItems: 0, totalPages: 0 } };
+    vi.mocked(api).mockImplementation(async path => {
+      if (path === '/projects/p/tasks/t') return current;
+      if (path === '/projects/p') return { id: 'p', currentRole: 'MEMBER' };
+      if (path.endsWith('/members')) return [];
+      if (path.endsWith('/attachments')) return { items: [] };
+      return empty;
+    });
+    vi.mocked(write).mockRejectedValue(new ApiError('BLOCKS: MAT-2.', 422));
+    render(<TaskDetailPanel close={vi.fn()}><TaskDetail projectId="p" id="t" standalone={false} /></TaskDetailPanel>);
+    await screen.findByRole('heading', { name: 'Compatibilidade painel' });
+    expect(screen.getByRole('option', { name: 'Concluída' })).toBeEnabled();
+    if (status === 'DONE') expect(screen.getByLabelText('Motivo de fecho')).toHaveValue('CANCELLED');
+    await userEvent.selectOptions(screen.getByLabelText('Estado'), status === 'DONE' ? 'IN_REVIEW' : 'DONE');
+    fireEvent.change(screen.getByLabelText('Descrição'), { target: { value: 'Rascunho' } });
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar tarefa' }));
+    await screen.findByText('BLOCKS: MAT-2.');
+    expect(write).toHaveBeenCalledExactlyOnceWith('/projects/p/tasks/t', 'PUT', expect.objectContaining({
+      version: 3, status: status === 'DONE' ? 'IN_REVIEW' : 'DONE', closeReason: null,
+    }));
+    expect(screen.getByLabelText('Descrição')).toHaveValue('Rascunho');
+    expect(screen.getByRole('option', { name: 'Concluída' })).toBeEnabled();
+  });
+  it('revisão obrigatória: painel/página e resize conservam base suja mesmo com revisão externa', async () => {
+    vi.resetAllMocks();
+    let current: Task = { id: 't', projectId: 'p', key: 'MAT-1', title: 'Revisão no painel', description: '', status: 'TODO',
+      type: 'TASK', weight: null, closeReason: null, priority: 'MEDIUM', assignees: [], version: 1, createdAt: '', updatedAt: '' };
+    const empty = { items: [], pagination: { page: 1, pageSize: 20, totalItems: 0, totalPages: 0 } };
+    vi.mocked(api).mockImplementation(async path => {
+      if (path === '/projects/p/tasks/t') return current;
+      if (path === '/projects/p') return { id: 'p', currentRole: 'MEMBER' };
+      if (path.endsWith('/members')) return [];
+      if (path.endsWith('/attachments')) return { items: [] };
+      return empty;
+    });
+    const close = vi.fn();
+    const { rerender } = render(<TaskDetailPanel close={close}><TaskDetail projectId="p" id="t" standalone={false} /></TaskDetailPanel>);
+    await screen.findByRole('heading', { name: 'Revisão no painel' });
+    const description = screen.getByLabelText('Descrição');
+    fireEvent.change(description, { target: { value: 'Local' } });
+    await userEvent.selectOptions(screen.getByLabelText('Estado'), 'IN_REVIEW');
+    current = { ...current, status: 'IN_REVIEW', version: 2 };
+    vi.mocked(write).mockResolvedValue({});
+    fireEvent.change(screen.getByLabelText('Novo comentário'), { target: { value: 'Atualizar' } });
+    await userEvent.click(screen.getByRole('button', { name: 'Adicionar comentário' }));
+    await screen.findByText('Comentário adicionado.');
+    await waitFor(() => expect(screen.queryByText('A atualizar detalhe… Os rascunhos mantêm-se.')).not.toBeInTheDocument());
+    rerender(<TaskDetailPanel close={close} full><TaskDetail projectId="p" id="t" standalone={false} /></TaskDetailPanel>);
+    fireEvent(window, new Event('resize'));
+    expect(screen.getByLabelText('Descrição')).toBe(description);
+    expect(screen.getByRole('option', { name: 'Concluída' })).toBeDisabled();
+    expect(description).toHaveValue('Local');
+    await userEvent.selectOptions(screen.getByLabelText('Estado'), 'DONE');
+    expect(screen.getByLabelText('Estado')).toHaveValue('IN_REVIEW');
+    expect(write).toHaveBeenCalledTimes(1);
+  });
   it('isola o fundo, foca fecho, Escape fecha e devolve foco', async () => {
     const origin = document.createElement('button'); origin.textContent = 'Origem'; document.body.append(origin); origin.focus();
     const close = vi.fn();
@@ -92,7 +208,7 @@ describe('Painel de detalhe', () => {
   it('App conserva contexto, guards e foco ao maximizar, fechar e reabrir o painel', async () => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })));
     window.history.replaceState(null, '', '#/projects/p');
-    const project: Project = { id: 'p', name: 'Projeto contexto', description: '', ownerUserId: 'u', currentRole: 'MEMBER', version: 1, createdAt: '', progress: { total: 1, todo: 1, inProgress: 0, done: 0, completedPercent: 0 } };
+    const project: Project = { id: 'p', name: 'Projeto contexto', description: '', ownerUserId: 'u', currentRole: 'MEMBER', version: 1, createdAt: '', progress: { total: 1, todo: 1, inProgress: 0, inReview: 0, done: 0, completedPercent: 0 } };
     const task: Task = { id: 't', projectId: 'p', key: 'MAT-1', title: 'Tarefa painel', description: '', type: 'TASK', weight: null, closeReason: null, status: 'TODO', priority: 'MEDIUM', assignees: [], version: 1, createdAt: '', updatedAt: '' };
     const pagination = { page: 1, pageSize: 20, totalItems: 1, totalPages: 1 };
     vi.mocked(api).mockImplementation(async path => {

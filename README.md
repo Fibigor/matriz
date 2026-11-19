@@ -15,7 +15,7 @@ anexos, relações de bloqueio e acompanhamento do progresso.
 
 ## Estado
 
-Candidato académico **`0.4.0-rc.1`**, sem nova release/publicação. Registo académico e usabilidade implementados; T024 fechada,
+Candidato académico **`0.4.0-rc.1`**, com [pré-release técnica de teste GHCR publicada](docs/verification.md#current-publication), sem release estável. Registo académico e usabilidade implementados; T024 fechada,
 28/28 tarefas, full E2E 11/11 PASS documentado em 18-11-2026.
 Aprovação visual humana registada separadamente.
 [Evidência, proveniência e pendências](docs/verification.md).
@@ -117,5 +117,6 @@ não é scan limpo nem remediação.
 [o guia de desenvolvimento](docs/development.md#observabilidade-local).
 Só o perfil `observability` configura logs de consola JSON ECS nativos do Boot.
 O [workflow de prerelease de teste](docs/development.md#prerelease-de-teste-ghcr)
-está configurado e validado localmente segundo relato do engenheiro, **sem
-publicação GHCR comprovada**; a execução remota exige aprovação separada.
+tem [publicação de teste GHCR confirmada por evidência recebida](docs/verification.md#current-publication);
+não é release estável nem prova de validação do digest reconstruído pelo CI.
+Este ajuste documental é posterior ao commit/imagem publicados e não os integra.

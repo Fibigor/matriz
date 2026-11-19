@@ -11,7 +11,7 @@ public final class ApiModels {
 
     public record UserView(String id, String displayName) {}
     public record MemberView(String id, String displayName, boolean active, String role) {}
-    public record Progress(long total, long todo, long inProgress, long done, int completedPercent) {}
+    public record Progress(long total, long todo, long inProgress, long inReview, long done, int completedPercent) {}
     public record Pagination(int page, int pageSize, long totalItems, long totalPages) {}
     public record ProjectView(String id, String name, String description, String ownerUserId,
                               String currentRole, long version, Instant createdAt, Progress progress) {}

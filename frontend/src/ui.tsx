@@ -54,7 +54,7 @@ export function ProgressCard({ progress }: { progress: Progress }) {
   return <section className="progress-card" aria-label="Progresso global do projeto">
     <div className="progress-heading"><span className="eyebrow">Progresso global</span><strong>{progress.completedPercent}% concluído</strong></div>
     <progress max={100} value={progress.completedPercent} aria-label="Percentagem concluída" />
-    <span className="progress-breakdown">Total: {progress.total} · Por fazer: {progress.todo} · Em curso: {progress.inProgress} · Concluídas: {progress.done}</span>
+    <span className="progress-breakdown">Total: {progress.total} · Por fazer: {progress.todo} · Em curso: {progress.inProgress} · Em revisão: {progress.inReview} · Concluídas: {progress.done}</span>
     {!progress.total && <span>Sem tarefas</span>}
   </section>;
 }

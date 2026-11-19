@@ -139,8 +139,9 @@ public class ProjectService {
         return db.query("""
                 SELECT count(*) FILTER (WHERE status='TODO') AS todo,
                 count(*) FILTER (WHERE status='IN_PROGRESS') AS doing,
+                count(*) FILTER (WHERE status='IN_REVIEW') AS review,
                 count(*) FILTER (WHERE status='DONE') AS done FROM task WHERE project_id=?
-                """, (rs, row) -> Inputs.progress(rs.getLong("todo"), rs.getLong("doing"), rs.getLong("done")), id).getFirst();
+                """, (rs, row) -> Inputs.progress(rs.getLong("todo"), rs.getLong("doing"), rs.getLong("review"), rs.getLong("done")), id).getFirst();
     }
 
     private long currentVersion(String id) {

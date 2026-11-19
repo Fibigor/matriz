@@ -6,6 +6,7 @@ import { Members, Projects } from './Projects';
 import { api, ApiError, write } from './api';
 import type { Member, Task, TaskPage } from './types';
 import { taskTemplates } from './taskTemplates';
+import { ProgressCard } from './ui';
 
 vi.mock('./api', async () => {
   const original = await vi.importActual<typeof import('./api')>('./api');
@@ -13,9 +14,9 @@ vi.mock('./api', async () => {
 });
 
 const page: TaskPage = {
-  project: { id: 'alpha', name: 'Alfa', description: '', ownerUserId: 'ana', currentRole: 'MEMBER', version: 1, createdAt: '', progress: { total: 0, todo: 0, inProgress: 0, done: 0, completedPercent: 0 } },
+  project: { id: 'alpha', name: 'Alfa', description: '', ownerUserId: 'ana', currentRole: 'MEMBER', version: 1, createdAt: '', progress: { total: 0, todo: 0, inProgress: 0, inReview: 0, done: 0, completedPercent: 0 } },
   items: [], pagination: { page: 1, pageSize: 20, totalItems: 0, totalPages: 0 },
-  progress: { total: 0, todo: 0, inProgress: 0, done: 0, completedPercent: 0 },
+  progress: { total: 0, todo: 0, inProgress: 0, inReview: 0, done: 0, completedPercent: 0 },
 };
 const createdTask: Task = { id: 't1', projectId: 'alpha', title: 'Nova tarefa real', description: '', status: 'TODO',
   key: 'MAT-1', type: 'TASK', weight: null, closeReason: null,
@@ -263,9 +264,83 @@ describe('Criação de tarefas', () => {
   describe('Indicadores do painel', () => {
     beforeEach(() => vi.resetAllMocks());
 
+    it('quatro estados: apresenta quatro cartões/barras dentro do viewBox e 25% globais', async () => {
+      const progress = { total: 4, todo: 1, inProgress: 1, inReview: 1, done: 1, completedPercent: 25 };
+      vi.mocked(api).mockResolvedValue({ items: [{ ...page.project, progress }], pagination: page.pagination });
+      render(<Projects dashboard />);
+      const summary = await screen.findByRole('region', { name: 'Resumo do projeto' });
+      const cards = within(summary).getAllByRole('article');
+      expect(cards.map(card => card.getAttribute('aria-label'))).toEqual(['Por fazer: 1', 'Em curso: 1', 'Em revisão: 1', 'Concluídas: 1']);
+      expect(within(summary).getByText('1 de 4 tarefas concluídas')).toBeInTheDocument();
+      const chart = within(summary).getByRole('img');
+      expect(chart.querySelector('desc')).toHaveTextContent('Por fazer: 1; Em curso: 1; Em revisão: 1; Concluídas: 1');
+      const bars = chart.querySelectorAll('rect');
+      expect(bars).toHaveLength(4);
+      const width = Number(chart.getAttribute('viewBox')!.split(' ')[2]);
+      bars.forEach(bar => {
+        expect(Number(bar.getAttribute('x'))).toBeGreaterThanOrEqual(0);
+        expect(Number(bar.getAttribute('x')) + Number(bar.getAttribute('width'))).toBeLessThanOrEqual(width);
+      });
+      const values = chart.querySelectorAll('text');
+      expect(values).toHaveLength(4);
+      values.forEach((value, index) => {
+        const baseline = Number(value.getAttribute('y'));
+        // Reserve headroom for 32px mobile text; browser E2E checks the actual glyph bounds.
+        expect(baseline).toBeGreaterThanOrEqual(42);
+        expect(baseline).toBeLessThanOrEqual(130);
+        expect(Number(bars[index].getAttribute('y')) - baseline).toBe(12);
+      });
+      // DOM extents are not evidence of browser geometry or text legibility.
+    });
+    it('quatro estados: filtro/lista reconhecem revisão em ordem e não recalculam globais por página/prioridade', async () => {
+      const progress = { total: 4, todo: 1, inProgress: 1, inReview: 1, done: 1, completedPercent: 25 };
+      const items = (['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'] as const).map((status, index) => ({
+        ...createdTask, id: String(index), title: 'Tarefa ' + status, status, priority: 'HIGH' as const,
+      }));
+      vi.mocked(api).mockImplementation(async path => {
+        if (path.endsWith('/members')) return [];
+        const params = new URLSearchParams(path.split('?')[1]);
+        const pageNumber = Number(params.get('page') ?? 1);
+        const filtered = params.get('status') === 'IN_REVIEW';
+        return { ...page, project: { ...page.project, progress }, progress,
+          items: filtered ? [items[2]] : [items[pageNumber - 1]],
+          pagination: { page: pageNumber, pageSize: 1, totalItems: filtered ? 1 : 4, totalPages: filtered ? 1 : 4 } };
+      });
+      render(<ProjectDetail id="alpha" />);
+      const filter = await screen.findByLabelText('Filtrar por estado');
+      expect(within(filter).getAllByRole('option').map(option => option.textContent)).toEqual([
+        'Todos os estados', 'Por fazer', 'Em curso', 'Em revisão', 'Concluída',
+      ]);
+      await userEvent.click(screen.getByRole('button', { name: 'Seguinte' }));
+      await screen.findByRole('link', { name: 'Tarefa IN_PROGRESS' });
+      expect(screen.getByRole('region', { name: 'Progresso global do projeto' })).toHaveTextContent('Total: 4');
+      await userEvent.click(screen.getByRole('button', { name: 'Seguinte' }));
+      await screen.findByRole('cell', { name: 'Em revisão' });
+      await userEvent.selectOptions(screen.getByLabelText('Filtrar por estado'), 'IN_REVIEW');
+      await waitFor(() => expect(api).toHaveBeenCalledWith('/projects/alpha/tasks?status=IN_REVIEW&page=1', expect.anything()));
+      await screen.findByRole('link', { name: 'Tarefa IN_REVIEW' });
+      expect(screen.queryByRole('link', { name: 'Tarefa TODO' })).not.toBeInTheDocument();
+      await userEvent.selectOptions(screen.getByLabelText('Filtrar por prioridade'), 'HIGH');
+      await screen.findByLabelText('Filtrar por estado');
+      await waitFor(() => expect(api).toHaveBeenCalledWith('/projects/alpha/tasks?status=IN_REVIEW&priority=HIGH&page=1', expect.anything()));
+      expect(screen.getByRole('button', { name: 'Seguinte' })).toBeDisabled();
+      const global = screen.getByRole('region', { name: 'Progresso global do projeto' });
+      expect(global).toHaveTextContent('Total: 4 · Por fazer: 1 · Em curso: 1 · Em revisão: 1 · Concluídas: 1');
+      expect(within(global).getByRole('progressbar')).toHaveAttribute('value', '25');
+    });
+    it('quatro estados: progresso vazio e arredondamento recebido não são reinterpretados', () => {
+      const { rerender } = render(<ProgressCard progress={page.progress} />);
+      expect(screen.getByText('Sem tarefas')).toBeInTheDocument();
+      expect(screen.getByText(/Em revisão: 0/)).toBeInTheDocument();
+      for (const [total, done, percent] of [[8, 1, 13], [3, 1, 33], [3, 2, 67]]) {
+        rerender(<ProgressCard progress={{ total, todo: total - done, inProgress: 0, inReview: 0, done, completedPercent: percent }} />);
+        expect(screen.getByRole('progressbar')).toHaveAttribute('value', String(percent));
+        expect(screen.queryByText('Sem tarefas')).not.toBeInTheDocument();
+      }
+    });
     it('usa os totais do projeto selecionado, não soma uma página como se fosse o conjunto global', async () => {
-      const alpha = { ...page.project, progress: { total: 5, todo: 2, inProgress: 1, done: 2, completedPercent: 40 } };
-      const beta = { ...page.project, id: 'beta', name: 'Beta', progress: { total: 2, todo: 0, inProgress: 0, done: 2, completedPercent: 100 } };
+      const alpha = { ...page.project, progress: { total: 5, todo: 2, inProgress: 1, inReview: 0, done: 2, completedPercent: 40 } };
+      const beta = { ...page.project, id: 'beta', name: 'Beta', progress: { total: 2, todo: 0, inProgress: 0, inReview: 0, done: 2, completedPercent: 100 } };
       vi.mocked(api).mockResolvedValue({ items: [alpha, beta], pagination: { page: 1, pageSize: 20, totalItems: 40, totalPages: 2 } });
       render(<Projects dashboard />);
       const summary = await screen.findByRole('region', { name: 'Resumo do projeto' });
@@ -327,7 +402,7 @@ describe('Criação de tarefas', () => {
     vi.mocked(api).mockImplementation(async path => {
       if (path.endsWith('/members')) return [];
       return created ? { ...page, items: [createdTask],
-        pagination: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1 }, progress: { total: 1, todo: 1, inProgress: 0, done: 0, completedPercent: 0 } } : page;
+        pagination: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1 }, progress: { total: 1, todo: 1, inProgress: 0, inReview: 0, done: 0, completedPercent: 0 } } : page;
     });
     vi.mocked(write).mockImplementation(async () => { created = true; return createdTask; });
     render(<ProjectDetail id="alpha" />);

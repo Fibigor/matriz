@@ -12,6 +12,7 @@ function ProjectOverview({ projects }: { projects: Project[] }) {
   const states = [
     { key: 'todo', label: 'Por fazer', count: progress.todo },
     { key: 'doing', label: 'Em curso', count: progress.inProgress },
+    { key: 'review', label: 'Em revisão', count: progress.inReview },
     { key: 'done', label: 'Concluídas', count: progress.done },
   ];
   const largest = Math.max(1, ...states.map(state => state.count));
@@ -31,20 +32,23 @@ function ProjectOverview({ projects }: { projects: Project[] }) {
         </div>
         <div className="overview-chart">
           <p className="chart-caption">Distribuição atual das tarefas</p>
-          <svg viewBox="0 0 640 190" role="img" aria-label={'Tarefas por estado de ' + project.name}>
+          <svg viewBox="0 0 640 160" role="img" aria-label={'Tarefas por estado de ' + project.name}>
             <title>Distribuição atual por estado</title>
             <desc>{states.map(state => `${state.label}: ${state.count}`).join('; ')}. Não é uma série temporal.</desc>
             {[32, 87, 142].map(y => <line key={y} x1="24" y1={y} x2="616" y2={y} className="chart-gridline" />)}
             {states.map((state, index) => {
-              const height = state.count / largest * 110;
-              const x = 120 + index * 200;
+              // Keep the highest value's baseline at 42, with room for the 32px mobile font.
+              const height = state.count / largest * 88;
+              const x = (index + .5) * 640 / states.length;
               return <g key={state.key} className={'chart-state state-' + state.key}>
                 <rect x={x - 30} y={142 - height} width="60" height={height} rx="4" />
                 <text x={x} y={130 - height} textAnchor="middle" className="chart-value">{state.count}</text>
-                <text x={x} y="176" textAnchor="middle" className="chart-label">{state.label}</text>
               </g>;
             })}
           </svg>
+          <ol className="chart-labels" aria-label="Estados das barras, da esquerda para a direita">
+            {states.map(state => <li key={state.key}>{state.label}</li>)}
+          </ol>
           <p className="chart-note">Contagens globais deste projeto, não apenas da página de tarefas.</p>
         </div>
       </div>

@@ -4,7 +4,7 @@
 
 ## Estado vigente — 18-11-2026
 
-**Candidato académico `0.4.0-rc.1`, sem bump ou imagem GHCR comprovada/validação do cliente.** Há uma prerelease de teste criada pelo autor, descrita abaixo; não é publicação da imagem. Este resumo prevalece sobre estados intermédios datados abaixo, preservados como cronologia; cada resultado distingue execução local, relato do autor e evidência histórica.
+**Candidato académico `0.4.0-rc.1`, sem bump ou validação do cliente; publicação de teste GHCR confirmada.** A prerelease técnica não é release estável nem prontidão de produção. Este resumo e a secção [publicação atual](#current-publication) prevalecem sobre estados intermédios datados abaixo, preservados como cronologia; cada resultado distingue execução local, relato recebido e evidência histórica. As alterações documentais deste fecho são posteriores ao commit/imagem publicados e não integram o SHA publicado.
 
 | Tema | Estado e proveniência |
 |---|---|
@@ -13,16 +13,66 @@
 | Visual humano | Aprovação do autor em **18-11-2026T09:42:49Z**, com proveniência própria. Não inferir cobertura específica dessa aprovação nem nova inspeção visual das imagens pelo agente. |
 | Testes/build anteriores | Backend **58** e frontend **141/10 ficheiros/build** pertencem a B1/B3. A correção de foco tem seleção **74/build** próprios. Não foram reexecutados pelo full nem por esta revisão documental; 41/43/6 e scans de 13-11 continuam históricos. |
 | Artefactos do full | `frontend/test-results/t024-20261118-1155-full`: `.last-run.json` passed/failedTests vazio e oito PNG inventariados no relato. A leitura do JSON isolado não prova totais, tempos ou cobertura; estes vêm da execução/console documentada abaixo. Sem HTML/trace. |
-| CI / segurança — A | Trivy/exceção exata das **14:30:17Z** preservados, não remediação/scan limpo. FAIL JSON **44402196925** histórico; após correção, o autor reporta CI verde para `a5fc8efe…`, sem confirmação independente dos quatro jobs (API pública 403 às 22:07). Esta nova correção de autenticação ainda não tem commit/CI remoto. |
+| CI / segurança — A | Trivy/exceção exata das **14:30:17Z** preservados, não remediação/scan limpo. FAIL JSON **44402196925** e relato sobre `a5fc8efe…` históricos. O confirmador readonly verificou CI push **44411086996**, SHA `181b267…`, com os quatro jobs SUCCESS; não é execução local deste fecho. |
 | Logs JSON — B | Só `observability`: consola ECS nativa Boot, YAML preservado. Falha de isolamento global do logging reproduzida/corrigida nos testes; execução local final **6/6 selecionados e 60/60 full PASS**, terminadas às **21:49:10Z/21:49:56Z**. Revisão independente **`review-ci-json-isolation` PASS**, sem achados; os seis das 21:09 continuam históricos. |
-| Prerelease GHCR — C | Prerelease de teste do autor às **22:09 UTC**, SHA `a5fc8efe…`; run **44408725656 FAIL** no gate por HTTP 403 segundo log fornecido às 22:10. Nenhuma imagem publicada por esse run. Correção local: API autenticada nos dois passos, `actions: read` nos dois jobs, `packages: write` só em `publish`. Revisão independente desta correção **PASS**, conforme relato recebido do Revisor Matriz `review-ghcr-api-auth`; distinta do PASS histórico `revisão-final-f1`, sem prova remota. |
-| Ainda pendente | Commit/push separadamente aprovados da nova SHA, novo CI quatro jobs verde e nova prerelease/tag, publicação GHCR e prova do digest; prova negativa controlada CI, uploads/retenção reais, aceitação do cliente, entrega portável de evidência externa e decisões de capacidade/backups/retenção/p95/produção. O fecho local B/C não encerra essas pendências; o fecho T024 não certifica segurança/WCAG integral. |
+| Prerelease GHCR — C | **EXECUTADO / publicação de teste confirmada**: release **450638723**, tag `test-ghcr-20261118T223030Z`, SHA `181b267…`; run **44412481407 attempt 2 SUCCESS**, digest principal observado no package público. [Proveniência e referência imutável](#current-publication). Falha 403 da release anterior e revisões locais preservadas como histórico. |
+| Ainda pendente | Prova negativa controlada CI, uploads/retenção reais, aceitação do cliente, entrega portável de evidência externa e decisões de capacidade/backups/retenção/p95/produção. Summary literal inacessível e pull/manifest não testados são lacunas distintas, não ausência de publicação comprovada. CI testa o commit, não o digest reconstruído; o fecho T024 não certifica segurança/WCAG integral. |
 
 **Leitura da cronologia:** estados «bloqueado», «parcial», «27/28» e revisões então pendentes nas notas anteriores ao full descrevem essas fases, não o estado vigente. RED e respetivos diagnósticos não foram apagados nem convertidos retroativamente em PASS. O resumo não autoriza novas execuções ou utilização de serviços.
 
+<a id="current-publication"></a>
+
+## Publicação atual de teste GHCR — 18-11-2026
+
+**C — EXECUTADO, publicação de teste confirmada.** Proveniência: relato do
+agente readonly **`confirmar-publicacao-ghcr-final`**, recebido neste fecho
+após o autor reportar sucesso às **22:47:49 UTC de 18-11-2026**. O confirmador
+consultou APIs públicas, HTML e refs Git sem autenticação; não foram consultas,
+execuções de CI ou publicação realizadas pelo agente documental. Não foi
+fornecido um horário exato de cada consulta; os horários abaixo são dos eventos.
+
+| Fonte externa confirmada | Resultado observado pelo confirmador |
+|---|---|
+| [Release test-ghcr-20261118T223030Z](https://github.com/Fibigor/matriz/releases/tag/test-ghcr-20261118T223030Z) | ID **450638723**, publicada em **2026-11-18T22:32:03Z**, `prerelease: true`, `draft: false`; target/tag remota no commit **`181b267bc3e5e44d173aa82614cf23054b63f94d`**. Consulta exata da ref e `^{}` devolveu só a ref direta nesse SHA. |
+| [Release run 44412481407 / attempt 2](https://github.com/Fibigor/matriz/actions/runs/44412481407/attempts/2) | Evento `release`, tag/SHA corretas, **SUCCESS**. Início **22:45:13 UTC**, atualização final **22:46:45 UTC**; `prepare`/`publish`, gates/revalidação CI, build/publish e registo do digest **SUCCESS**. A tentativa 1 não foi investigada: não se atribuem causa, estado ou horário. |
+| [CI push 44411086996](https://github.com/Fibigor/matriz/actions/runs/44411086996) | Mesmo SHA completo; **SUCCESS** nos quatro jobs: `Static analysis (Semgrep)`, `Backend tests`, `Frontend tests and build`, `End-to-end tests`. Novo CI real verificado externamente, não reexecução Maven/E2E local deste fecho. |
+| [Package público matriz / versão 1593157715](https://github.com/users/Fibigor/packages/container/matriz/1593157715) | Imagem, tag e digest abaixo **explicitamente observados**, não apenas derivados da convenção do workflow. Digest principal da versão, não digest de plataforma ou artefacto. |
+
+- **IMAGE:** `ghcr.io/fibigor/matriz`
+- **TAG:** `test-450638723-sha-181b267bc3e5e44d173aa82614cf23054b63f94d`
+- **DIGEST:** `sha256:3e8c10bb86911d409ac4acf8a183a1814d70627d5c21902776800e671078b2ca`
+- **Referência imutável:** `ghcr.io/fibigor/matriz@sha256:3e8c10bb86911d409ac4acf8a183a1814d70627d5c21902776800e671078b2ca`
+
+**Lacunas e limites:** o conteúdo literal IMAGE/TAG/DIGEST/COMMIT/CI do summary
+não foi lido: a página exigia login e a API de logs devolveu 403. IMAGE/TAG/DIGEST
+foram confirmados pelo package; commit/CI por API/refs, fora do summary.
+A inacessibilidade do summary é apenas lacuna de verificação literal, não
+bloqueio da publicação já comprovada. Nenhum pull ou consulta de manifest foi
+executado para este fecho; não se prova acesso de runtime. CI validou o commit,
+**não este digest reconstruído**: não se afirma igualdade com a imagem
+analisada no CI, novo Trivy/E2E da imagem publicada ou atomicidade API/registry.
+A exceção Trivy exata permanece inalterada, não remediada nem scan limpo.
+B/JSON e autenticação da API mantêm os factos documentados.
+
+A release anterior `test-ghcr-20261118T220713Z`, SHA
+`a5fc8efe56c1bb41d7106d7ba9438cb7e74bb5ff`, e o run `44408725656` falhado
+em `prepare` por HTTP 403 rate limit segundo log do autor ficam históricos.
+A revisão local `review-ghcr-api-auth` PASS mantém a sua proveniência; não é
+substituída por estes resultados remotos nem revisão deste novo texto.
+
+**Âmbito deste fecho documental:** escrita apenas em `development.md`,
+`verification.md`, `relatorio-final.md` e `coursework-review.md`, após o
+commit/imagem publicados; **o novo texto não integra
+`181b267bc3e5e44d173aa82614cf23054b63f94d`**. Sem bump de `0.4.0-rc.1`,
+release estável, validação do cliente, certificação de acessibilidade,
+pentest ou prontidão de produção. Sem IDs Spec Kit atribuídos ou atualização
+de `tasks.md`; skills `contexto-matriz`/`validacao-matriz` lidas e seguidas,
+sem mecanismo nativo de invocação. Sem rede, suites da aplicação, serviços ou
+operações Git de escrita nesta tarefa.
+
 <a id="correcao-release-auth-20261118"></a>
 
-## Correção da autenticação do gate de release — 18-11-2026
+## Histórico — correção da autenticação do gate de release — 18-11-2026
 
 **Aprovação explícita do autor: 22:12:55 UTC**, limitada ao workflow release e
 a development/verification/relatorio-final/coursework-review. Sem IDs Spec Kit
@@ -207,7 +257,7 @@ automática de datas e foi corrigida só em memória, sem alterar reports.
 Não comprova todas as permutações/paralelismo, CI remoto verde ou autorização
 de commit/push/publicação. O registo deste fecho foi autorizado pelo autor.
 
-### Gate de publicação
+### Gate de publicação — procedimento histórico anterior à confirmação
 
 O autor autorizou GHCR, **não** contornar CI. Não houve commit, staging, push,
 tag, release, publicação, deploy ou uso de credenciais nesta sessão.
@@ -301,7 +351,7 @@ a esta seleção, **não são acrescidos aos 58** do backend B1 nem substituem u
 reexecução completa. Sem nova confirmação do cliente; a revisão independente
 local B consta do relato de fecho abaixo, sem reexecução Maven pelo revisor.
 
-### C — workflow GHCR configurado, publicação não demonstrada
+### C — histórico do workflow configurado, antes da publicação confirmada
 
 **Histórico anterior à correção de autenticação das 22:12:55 UTC:**
 a API anónima e o uso do token apenas no login descrevem essa versão,
@@ -424,7 +474,7 @@ Isto não amplia o escopo do revisor a esta escrita de fecho ou a outros increme
 A revisão comprova localmente a correção do gate de identidades/runs/attempts
 antes/depois dos jobs e antes de build/push, **não atomicidade entre API e
 registry, scan da imagem reconstruída ou igualdade de digest**. Estado C:
-**CONFIGURADO localmente com revisão PASS**, não desafio C demonstrado por
+**Naquela fase: CONFIGURADO localmente com revisão PASS**, não desafio C demonstrado por
 publicação. A publicação efetiva exige aprovação separada; pendências de
 cliente, prova remota e outros incrementos mantêm-se. Esta nota regista
 evidência independente recebida, não testes ou revisão executados pelo agente

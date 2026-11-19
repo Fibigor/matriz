@@ -1,12 +1,12 @@
 export interface User { id: string; displayName: string }
 export interface Member extends User { active: boolean; role: 'MANAGER' | 'MEMBER' }
-export interface Progress { total: number; todo: number; inProgress: number; done: number; completedPercent: number }
+export interface Progress { total: number; todo: number; inProgress: number; inReview: number; done: number; completedPercent: number }
 export interface Pagination { page: number; pageSize: number; totalItems: number; totalPages: number }
 export interface Project {
   id: string; name: string; description: string; ownerUserId: string;
   currentRole: 'MANAGER' | 'MEMBER'; version: number; createdAt: string; progress: Progress;
 }
-export type Status = 'TODO' | 'IN_PROGRESS' | 'DONE';
+export type Status = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE';
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH';
 export type TaskType = 'TASK' | 'BUG' | 'IMPROVEMENT';
 export type Weight = 1 | 2 | 3 | 5 | 8 | 13;
@@ -49,5 +49,5 @@ export interface TaskEvent {
   relation: { id: string; type: LinkType; sourceTaskId: string; targetTaskId: string; otherTaskId: string; otherTaskKey: string } | null;
   attachment: AttachmentSnapshot | null; attachments: AttachmentSnapshot[];
 }
-export const statusLabels: Record<Status, string> = { TODO: 'Por fazer', IN_PROGRESS: 'Em curso', DONE: 'Concluída' };
+export const statusLabels: Record<Status, string> = { TODO: 'Por fazer', IN_PROGRESS: 'Em curso', IN_REVIEW: 'Em revisão', DONE: 'Concluída' };
 export const priorityLabels: Record<Priority, string> = { LOW: 'Baixa', MEDIUM: 'Média', HIGH: 'Alta' };

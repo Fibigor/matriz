@@ -20,6 +20,17 @@ describe('Relações versionadas', () => {
       throw new Error('Rota não prevista: ' + path);
     });
   });
+  it('quatro estados: relação com bloqueador em revisão mostra label comum e continua pendente', async () => {
+    const fallback = vi.mocked(api).getMockImplementation()!;
+    vi.mocked(api).mockImplementation(async (path, init) => path.includes('/links?')
+      ? { items: [{ ...link, sourceTask: { ...other, status: 'IN_REVIEW' } }], pagination }
+      : fallback(path, init));
+    render(<TaskLinks task={task} revision={0} changed={vi.fn()} />);
+    const origin = await screen.findByRole('link', { name: 'MAT-1 · Origem' });
+    expect(origin.closest('li')).toHaveTextContent('Em revisão');
+    expect(origin.closest('li')).toHaveTextContent('Bloqueador pendente: MAT-1');
+    expect(write).not.toHaveBeenCalled();
+  });
   it('mostra direção/chaves e elimina relação incoming com versões dos endpoints corretos', async () => {
     vi.mocked(write).mockResolvedValue({ task: { ...task, version: 4 }, otherTask: { ...other, version: 8 } });
     const changed = vi.fn();

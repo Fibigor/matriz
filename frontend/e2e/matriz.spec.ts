@@ -1,7 +1,71 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Dialog, type Locator, type Page } from '@playwright/test';
+import { expect, test as base, type BrowserContext, type Dialog, type Locator, type Page } from '@playwright/test';
 import { taskTemplates } from '../src/taskTemplates';
-import type { Comment as TaskComment, Task, TaskAttachment } from '../src/types';
+import type { Comment as TaskComment, Project, Task, TaskAttachment, TaskEvent, TaskPage } from '../src/types';
+
+// One worker; retain only IDs returned by this test's successful project creates.
+// The three registration accounts deliberately survive: there is no account DELETE API.
+type FixtureLogin = { email: string; password: string };
+const fixtureLogins = new WeakMap<BrowserContext, FixtureLogin>();
+let ownedProjects: { id: string; login: FixtureLogin }[] = [];
+const test = base.extend<{ cleanupOwnProjects: void }>({
+  cleanupOwnProjects: [async ({ context, browser, baseURL }, use) => {
+    ownedProjects = [];
+    const pending: Promise<void>[] = [];
+    context.on('response', response => {
+      const request = response.request();
+      const path = new URL(response.url()).pathname;
+      if (request.method() !== 'POST' || !response.ok()) return;
+      if (path === '/api/auth/login') fixtureLogins.set(context, request.postDataJSON() as FixtureLogin);
+      if (path === '/api/projects') pending.push(response.json().then((project: Project) => {
+        const login = fixtureLogins.get(context);
+        if (!login) throw new Error('Projeto próprio sem sessão fictícia identificada para cleanup.');
+        ownedProjects.push({ id: project.id, login });
+      }));
+    });
+    try { await use(); } finally {
+      await Promise.all(pending);
+      const failures: string[] = [];
+      for (const { id, login } of ownedProjects) {
+        const cleanup = await browser.newContext({ baseURL });
+        let step = 'CSRF inicial', status: number | undefined;
+        try {
+          // Isolated session survives UI logout/closed secondary contexts; no seed mutation.
+          const api = cleanup.request;
+          const csrfResponse = await api.get('/api/auth/csrf');
+          status = csrfResponse.status(); expect(status).toBe(200);
+          const csrf = await csrfResponse.json() as { headerName: string; token: string };
+          step = 'login fictício'; status = undefined;
+          status = (await api.post('/api/auth/login', { headers: { [csrf.headerName]: csrf.token }, data: login })).status();
+          expect(status).toBe(200);
+          step = 'consultar projeto próprio'; status = undefined;
+          const current = await api.get(`/api/projects/${id}`);
+          status = current.status();
+          if (status === 404) continue; // Already deleted by this test's UI.
+          expect(status).toBe(200);
+          const project = await current.json() as Project;
+          step = 'renovar CSRF'; status = undefined;
+          const freshResponse = await api.get('/api/auth/csrf');
+          status = freshResponse.status(); expect(status).toBe(200);
+          const fresh = await freshResponse.json() as { headerName: string; token: string };
+          step = 'eliminar projeto próprio'; status = undefined;
+          status = (await api.delete(`/api/projects/${id}?version=${project.version}`, {
+            headers: { [fresh.headerName]: fresh.token },
+          })).status();
+          expect(status).toBe(204);
+          step = 'confirmar eliminação'; status = undefined;
+          status = (await api.get(`/api/projects/${id}`)).status();
+          expect(status).toBe(404);
+        } catch {
+          // Do not print request errors/bodies/headers that could contain session tokens.
+          failures.push(`Cleanup API incompleto: projeto próprio ${id}, ${step}, HTTP ${status ?? 'sem resposta'}.`);
+        } finally { await cleanup.close(); }
+      }
+      ownedProjects = [];
+      expect(failures, 'Nunca limpar dados seed ou contas para compensar uma falha.').toEqual([]);
+    }
+  }, { auto: true }],
+});
 
 // Runtime requires an explicitly authorised target/artifact budget (quickstart V1–V5).
 // The whole suite makes THREE real registrations: this original long-password case
@@ -23,9 +87,34 @@ async function writeFixture<T>(page: Page, path: string, method: 'post' | 'put' 
 
 async function createFixtureProject(page: Page, name: string) {
   const project = await writeFixture<{ id: string }>(page, '/api/projects', 'post', { name, description: '' });
+  const login = fixtureLogins.get(page.context());
+  if (!login) throw new Error('Sessão fictícia não identificada.');
+  ownedProjects.push({ id: project.id, login });
   await page.goto(`/#/projects/${project.id}`);
   await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
   return project.id;
+}
+
+// Explicit opt-in at legitimate completion sites, never an automatic PUT wrapper.
+async function saveReview(page: Page, detail: Locator) {
+  const [, , projectId, , taskId] = new URL(page.url()).hash.split('/');
+  const base = `/api/projects/${projectId}/tasks/${taskId}`;
+  const current = await page.request.get(base);
+  expect(current.status()).toBe(200);
+  const before = await current.json() as Task;
+  await detail.getByRole('combobox', { name: 'Estado', exact: true }).selectOption('IN_REVIEW');
+  const response = page.waitForResponse(r => new URL(r.url()).pathname === base && r.request().method() === 'PUT');
+  await detail.getByRole('button', { name: 'Guardar tarefa', exact: true }).click();
+  const saved = await response;
+  expect(saved.status()).toBe(200);
+  const review = await saved.json() as Task;
+  expect(review).toMatchObject({ status: 'IN_REVIEW', version: before.version + 1, closeReason: null });
+  const persisted = await page.request.get(base);
+  expect(persisted.status()).toBe(200);
+  expect(await persisted.json()).toEqual(review);
+  await expect(detail.getByRole('status').filter({ hasText: 'Alteração guardada.' })).toBeVisible();
+  await expect(detail.getByRole('combobox', { name: 'Estado', exact: true }).locator('option[value="DONE"]')).toHaveJSProperty('disabled', false);
+  return review;
 }
 
 const card = (page: Page, heading: string) =>
@@ -125,6 +214,7 @@ async function signIn(page: import('@playwright/test').Page, email = 'ana@exampl
   await page.getByLabel('Palavra-passe').fill('Matriz-Demo-2026!');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Painel inicial' })).toBeVisible();
+  fixtureLogins.set(page.context(), { email, password: 'Matriz-Demo-2026!' });
 }
 
 async function keyboardSignIn(page: import('@playwright/test').Page) {
@@ -339,7 +429,7 @@ test('registo académico: confirmação, login explícito, email idempotente e a
   expect((await page.request.get('/api/auth/me')).status()).toBe(401);
   expect(registrations).toBe(1);
   expect(logins).toBe(1);
-  // Preserve this fictitious account/project; never delete existing data for cleanup.
+  // Preserve the fictitious account; the ownership ledger cleans only this test's projects.
 });
 
 test('registo fronteiras: 5/201 locais, erro servidor seguro e 6/200 Unicode brutos com login explícito', async ({ page, browser }) => {
@@ -454,7 +544,7 @@ test('registo fronteiras: 5/201 locais, erro servidor seguro e 6/200 Unicode bru
 });
 
 test('percurso integrado: projeto, tarefas, filtros, atribuições, comentários e eliminação', async ({ page }) => {
-  const suffix = Date.now();
+  const suffix = crypto.randomUUID();
   await keyboardSignIn(page);
   await page.getByLabel('Nome do projeto *').fill(`E2E ${suffix}`);
   await page.getByRole('button', { name: 'Criar projeto', exact: true }).click();
@@ -473,6 +563,7 @@ test('percurso integrado: projeto, tarefas, filtros, atribuições, comentários
   await detail.getByRole('combobox', { name: 'Tipo', exact: true }).selectOption('BUG');
   await detail.getByRole('combobox', { name: 'Peso', exact: true }).selectOption('5');
   await detail.getByLabel('Descrição', { exact: true }).fill('## Objetivo seguro\n\n**Importante**\n\n![sem imagem](https://example.invalid/a.png)\n\n[inválida](javascript:alert%281%29)');
+  await saveReview(page, detail);
   await page.getByRole('combobox', { name: 'Estado', exact: true }).selectOption('DONE');
   await detail.getByRole('combobox', { name: 'Motivo de fecho', exact: true }).selectOption('CANCELLED');
   await detail.getByRole('combobox', { name: 'Prioridade', exact: true }).selectOption('HIGH');
@@ -530,7 +621,7 @@ test('percurso integrado: projeto, tarefas, filtros, atribuições, comentários
 });
 
 test('Ficha 04: autenticar, abrir projeto, criar tarefa e confirmar listagem', async ({ page }) => {
-  const suffix = Date.now();
+  const suffix = crypto.randomUUID();
   const projectName = `Ficha 04 ${suffix}`;
   const taskTitle = `Tarefa de qualidade ${suffix}`;
 
@@ -560,6 +651,7 @@ test('Ficha 04: autenticar, abrir projeto, criar tarefa e confirmar listagem', a
   await detail.getByRole('combobox', { name: 'Tarefa de destino', exact: true }).selectOption(targetId!);
   await detail.getByRole('button', { name: 'Adicionar relação', exact: true }).click();
   await expect(detail.getByText('Relação adicionada.', { exact: true })).toBeVisible();
+  await saveReview(page, detail); // A blocker in review is still pending.
   await detail.getByLabel('Novo comentário').fill('Rascunho responsivo');
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(detail.getByLabel('Novo comentário')).toHaveValue('Rascunho responsivo');
@@ -573,8 +665,12 @@ test('Ficha 04: autenticar, abrir projeto, criar tarefa e confirmar listagem', a
   await page.getByRole('link', { name: taskTitle, exact: true }).click();
   detail = page.getByRole('dialog', { name: 'Detalhe da tarefa' });
   await expect(detail.getByText(`Bloqueador pendente: ${blocker.key}`, { exact: false })).toBeVisible();
+  await saveReview(page, detail);
+  const blockedSave = page.waitForResponse(r => r.url().endsWith(`/tasks/${targetId}`) && r.request().method() === 'PUT');
   await detail.getByRole('combobox', { name: 'Estado', exact: true }).selectOption('DONE');
   await detail.getByRole('button', { name: 'Guardar tarefa' }).click();
+  expect((await blockedSave).status()).toBe(422);
+  await expect(detail.getByRole('alert').first()).toHaveText('Conclua primeiro todos os bloqueadores diretos.');
   await expect(detail.getByRole('alert').first()).toBeVisible();
   await expect(detail.getByRole('combobox', { name: 'Estado', exact: true })).toHaveValue('DONE');
   // Discard only this explicitly failed draft, then conclude the blocker.
@@ -582,6 +678,7 @@ test('Ficha 04: autenticar, abrir projeto, criar tarefa e confirmar listagem', a
   await detail.getByRole('button', { name: 'Fechar detalhe' }).click();
   await page.getByRole('link', { name: `Bloqueador ${suffix}`, exact: true }).click();
   detail = page.getByRole('dialog', { name: 'Detalhe da tarefa' });
+  await expect(detail.getByRole('combobox', { name: 'Estado', exact: true })).toHaveValue('IN_REVIEW');
   await detail.getByRole('combobox', { name: 'Estado', exact: true }).selectOption('DONE');
   await detail.getByRole('button', { name: 'Guardar tarefa' }).click();
   await expect(detail.getByText('Concluída · Prioridade Média', { exact: true })).toBeVisible();
@@ -613,9 +710,13 @@ test('Ficha 04: autenticar, abrir projeto, criar tarefa e confirmar listagem', a
   await detail.getByRole('button', { name: 'Fechar detalhe' }).click();
   await page.getByRole('link', { name: `Bloqueador ${suffix}`, exact: true }).click();
   detail = page.getByRole('dialog', { name: 'Detalhe da tarefa' });
-  await detail.getByRole('combobox', { name: 'Estado', exact: true }).selectOption('TODO');
-  await detail.getByRole('button', { name: 'Guardar tarefa' }).click();
-  await expect(detail.getByRole('alert').first()).toBeVisible();
+  for (const status of ['TODO', 'IN_REVIEW']) {
+    await detail.getByRole('combobox', { name: 'Estado', exact: true }).selectOption(status);
+    const blockedReopen = page.waitForResponse(r => r.url().endsWith(`/tasks/${blocker.id}`) && r.request().method() === 'PUT');
+    await detail.getByRole('button', { name: 'Guardar tarefa' }).click();
+    expect((await blockedReopen).status()).toBe(422);
+    await expect(detail.getByRole('alert').first()).toHaveText('Reabra primeiro os dependentes diretos concluídos.');
+  }
   page.once('dialog', dialog => dialog.accept());
   await detail.getByRole('button', { name: 'Fechar detalhe' }).click();
 
@@ -640,8 +741,352 @@ test('Ficha 04: autenticar, abrir projeto, criar tarefa e confirmar listagem', a
   await expect(page.getByRole('heading', { name: 'Projetos', exact: true })).toBeVisible();
 });
 
+test('Em revisão: origem persistida, devoluções e conclusão por membro não atribuído, sem contornar a API', async ({ page, browser }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await signIn(page);
+  const suffix = crypto.randomUUID();
+  const projectId = await createFixtureProject(page, `Revisão obrigatória ${suffix}`);
+  const tasksURL = `/api/projects/${projectId}/tasks`;
+  await writeFixture(page, `/api/projects/${projectId}/members`, 'post', { email: 'bruno@example.invalid' });
+  const todo = await writeFixture<Task>(page, tasksURL, 'post', { title: `Direta ${suffix}` });
+  const started = await writeFixture<Task>(page, tasksURL, 'post', { title: `Iniciada ${suffix}` });
+  const putValues = (task: Task, status: Task['status']) => ({
+    title: task.title, description: task.description, status, priority: task.priority,
+    type: task.type, weight: task.weight, closeReason: null, version: task.version,
+  });
+  await writeFixture(page, `${tasksURL}/${started.id}`, 'put', putValues(started, 'IN_PROGRESS'));
+  // signIn navigates: do not abort the CSRF/logout sequence by navigating early.
+  const loggedOut = page.waitForResponse(r =>
+    new URL(r.url()).pathname === '/api/auth/logout' && r.request().method() === 'POST');
+  await page.getByRole('button', { name: 'Sair', exact: true }).click();
+  expect((await loggedOut).status()).toBe(204);
+  await expect(page.getByRole('heading', { name: 'Entrar na Matriz', exact: true })).toBeVisible();
+  expect((await page.request.get('/api/auth/me')).status()).toBe(401);
+  await signIn(page, 'bruno@example.invalid');
+  await page.goto(`/#/projects/${projectId}`);
+  await expect(page.getByText('Gerir projeto', { exact: true })).toHaveCount(0);
+  await page.getByRole('link', { name: todo.title, exact: true }).click();
+  let detail = page.getByRole('dialog', { name: 'Detalhe da tarefa' });
+  let state = detail.getByRole('combobox', { name: 'Estado', exact: true });
+  const base = `${tasksURL}/${todo.id}`;
+  let puts = 0;
+  page.on('request', request => {
+    if (new URL(request.url()).pathname === base && request.method() === 'PUT') puts++;
+  });
+
+  async function getTask(url = base) {
+    const response = await page.request.get(url);
+    expect(response.status()).toBe(200);
+    return await response.json() as Task;
+  }
+  async function refusedDirectDone(url = base) {
+    const before = await getTask(url);
+    expect(['TODO', 'IN_PROGRESS']).toContain(before.status);
+    expect(before.assignees).toEqual([]);
+    const history = await (await page.request.get(`${url}/activity`)).json();
+    const csrf = await (await page.request.get('/api/auth/csrf')).json() as { headerName: string; token: string };
+    const refused = await page.request.put(url, {
+      headers: { [csrf.headerName]: csrf.token }, data: putValues(before, 'DONE'),
+    });
+    expect(refused.status()).toBe(422);
+    expect(refused.headers()['content-type']).toContain('application/problem+json');
+    expect(await refused.json()).toMatchObject({
+      detail: 'Coloque a tarefa em revisão antes de a concluir.',
+      errors: [{ field: 'status', message: 'Coloque a tarefa em revisão antes de a concluir.' }],
+    });
+    // Includes every field, dates and version; rejection must not invent history.
+    expect(await getTask(url)).toEqual(before);
+    expect(await (await page.request.get(`${url}/activity`)).json()).toEqual(history);
+  }
+  async function saveState(status: Task['status']) {
+    const before = await getTask();
+    await state.selectOption(status);
+    const response = page.waitForResponse(r => new URL(r.url()).pathname === base && r.request().method() === 'PUT');
+    await detail.getByRole('button', { name: 'Guardar tarefa', exact: true }).click();
+    const saved = await response;
+    expect(saved.status()).toBe(200);
+    const task = await saved.json() as Task;
+    expect(task).toMatchObject({ status, version: before.version + 1, assignees: [] });
+    expect(await getTask()).toEqual(task);
+    await expect(detail.getByRole('status').filter({ hasText: 'Alteração guardada.' })).toBeVisible();
+    return task;
+  }
+
+  await expect(state.locator('option')).toHaveText(['Por fazer', 'Em curso', 'Em revisão', 'Concluída']);
+  // Playwright's enabled matcher follows the wrapping label to the select, not the option.
+  await expect(state.locator('option[value="DONE"]')).toHaveJSProperty('disabled', true);
+  await expect(state).toHaveAccessibleDescription('Guarde a tarefa em revisão antes de a concluir.');
+  await refusedDirectDone();
+  await refusedDirectDone(`${tasksURL}/${started.id}`);
+  await detail.getByLabel('Descrição', { exact: true }).fill('Rascunho de revisão não é persistência.');
+  await state.focus();
+  await expect(state).toBeFocused();
+  expect(await state.evaluate(node => {
+    const css = getComputedStyle(node);
+    return css.outlineStyle !== 'none' && parseFloat(css.outlineWidth) > 0;
+  })).toBe(true);
+  await page.keyboard.press('Home');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await expect(state).toHaveValue('IN_REVIEW');
+  await expect(state.locator('option[value="DONE"]')).toHaveJSProperty('disabled', true);
+  await state.focus();
+  await page.keyboard.press('End');
+  await expect(state).toHaveValue('IN_REVIEW'); // Native keyboard navigation must skip disabled DONE.
+  expect(puts).toBe(0);
+  await refusedDirectDone(); // The selected draft cannot satisfy the server guard.
+  await expect(detail.getByLabel('Descrição', { exact: true })).toHaveValue('Rascunho de revisão não é persistência.');
+  const review = await saveReview(page, detail); // TODO → review, first explicit write.
+  expect(puts).toBe(1);
+  expect(review.assignees).toEqual([]);
+  await page.reload();
+  // Reload/direct hash opens the standalone editor, not a local modal snapshot.
+  await expect(page.getByRole('dialog', { name: 'Detalhe da tarefa' })).toHaveCount(0);
+  detail = page.getByRole('main');
+  state = detail.getByRole('combobox', { name: 'Estado', exact: true });
+  await expect(state).toHaveValue('IN_REVIEW');
+  await expect(state.locator('option[value="DONE"]')).toHaveJSProperty('disabled', false);
+  const observerContext = await browser.newContext({ baseURL: new URL(page.url()).origin });
+  try {
+    const observer = await observerContext.newPage();
+    await signIn(observer);
+    const persisted = await observer.request.get(base);
+    expect(persisted.status()).toBe(200);
+    expect(await persisted.json()).toEqual(review);
+  } finally { await observerContext.close(); }
+  const activity = card(page, 'Atividade');
+  await activity.getByRole('button', { name: 'Histórico', exact: true }).click();
+  await expect(activity.getByText('status: Por fazer → Em revisão', { exact: true })).toBeVisible();
+  await expect(activity.getByText('status: TODO → IN_REVIEW', { exact: true })).toHaveCount(0);
+
+  // Both return paths invalidate an earlier review; no historical approval shortcut.
+  for (const returned of ['TODO', 'IN_PROGRESS'] as const) {
+    await saveState(returned);
+    await expect(state.locator('option[value="DONE"]')).toHaveJSProperty('disabled', true);
+    await refusedDirectDone();
+    await saveReview(page, detail);
+  }
+  const completed = await saveState('DONE');
+  expect(completed.version).toBe(review.version + 5);
+  expect(completed.closeReason).toBeNull();
+  await expect(activity.getByText('status: Em revisão → Concluída', { exact: true })).toBeVisible();
+  const historyResponse = await page.request.get(`${base}/activity`);
+  expect(historyResponse.status()).toBe(200);
+  const history = await historyResponse.json() as { items: TaskEvent[] };
+  const statusEvents = history.items.filter(event => event.changes.some(change => change.field === 'status'));
+  expect(statusEvents).toHaveLength(6);
+  expect(statusEvents.flatMap(event => event.changes.filter(change => change.field === 'status'))).toEqual([
+    { field: 'status', oldValue: { kind: 'text', value: 'TODO' }, newValue: { kind: 'text', value: 'IN_REVIEW' } },
+    { field: 'status', oldValue: { kind: 'text', value: 'IN_REVIEW' }, newValue: { kind: 'text', value: 'TODO' } },
+    { field: 'status', oldValue: { kind: 'text', value: 'TODO' }, newValue: { kind: 'text', value: 'IN_REVIEW' } },
+    { field: 'status', oldValue: { kind: 'text', value: 'IN_REVIEW' }, newValue: { kind: 'text', value: 'IN_PROGRESS' } },
+    { field: 'status', oldValue: { kind: 'text', value: 'IN_PROGRESS' }, newValue: { kind: 'text', value: 'IN_REVIEW' } },
+    { field: 'status', oldValue: { kind: 'text', value: 'IN_REVIEW' }, newValue: { kind: 'text', value: 'DONE' } },
+  ]);
+  expect(statusEvents.every(event => event.actor.id === 'user-bruno')).toBe(true);
+  expect(statusEvents.every(event => !Number.isNaN(Date.parse(event.createdAt)))).toBe(true);
+  await detail.getByLabel('Título *', { exact: true }).fill(`Concluída editada ${suffix}`);
+  await detail.getByRole('combobox', { name: 'Motivo de fecho', exact: true }).selectOption('CANCELLED');
+  const maintained = await saveState('DONE'); // Maintenance never requires artificial review.
+  expect(maintained.closeReason).toBe('CANCELLED');
+  await expect(activity.getByText('closeReason: Sem valor → CANCELLED', { exact: true })).toBeVisible();
+  await saveState('IN_PROGRESS');
+  expect((await getTask()).closeReason).toBeNull();
+  await expect(state.locator('option[value="DONE"]')).toHaveJSProperty('disabled', true);
+  await refusedDirectDone();
+  await detail.getByRole('button', { name: 'Fechar detalhe', exact: true }).click();
+
+  await page.getByRole('link', { name: started.title, exact: true }).click();
+  detail = page.getByRole('dialog', { name: 'Detalhe da tarefa' });
+  state = detail.getByRole('combobox', { name: 'Estado', exact: true });
+  await expect(state).toHaveValue('IN_PROGRESS');
+  await expect(state.locator('option[value="DONE"]')).toHaveJSProperty('disabled', true);
+  await detail.getByLabel('Descrição', { exact: true }).fill('Revisão desde curso, rascunho responsivo.');
+  await state.selectOption('IN_REVIEW');
+  const descriptionNode = await detail.getByLabel('Descrição', { exact: true }).elementHandle();
+  for (const width of [390, 320, 1440]) {
+    await page.setViewportSize({ width, height: width === 1440 ? 1000 : 844 });
+    await expect(state.locator('option[value="DONE"]')).toHaveJSProperty('disabled', true);
+    await expect(detail.getByLabel('Descrição', { exact: true })).toHaveValue('Revisão desde curso, rascunho responsivo.');
+    expect(await detail.getByLabel('Descrição', { exact: true }).evaluate((node, original) => node === original, descriptionNode)).toBe(true);
+    await expectNoOverflow(page);
+  }
+  await confirmOnce(page, false, () => page.keyboard.press('Escape'),
+    () => expect(state).toHaveValue('IN_REVIEW'));
+  const startedReview = await saveReview(page, detail); // IN_PROGRESS → review.
+  expect(startedReview.assignees).toEqual([]);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('link', { name: started.title, exact: true })).toBeFocused();
+  await page.goto(`/#/projects/${projectId}/tasks/${started.id}`);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('combobox', { name: 'Estado', exact: true })).toHaveValue('IN_REVIEW');
+  await card(page, 'Atividade').getByRole('button', { name: 'Histórico', exact: true }).click();
+  await expect(page.getByText('status: Em curso → Em revisão', { exact: true })).toBeVisible();
+  const completedResponse = page.waitForResponse(r =>
+    new URL(r.url()).pathname === `${tasksURL}/${started.id}` && r.request().method() === 'PUT');
+  await page.getByRole('combobox', { name: 'Estado', exact: true }).selectOption('DONE');
+  await page.getByRole('button', { name: 'Guardar tarefa', exact: true }).click();
+  const completedStarted = await completedResponse;
+  expect(completedStarted.status()).toBe(200);
+  expect(await completedStarted.json()).toMatchObject({ status: 'DONE', assignees: [], version: startedReview.version + 1 });
+  await expect(page.getByText('status: Em revisão → Concluída', { exact: true })).toBeVisible();
+});
+
+test('Em revisão: quatro estados globais, filtro/paginação, relações e dashboard desktop/390/320', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await signIn(page);
+  const suffix = crypto.randomUUID();
+  const projectName = `Quatro estados ${suffix}`;
+  const projectId = await createFixtureProject(page, projectName);
+  const tasksURL = `/api/projects/${projectId}/tasks`;
+  const tasks: Task[] = [];
+  for (const status of ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'] as const) {
+    let task = await writeFixture<Task>(page, tasksURL, 'post', { title: `${status} ${suffix}` });
+    if (status !== 'TODO') {
+      task = await writeFixture<Task>(page, `${tasksURL}/${task.id}`, 'put', {
+        title: task.title, description: '', status: status === 'DONE' ? 'IN_REVIEW' : status,
+        priority: 'MEDIUM', version: task.version,
+      });
+    }
+    if (status === 'DONE') {
+      const persisted = await page.request.get(`${tasksURL}/${task.id}`);
+      expect(persisted.status()).toBe(200);
+      expect(await persisted.json()).toEqual(task);
+      task = await writeFixture<Task>(page, `${tasksURL}/${task.id}`, 'put', {
+        title: task.title, description: '', status: 'DONE', priority: 'MEDIUM', version: task.version,
+      });
+    }
+    tasks.push(task);
+  }
+  const global = { total: 4, todo: 1, inProgress: 1, inReview: 1, done: 1, completedPercent: 25 };
+  const review = tasks[2];
+  await writeFixture(page, `${tasksURL}/${tasks[0].id}/links`, 'post', {
+    type: 'RELATED', targetTaskId: review.id, version: tasks[0].version, targetVersion: review.version,
+  });
+  for (const query of ['page=1&pageSize=1', 'page=2&pageSize=1', 'status=IN_REVIEW&pageSize=1',
+    'status=IN_REVIEW&page=2&pageSize=1', 'status=IN_REVIEW&priority=HIGH&pageSize=1']) {
+    const response = await page.request.get(`${tasksURL}?${query}`);
+    expect(response.status()).toBe(200);
+    const result = await response.json() as TaskPage;
+    expect(result.progress).toEqual(global);
+    expect(result.project.progress).toEqual(global);
+    expect(result.pagination.pageSize).toBe(1);
+    expect(result.pagination.page).toBe(Number(new URLSearchParams(query).get('page') ?? 1));
+    if (query.startsWith('page=')) {
+      expect(result.items).toHaveLength(1);
+      expect(result.pagination).toMatchObject({ totalItems: 4, totalPages: 4 });
+    } else if (query.includes('page=2') || query.includes('priority=HIGH')) {
+      expect(result.items).toEqual([]);
+    } else {
+      expect(result.items.map(task => task.id)).toEqual([review.id]);
+      expect(result.pagination).toMatchObject({ totalItems: 1, totalPages: 1 });
+    }
+  }
+  const project = await page.request.get(`/api/projects/${projectId}`);
+  expect(project.status()).toBe(200);
+  expect((await project.json() as Project).progress).toEqual(global);
+  const projects = await page.request.get(`/api/projects?search=${encodeURIComponent(projectName)}`);
+  expect(projects.status()).toBe(200);
+  expect((await projects.json() as { items: Project[] }).items.find(item => item.id === projectId)?.progress).toEqual(global);
+  await page.reload();
+  const progress = page.getByRole('region', { name: 'Progresso global do projeto' });
+  await expect(progress).toContainText('Total: 4 · Por fazer: 1 · Em curso: 1 · Em revisão: 1 · Concluídas: 1');
+  await expect(progress).toContainText('25% concluído');
+  await expect(page.getByRole('row').filter({ hasText: review.title })).toContainText('Em revisão');
+  const filter = page.getByRole('combobox', { name: 'Filtrar por estado', exact: true });
+  await expect(filter.locator('option')).toHaveText(['Todos os estados', 'Por fazer', 'Em curso', 'Em revisão', 'Concluída']);
+  // Each native key changes the filter and LoadState remounts it; refocus after each GET.
+  for (const [key, status] of [['End', 'DONE'], ['ArrowUp', 'IN_REVIEW']] as const) {
+    await filter.focus();
+    await expect(filter).toBeFocused();
+    const filtered = page.waitForResponse(r => {
+      const url = new URL(r.url());
+      return url.pathname === tasksURL && url.searchParams.get('status') === status
+        && url.searchParams.get('page') === '1' && !url.searchParams.has('priority')
+        && r.request().method() === 'GET';
+    });
+    await page.keyboard.press(key);
+    expect((await filtered).status()).toBe(200);
+    await expect(filter).toHaveValue(status);
+    await filter.focus();
+    await expect(filter).toBeFocused();
+  }
+  await expect(filter).toHaveValue('IN_REVIEW');
+  await expect(page.getByRole('table').getByRole('row')).toHaveCount(2);
+  await expect(page.getByRole('link', { name: review.title, exact: true })).toBeVisible();
+  await expect(progress).toContainText('25% concluído');
+  await expect(progress).toContainText('Total: 4 · Por fazer: 1 · Em curso: 1 · Em revisão: 1 · Concluídas: 1');
+  await page.getByRole('combobox', { name: 'Filtrar por prioridade', exact: true }).selectOption('HIGH');
+  await expect(page.getByText('Sem tarefas para os critérios selecionados.', { exact: true })).toBeVisible();
+  await expect(progress).toContainText('25% concluído');
+  await expect(progress).toContainText('Total: 4 · Por fazer: 1 · Em curso: 1 · Em revisão: 1 · Concluídas: 1');
+  await page.getByRole('combobox', { name: 'Filtrar por prioridade', exact: true }).selectOption('');
+  await page.getByRole('link', { name: review.title, exact: true }).click();
+  const detail = page.getByRole('dialog', { name: 'Detalhe da tarefa' });
+  await expect(detail.getByRole('combobox', { name: 'Estado', exact: true })).toHaveValue('IN_REVIEW');
+  await expect(card(page, 'Relações').getByRole('listitem').filter({ hasText: tasks[0].key })).toContainText('Por fazer');
+  await page.keyboard.press('Escape');
+  await filter.selectOption('');
+  await page.getByRole('link', { name: tasks[0].title, exact: true }).click();
+  await expect(card(page, 'Relações').getByRole('listitem').filter({ hasText: review.key })).toContainText('Em revisão');
+  await page.keyboard.press('Escape');
+  await page.goto('/#/');
+  await page.getByRole('searchbox', { name: 'Pesquisar pelo nome' }).fill(projectName);
+  const summary = page.getByRole('region', { name: 'Resumo do projeto' });
+  await summary.getByRole('combobox', { name: 'Projeto do resumo' }).selectOption(projectId);
+  await expect(summary.getByText('1 de 4 tarefas concluídas', { exact: true })).toBeVisible();
+  await expect(summary.locator('.overview-percent')).toHaveText('25%');
+  const labels = ['Por fazer', 'Em curso', 'Em revisão', 'Concluídas'];
+  for (const width of [1440, 390, 320]) {
+    await page.setViewportSize({ width, height: width === 1440 ? 1000 : 844 });
+    const chart = summary.getByRole('img', { name: `Tarefas por estado de ${projectName}` });
+    await expect(chart).toBeVisible();
+    await expect(chart.locator('desc')).toHaveText('Por fazer: 1; Em curso: 1; Em revisão: 1; Concluídas: 1. Não é uma série temporal.');
+    await expect(chart.locator('.chart-state')).toHaveCount(4);
+    await expect(chart.locator('.chart-value')).toHaveText(['1', '1', '1', '1']);
+    expect(await chart.evaluate(svg => {
+      const box = (svg as SVGSVGElement).viewBox.baseVal;
+      return [...svg.querySelectorAll<SVGGraphicsElement>('.chart-state rect, .chart-state text')].every(node => {
+        const bounds = node.getBBox();
+        return bounds.width > 0 && bounds.height > 0 && bounds.x >= box.x && bounds.y >= box.y
+          && bounds.x + bounds.width <= box.x + box.width && bounds.y + bounds.height <= box.y + box.height;
+      });
+    })).toBe(true);
+    const chartLabels = summary.getByRole('list', { name: 'Estados das barras, da esquerda para a direita' });
+    await expect(chartLabels.getByRole('listitem')).toHaveText(labels);
+    for (const label of labels) {
+      const metric = summary.getByRole('article', { name: `${label}: 1`, exact: true });
+      await expect(metric).toBeVisible();
+      await expect(metric.locator('strong')).toHaveText('1');
+      await expect(metric).toContainText('/ 4 tarefas');
+      await expect(metric.getByRole('progressbar')).toHaveAttribute('value', '1');
+      await expect(metric.getByRole('progressbar')).toHaveAttribute('max', '4');
+    }
+    // Real browser geometry: bars, labels and cards must neither clip nor overlap.
+    for (const selector of ['.chart-state rect', '.chart-labels li', '.metric-card']) {
+      const boxes = await summary.locator(selector).evaluateAll(nodes => nodes.map(node => {
+        const box = node.getBoundingClientRect();
+        return { x: box.x, y: box.y, right: box.right, bottom: box.bottom, width: box.width, height: box.height };
+      }));
+      for (let i = 0; i < boxes.length; i++) {
+        const a = boxes[i];
+        expect(a.width).toBeGreaterThan(0); expect(a.height).toBeGreaterThan(0);
+        expect(a.x).toBeGreaterThanOrEqual(0); expect(a.right).toBeLessThanOrEqual(width + 1);
+        for (const b of boxes.slice(i + 1)) {
+          expect(a.right <= b.x + 1 || b.right <= a.x + 1 || a.bottom <= b.y + 1 || b.bottom <= a.y + 1).toBe(true);
+        }
+      }
+    }
+    expect(await summary.locator('.metric-label, .chart-labels li').evaluateAll(nodes =>
+      nodes.every(node => node.scrollWidth <= node.clientWidth && node.scrollHeight <= node.clientHeight))).toBe(true);
+    await expectNoOverflow(page);
+    await expectNoAccessibilityViolations(page);
+  }
+});
+
 test('revisão: rascunhos sobrevivem a mutações locais, retry só consulta e conflito externo exige confirmação', async ({ page }) => {
-  const suffix = Date.now();
+  const suffix = crypto.randomUUID();
   await signIn(page);
   const projectName = `Revisão local ${suffix}`;
   await page.getByLabel('Nome do projeto *').fill(projectName);
@@ -1375,6 +1820,7 @@ test('workspace Jira: dados reais, navegação móvel e teclado', async ({ page 
   await expect(summary.getByText('2 de 5 tarefas concluídas')).toBeVisible();
   await expect(summary.getByRole('article', { name: 'Por fazer: 2' })).toBeVisible();
   await expect(summary.getByRole('article', { name: 'Em curso: 1' })).toBeVisible();
+  await expect(summary.getByRole('article', { name: 'Em revisão: 0' })).toBeVisible();
   await expect(summary.getByRole('article', { name: 'Concluídas: 2' })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('dashboard-desktop.png'), fullPage: true });
   const hash = new URL(page.url()).hash;

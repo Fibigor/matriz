@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api, ApiError, query, write } from './api';
-import type { ActivityValue, Comment, CommentPage, Page, TaskEvent } from './types';
+import type { ActivityValue, Comment, CommentPage, Page, Status, TaskEvent } from './types';
+import { statusLabels } from './types';
 import { Feedback, FieldError, LoadState, Pager, submit, useMutation, useResource } from './ui';
 import { MarkdownBody, MarkdownEditor } from './MarkdownEditor';
 import { AttachmentList, FilePicker, uploadFiles } from './TaskAttachments';
@@ -12,7 +13,9 @@ const eventLabels: Record<TaskEvent['type'], string> = {
   COMMENT_ADDED: 'Comentário adicionado', LINK_ADDED: 'Relação adicionada', LINK_REMOVED: 'Relação removida',
   ATTACHMENT_ADDED: 'Anexo adicionado', ATTACHMENT_REMOVED: 'Anexo removido',
 };
-function valueText(value: ActivityValue) {
+function valueText(value: ActivityValue, field: string) {
+  if (field === 'status' && value.kind === 'text' && value.value !== null
+    && Object.hasOwn(statusLabels, value.value)) return statusLabels[value.value as Status];
   return value.kind === 'userIds' ? value.userIds.join(', ') || 'Nenhum' : String(value.value ?? 'Sem valor');
 }
 function CommentBody({ comment, base, changed }: { comment: Comment; base: string; changed: () => void }) {
@@ -64,7 +67,7 @@ export function TaskActivity({ base, revision, changed, draft }: { base: string;
         ? <ActivityComment key={event.id} event={event} base={base} comments={comments.data?.items ?? []} changed={changed} />
         : <article className="comment" key={event.id}><strong>{eventLabels[event.type]}</strong> · {event.actor.displayName} · <time dateTime={event.createdAt}>{new Date(event.createdAt).toLocaleString('pt-PT')}</time>
           {event.titleChanged && <p>Título alterado.</p>}{event.descriptionChanged && <p>Descrição alterada.</p>}
-          <ul>{event.changes.map(change => <li key={change.field}>{change.field}: {valueText(change.oldValue)} → {valueText(change.newValue)}</li>)}</ul>
+          <ul>{event.changes.map(change => <li key={change.field}>{change.field}: {valueText(change.oldValue, change.field)} → {valueText(change.newValue, change.field)}</li>)}</ul>
           {event.relation && <p>{linkLabels[event.relation.type]} · {event.relation.sourceTaskId === event.taskId ? 'Saída para' : 'Entrada de'} {event.relation.otherTaskKey}</p>}
           {event.attachment && <p>{event.attachment.filename} · {event.attachment.sizeBytes} bytes</p>}
         </article>)}

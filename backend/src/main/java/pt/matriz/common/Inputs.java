@@ -52,11 +52,11 @@ public final class Inputs {
         return new Pagination(page, size, total, (total + size - 1) / size);
     }
 
-    public static Progress progress(long todo, long doing, long done) {
-        long total = todo + doing + done;
+    public static Progress progress(long todo, long doing, long review, long done) {
+        long total = todo + doing + review + done;
         int percent = total == 0 ? 0 : BigDecimal.valueOf(done).multiply(BigDecimal.valueOf(100))
                 .divide(BigDecimal.valueOf(total), 0, RoundingMode.HALF_UP).intValueExact();
-        return new Progress(total, todo, doing, done, percent);
+        return new Progress(total, todo, doing, review, done, percent);
     }
 
     public static ApiException invalid(String field, String message) { return new ApiException(422, message, field); }
