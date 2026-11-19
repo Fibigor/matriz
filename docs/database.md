@@ -20,8 +20,11 @@ DONE; detalhes em [RN-07](requirements.md#regras-em-vigor) e
 [modelo delta 002](../specs/002-estado-em-revisao/data-model.md).
 [Evidência](verification.md#feature-002): upgrade populado V4→V5 e cadeia limpa
 cobertos no backend segundo os relatos; prova histórica V3→V4 isolada por
-target 4. Reinício/persistência operacional de 002 continuam pendentes;
-nenhuma migration foi executada por esta revisão documental antecipada.
+target 4. T033 persistência após um único reinício só da app PASS e
+T034/G3 aprovado, segundo a [evidência recebida](verification.md#feature-002-persistencia-final):
+tarefa IN_REVIEW v2, projeto e histórico completo iguais antes/depois,
+DB e volume preservados. G4/G5 aprovados; [T043 concluída, 43/43 tarefas](verification.md#feature-002-fecho-final);
+nenhuma migration ou prova operacional foi executada por esta revisão documental.
 
 ## Suplemento de usabilidade — 18-11-2026 (incremento anterior 001)
 

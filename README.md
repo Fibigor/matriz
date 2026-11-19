@@ -16,9 +16,12 @@ anexos, relações de bloqueio e acompanhamento do progresso.
 ## Estado
 
 Candidato académico **`0.4.0-rc.1`**, sem nova versão/tag. Feature 002
-**«Em revisão» implementada, validação integrada e fecho pendentes**:
-E2E do código final, apreciação visual, reinício e gates G3–G5 não concluídos.
-[Estado e evidência da feature 002](docs/verification.md#feature-002).
+**«Em revisão» implementada; E2E via CI PASS, visual humano aprovado,
+persistência após reinício PASS e G0–G5 aprovados**.
+**43/43 tarefas concluídas**; T043 fechada após conferências documentais PASS.
+O CI cobre o SHA `7c182ed`, não o HEAD documental posterior `3360662`;
+o código mantém-se igual. A nova imagem de persistência é local, não publicada.
+[Estado e evidência da feature 002](docs/verification.md#feature-002-fecho-final).
 A [pré-release técnica de teste GHCR publicada](docs/verification.md#current-publication)
 é anterior e **não contém esta feature**; não há release estável.
 No incremento anterior 001, registo académico e usabilidade implementados; T024 fechada,

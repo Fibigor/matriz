@@ -12,8 +12,11 @@ As restrições de fase antigas nesses artefactos conservam proveniência;
 implementação foi aprovada em **18-11-2026 às 23:33:19 UTC**.
 Autor aprovou excecionalmente em **19-11 às 01:31:49 UTC** antecipar
 **T035–T040 antes de T034/G3**, mantendo gates e fecho pendentes.
-Não se reescrevem dependências/plan nem marcadores de tasks.md;
-atualização futura T043 exige atribuição separada.
+Essa exceção histórica não reescreve dependências/plan. Consolidação aprovada
+em **19-11 às 10:19:48 UTC** e complemento de **10:41:59 UTC**,
+reconfirmados no pedido final, autorizam a serialização por DocConfig,
+escritor único: **43/43 concluídas**, G0–G5 aprovados; T043 fechada após conferências PASS.
+[Proveniência e limites](verification.md#feature-002-fecho-final).
 
 | Pacote / IDs da feature 002 | Implementação | Testado / revisto / pendente |
 |---|---|---|
@@ -21,9 +24,9 @@ atualização futura T043 exige atribuição separada.
 | ER-02 / T005/T007/T014 | V5 só CHECK; guarda de origem persistida IN_REVIEW; Progress global com inReview. | Backend 68/68 e G1 aprovados segundo relatos, não executados nesta escrita. |
 | ER-03 / T004/T006/T008–T013/T015 | Testes no ApiIntegrationTest/InputsTest existentes: recusas atómicas, membro não atribuído, motivos, BLOCKS/concorrência/revogação/rollback, quatro estados/25%. | Cadeia limpa V1→V5 e upgrade V4 populada→V5 com snapshots/uma migration/repetição zero; prova V3→V4 preservada com target 4. G1 estático/XML não é rerun. |
 | ER-04 / T017–T026 | Tipos/labels, base persistida segura no editor, quatro contagens/barras/cartões, história localizada apenas a status. Correções posteriores de gráfico/foco integradas no HEAD. | G2 aprovado no lote inicial; final local posterior 174/174 e build PASS relatados, com duas revisões estáticas de correções. T031: autor confirmou aprovação total visual desktop/390/320/teclado às 01:49:42 UTC, não inferida dos testes/build nem inspeção pelo agente. |
-| ER-05 / T027–T033 | Ambiente isolado autorizado; T028/T029 implementadas/revistas (11 cenários antigos preservados + 2 novos = 13 preparados). | RED locais antigos preservados. T030 PASS via CI #22/run 44436970582, SHA HEAD, corroborado independentemente por metadados públicos: quatro jobs completed/success, incluindo E2E do código final. Totais remotos indisponíveis, não 13/13 verificado. T031 total aprovada; T032/T033 pendentes, G3 não fechado. |
-| ER-06 / T035–T040 | Nove canónicos alinhados nesta antecipação; revisão limitada `review-002-documentacao-antecipada` aprovada sem achados. Pós-update autorizado só em verification/test-plan/implementation-plan. | T040 e revisão limitada são documentais; não G3/G4/G5 formal, teste de aplicação ou fecho. [Proveniência e conferências](verification.md#feature-002-doc-checks). Novo delta pronto para revisão estreita. |
-| ER-07 / T003/T016/T026/T034/T041–T043 | G0/G1/G2 recebidos; revisão documental limitada recebida não substitui gates formais. | T034/G3 bloqueado; T041/G4 formal e T042/G5 não realizados. T043 não autorizado; tasks.md e marcadores preservados, sem confundir progresso documental com fecho. |
+| ER-05 / T027–T033 | T028/T029 implementadas/revistas (11 cenários preservados + 2 novos = 13 preparados); ambiente final novo autorizado especificamente em T032 às 10:19:48. | T030 PASS via CI #22/run 44436970582, SHA 7c182ed, quatro jobs success; totais remotos desconhecidos, não 13/13. T031 total aprovada. T033 PASS recebido de `concluir-002-persistencia-compose`: snapshots integrais iguais após restart apenas da app, DB/volume preservados e nova autenticação. RED antigos históricos. |
+| ER-06 / T035–T040 | Nove canónicos alinhados; `review-002-documentacao-antecipada` e `review-002-ci-visual-final` PASS recebidos. Consolidação final limitada aos sete caminhos expressamente aprovados. | Concluídas no âmbito documental; G4 formal aprovado após resolução de G4-01 LOW. T040 não é validador integral OpenAPI nem teste da aplicação. [Proveniência e conferências](verification.md#feature-002-doc-checks). |
+| ER-07 / T003/T016/T026/T034/T041–T043 | G0–G5 APROVADOS: G3 `review-002-g3-persistencia`, G4 `review-002-g4-01-fecho`, G5 `review-002-g5-final`, segundo evidência recebida. | Sem teste/revisão/reinício obrigatório pendente no âmbito académico aprovado; revisores não reexecutaram suites. T043 concluída após conferências documentais PASS, sem release/publicação/produção. [Registo final](verification.md#feature-002-fecho-final). |
 
 Rastreabilidade FR-001–010/SC-001–006 e níveis de prova no
 [plano de testes](test-plan.md#feature-002-test-plan); comandos, falhas,
@@ -37,14 +40,19 @@ enum alargado e DONE direto recusado não são compatibilidade transparente.
 Nenhuma publicação/release/deploy nova, permissão, dependência ou operação
 de serviço/Git resulta desta antecipação. Imagem GHCR histórica não contém
 002. CI público canónico **Fibigor/matriz**, run **44436970582 attempt 1**,
-push/main, SHA **`7c182edf7fe1c2cd1009743b029e3cd9d5759c12`** igual ao HEAD:
+push/main, SHA **`7c182edf7fe1c2cd1009743b029e3cd9d5759c12`** da base CI:
 quatro jobs verdes confirmados pelo agente `verificar-002-ci-44436970582`,
 não consulta de rede desta escrita. [URLs, horários, HTTP e limites](verification.md#feature-002-ci-final).
 Não há novo full local final nem logs/totais remotos disponíveis; números
 locais 68/174 e 13 cenários preparados não são contagens CI.
-Os nove diffs documentais são posteriores ao SHA testado, não causa do
-sucesso nem parte da imagem CI. A aprovação humana T031 é separada da
-automação e não autoriza reinício nem demonstra persistência após este.
+HEAD atual **`336066253151dd8e3e6229a55827e047c7ac4779`** tem apenas
+nove documentos de delta, sem código/CI alterados; não foi esse SHA testado
+pelo CI nem os documentos integram a imagem CI.
+A aprovação humana T031 é separada da automação. A persistência tem prova
+própria T032/T033, não inferida do visual: nova stack loopback app 18082/
+DB 15433, imagem **local não publicada**, um PUT TODO v1→IN_REVIEW v2,
+restart só da app, snapshots completos tarefa/projeto/todo o histórico e
+hashes iguais. [Evidência recebida/G3](verification.md#feature-002-persistencia-final).
 
 ## Suplemento de usabilidade — 18-11-2026
 

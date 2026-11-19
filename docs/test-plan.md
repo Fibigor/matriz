@@ -2,22 +2,31 @@
 
 <a id="feature-002-test-plan"></a>
 
-## Feature 002 — plano e cobertura parcial, 19-11-2026
+## Feature 002 — cobertura e gates G0–G5 aprovados, 19-11-2026
 
 T038 alinha este documento com os mesmos
 [spec/FR/SC](../specs/002-estado-em-revisao/spec.md),
 [plan/ER-01–07](../specs/002-estado-em-revisao/plan.md) e
 [tasks](../specs/002-estado-em-revisao/tasks.md), sem os regenerar.
-T035–T040 foram antecipadas expressamente antes de T034/G3; não se altera
-a DAG nem se fecham marcadores/gates. As tabelas de 001 e V4 abaixo são
+T035–T040 foram antecipadas expressamente antes de T034/G3; essa exceção
+histórica não altera a DAG. Na serialização final aprovada às 10:19:48 UTC,
+com complemento às 10:41:59 UTC e reconfirmação no pedido final,
+**43/43 concluídas; G0–G5 aprovados; T043 fechada após conferências PASS**.
+As tabelas de 001 e V4 abaixo são
 históricas, não validação de 002. Regras atuais em
 [RF-08/RN-07](requirements.md#regras-em-vigor), [US-08](user-stories.md)
 e [OpenAPI](../openapi.yaml). Resultados, horários e proveniência exclusivamente
 em [verification](verification.md#feature-002).
 
+A matriz FR-001–010/SC-001–006 abaixo está encerrada pela revisão final
+`review-002-g5-final` no âmbito académico aprovado: sem achados confirmados
+ou teste/revisão/reinício obrigatório pendente. Conserva os níveis de prova
+e limites de cada linha; não equivale a certificação integral de segurança,
+acessibilidade ou produção. [G5 e fecho](verification.md#feature-002-fecho-final).
+
 | FR / SC da feature 002 | Pacotes / IDs e cobertura implementada | Nível de prova disponível / pendente |
 |---|---|---|
-| FR-001; SC-004/005 | ER-02/03/04/06; T004–005/T008/T011/T017/T035–037. CHECK/default TODO/desconhecido, enum/labels e preservação dos dados antigos. | Backend testado/relatado, G1 revisto; CI final E2E PASS identificado, T031 total aprovada. SC-004 mantém prova própria de reinício pendente. |
+| FR-001; SC-004/005 | ER-02/03/04/06; T004–005/T008/T011/T017/T035–037. CHECK/default TODO/desconhecido, enum/labels e preservação dos dados antigos. | Backend testado/relatado, G1 revisto; CI E2E PASS, T031 total aprovada, T033 persistência PASS e G3 aprovado. |
 | FR-002; SC-001/002 | ER-02/03/04/05; T006–008/T018–020/T029. TODO/IN_PROGRESS→DONE recusadas com 422 status/mensagem e snapshots de dados/versão/datas/história; revisão guardada permite. | API/componentes relatados PASS; T030 PASS via metadados do CI final, sem logs/totais remotos ou promoção automática de SC integral. |
 | FR-003; SC-002/006 | ER-02/03/04/05; T006/T009/T020–021/T029. TODO direto a revisão, entrada desde IN_PROGRESS, devolução aos dois estados, abandono não autoriza DONE e reaberturas protegidas. | API/componentes testados/relatados, G1/G2; CI final E2E completed/success confirmado independentemente, sem detalhe remoto por cenário. |
 | FR-004; SC-002 | ER-02/03/05; T006/T010/T029. Membro ativo não atribuído revê/conclui, mesma pessoa, sem papel novo; acesso/CSRF/revalidação preservados. | API relatada PASS; falha local antiga preservada. CI final E2E PASS confirmado, sem detalhe remoto por cenário. |
@@ -25,7 +34,7 @@ em [verification](verification.md#feature-002).
 | FR-006; SC-003 | ER-02/03/04/05; T012–014/T022–023/T029–031. Quatro estados=4/1/1/1/1/25% nos projetos e ambos TaskPage; filtro/prioridade/página/tamanho não alteram globais; vazio/HALF_UP preservados. | API/componentes relatados PASS; RED local do viewBox/correção preservados. CI final E2E PASS e aprovação humana total desktop/390/320/teclado, não nova medição geométrica pelo agente. |
 | FR-007; SC-005 | ER-02/03/06; T009/T011/T021/T035–037. V4 populada→V5 compara tabelas/bytes/eventos/checksums antigos; uma migration, repetição zero; DONE antiga/DONE→DONE sem revisão fictícia. | Cobertura backend testada/relatada e G1 aprovado; V3→V4 continua teste independente target 4, não convertido em prova V5. |
 | FR-008; SC-006 | ER-02/03/04/05; T009–011/T021/T028–030. Revisão bloqueada permitida, bloqueador em revisão pendente, review→DONE bloqueada, reabertura/novo BLOCKS para dependente DONE recusados; motivos/remoção intactos. | API e erro BLOCKS de componentes alcançáveis desde base IN_REVIEW, relatados PASS; CI final E2E PASS identificado, sem detalhe remoto por cenário. |
-| FR-009; SC-004/005 | ER-02/03/05/07; T008/T011/T013/T029–030/T032–033. História tipada, GET/reload e preservação no upgrade; reinício com identidade/estado/versão/história antes/depois. | API/upgrade relatados PASS; CI final E2E PASS sem detalhe remoto por cenário não comprova isoladamente reload/reinício. T032/T033 continuam pendentes, não inferidos de 001/T027/CI ou aprovação visual. |
+| FR-009; SC-004/005 | ER-02/03/05/07; T008/T011/T013/T029–030/T032–033. História tipada, GET/reload e preservação no upgrade; reinício com identidade/estado/versão/história antes/depois. | T033 efetivamente PASS segundo `concluir-002-persistencia-compose`: snapshots completos tarefa (14 propriedades)/projeto/todo o histórico (1 evento/1 página), hashes iguais após restart só da app, DB/volume preservados, nova autenticação. G3 aprovado; não inferido de CI/visual/001 nem rerun documental. |
 | FR-010; SC-001/002 | ER-02/03/04/05/07; T006/T010/T018/T020–021/T029. HTTP direto, 409/CSRF/revogação após espera/rollback, draft conservado; base não promovida por GET sujo ou seleção intermédia. | API/componentes relatados PASS e revisões estáticas; CI final E2E PASS identificado e aprovação humana total incluindo teclado, sem logs remotos/detalhe por cenário ou certificação integral de foco. |
 
 ### Proteções contra falsos positivos
@@ -51,11 +60,11 @@ em [verification](verification.md#feature-002).
   desktop/390/320/teclado foi explicitamente recebida para T031.
   Build/jsdom e revisões estáticas não provam foco real, SVG ou visual humano.
 
-### Gates de validação ainda abertos
+### Gates de validação aprovados e limites da evidência
 
 O relato inicial do autor sobre E2E PASS foi corroborado independentemente:
 **CI #22/run 44436970582 attempt 1**, canónico público **Fibigor/matriz**,
-push/main, SHA **`7c182edf7fe1c2cd1009743b029e3cd9d5759c12`** igual ao HEAD,
+push/main, SHA **`7c182edf7fe1c2cd1009743b029e3cd9d5759c12`** da base CI,
 **quatro jobs completed/success**, incluindo build da imagem e execução
 E2E do código final. **T030 tem prova PASS via CI**, não novo full local.
 O agente `verificar-002-ci-44436970582` conferiu REST público sem credenciais;
@@ -63,21 +72,33 @@ esta escrita não consultou rede. [URLs/horários/HTTP e limites](verification.m
 Logs anónimos 403: totais remotos backend/frontend/E2E desconhecidos;
 68/174 locais e 13 cenários preparados não se transpõem para CI.
 Não houve jobs skipped; só dois passos condicionais de diagnóstico E2E.
-Os nove diffs documentais posteriores ao SHA não integram a imagem CI.
+HEAD atual **`336066253151dd8e3e6229a55827e047c7ac4779`** difere apenas
+nos nove canónicos documentais, com código/CI inalterados. Esses documentos
+não integram a imagem CI; não se afirma CI do SHA 3360662.
 
 Às **01:49:42 UTC**, o autor respondeu **«confirmo aprovação total visual»**
 à pergunta que abrangia desktop/390/320/teclado: **T031 aprovada nesse âmbito**,
 separada da automação e sem inspeção visual pelo agente ou reutilização de 001.
 O bloqueio local anterior de app-only build/recreate fica histórico, não
 contradiz o sucesso remoto nem constitui reinício executado.
-T032 exige aprovação operacional específica do reinício,
-T033 compara dados sem eliminar volume/sem seed mascarar perda; ambas pendentes.
-T034/G3 continua não fechado. T040 é conferência documental, não execução de SC;
-T041/G4 formal e T042/G5 ainda não realizados. A revisão independente
-`review-002-documentacao-antecipada` já aprovou os nove canónicos sem
-achados, apenas no âmbito T035–T040; este delta final de três documentos
-fica pronto para revisão estreita, não fecho. tasks.md não é atualizado:
-evidência disponível T030/T031 não equivale a marcadores alterados/T043.
+T032 recebeu aprovação específica às **10:19:48 UTC** para nova stack
+`matriz-review-002-final`, loopback app 18082/DB 15433 e volume novo,
+preservando a antiga. T033 **PASS**: TODO v1→IN_REVIEW v2 num único PUT,
+snapshots integrais iguais antes/depois de restart apenas da app às
+10:32:40.042–40.950; mesma DB/volume/StartedAt, nova sessão e GETs 200.
+O seed normal não mascara identidade/v2/datas/história conservadas.
+[Prova e limites recebidos](verification.md#feature-002-persistencia-final).
+Não foi nova suite E2E.
+
+**T034/G3 APROVADO, sem achados**, por `review-002-g3-persistencia`:
+evidência recebida + leitura estática própria, não rerun do revisor.
+T040 é conferência documental, não execução de SC.
+**T041/G4 APROVADO** por `review-002-g4-01-fecho`, após o único achado
+G4-01 LOW da revisão integral `review-002-g4-final` ser resolvido.
+**T042/G5 APROVADO** por `review-002-g5-final`, sem achados confirmados
+ou teste/revisão/reinício obrigatório pendente. As revisões limitadas
+anteriores não substituem esses gates formais. DocConfig é escritor único;
+T043 concluída após conferências PASS. [Proveniência](verification.md#feature-002-fecho-final).
 
 ## Suplemento de usabilidade — 18-11-2026
 

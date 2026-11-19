@@ -6,12 +6,20 @@
 
 ## Estado vigente — feature 002, 19-11-2026
 
-**Implementação presente; T030 PASS em CI e T031 aprovada pelo autor;
-reinício, gates formais e fecho pendentes.** Base
-observada na antecipação documental: HEAD
-`7c182edf7fe1c2cd1009743b029e3cd9d5759c12`, worktree e índice então
-limpos. Neste delta final, os nove canónicos já estavam modificados e o
-índice vazio; apenas três recebem ajustes. O commit foi identificado no handover como realizado pelo utilizador
+**T030 PASS via CI, T031 aprovada pelo autor, T033 persistência PASS e
+T034/G3 APROVADO sem achados. T041/G4 APROVADO após resolução de
+G4-01 LOW; T042/G5 APROVADO por `review-002-g5-final`.
+T001–T043 concluídas (43/43); T043 fechada após conferências documentais PASS.
+G0–G5 aprovados; sem gate obrigatório pendente no âmbito académico aprovado.**
+[G5, serialização e limites](#feature-002-fecho-final).
+HEAD observado na consolidação anterior e confirmado nesta sessão:
+`336066253151dd8e3e6229a55827e047c7ac4779`, sete documentos já
+modificados à entrada e índice sem staged. A entrada limpa refere-se à
+consolidação anterior, não a esta sessão. Comparação local de nomes confirma nove canónicos documentais
+desde a base CI `7c182edf7fe1c2cd1009743b029e3cd9d5759c12`, sem código/CI
+alterados; isto não é um CI do SHA 3360662.
+Na antecipação documental anterior, a base observada era 7c182ed.
+Esse commit foi identificado no handover como realizado pelo utilizador
 às 01:26:30 UTC; o horário é recebido, não verificado por esta leitura.
 Candidato mantém **`0.4.0-rc.1`**, sem nova versão/tag/release.
 A [publicação GHCR de 18-11](#current-publication) é anterior e **não contém
@@ -21,7 +29,7 @@ A [publicação GHCR de 18-11](#current-publication) é anterior e **não conté
 passaram e dou o meu selo de aprovação para a parte visual do frontend».
 Esse relato foi posteriormente corroborado por verificação independente
 dos metadados públicos do **CI #22, run 44436970582, attempt 1**, no
-repositório canónico público **Fibigor/matriz**, SHA igual ao HEAD acima:
+repositório canónico público **Fibigor/matriz**, SHA da base CI acima:
 quatro jobs **completed/success**, incluindo E2E. **T030 tem prova de
 execução PASS via CI do código final**, não novo full local; totais remotos
 de testes continuam indisponíveis, sem alegar 13/13.
@@ -29,19 +37,36 @@ Em **19-11-2026 às 01:49:42 UTC**, o autor respondeu **«confirmo aprovação
 total visual»** à pergunta que abrangia desktop, 390/320 px e teclado:
 **T031 tem aprovação humana total nesse âmbito**, separada da automação,
 sem inspeção visual pelo agente. [Proveniência e limites](#feature-002-ci-final).
-T032/T033 continuam pendentes e G3 não fechado. Falhas locais anteriores
+T032 teve nova autorização específica às **10:19:48 UTC**; T033 passou e
+`review-002-g3-persistencia` aprovou G3, segundo evidência recebida
+[abaixo](#feature-002-persistencia-final). Falhas locais anteriores
 mantêm-se históricas; não são o resultado deste CI.
 
-**Âmbito/aprovação:** implementação aprovada pelo autor em
+**Âmbito/aprovação atual:** serialização final T043 expressamente aprovada
+pelo utilizador, DocConfig escritor único de tasks; apenas os sete existentes
+README, architecture, database, implementation-plan, test-plan, verification
+e tasks 002. Architecture/database: somente as mesmas referências de estado
+G4/G5/T043 antes pendentes, sem alteração funcional.
+Aprovação de **19-11 às 10:19:48 UTC** e complemento dos dois ficheiros às
+**10:41:59 UTC**, reconfirmados no pedido final. T042 marcada pela evidência
+formal recebida; T043 marcada somente após conferências locais PASS abaixo.
+**Consolidação anterior — histórica:** expressamente aprovada em
+19-11 às **10:19:48 UTC**, apenas nos cinco existentes README, verification,
+test-plan, implementation-plan e tasks 002; DocConfig é escritor único de
+tasks, autorizado a marcar T028–T040 conforme evidência, preservando
+T001–T027 e deixando T041–T043 abertas. Sem novos relatórios/ficheiros.
+
+**Histórico da aprovação documental:** implementação aprovada pelo autor em
 18-11-2026 às **23:33:19 UTC**. Em 19-11 às **01:31:49 UTC**, resposta
-«sim» à antecipação de **T035–T040 mantendo gates e fecho pendentes**,
-reconfirmada no pedido atual. Exceção de ordem: documentação antes de
+«sim» à antecipação de **T035–T040 mantendo gates e fecho pendentes**.
+Exceção de ordem então aprovada: documentação antes de
 T034/G3; não reescreve DAG/plan, não aprova G3/G4/G5, não marca tarefas
 e não autoriza T043. Escrita exclusivamente nos nove canónicos existentes:
 OpenAPI, README, requirements, user-stories, database, architecture,
-implementation-plan, test-plan e este documento. O delta final autorizado
-restringe a escrita a **verification, test-plan e implementation-plan**;
-os outros seis diffs ficam preservados. Sem delegação nesta escrita.
+implementation-plan, test-plan e este documento. O pós-update anterior
+restringiu a escrita a **verification, test-plan e implementation-plan**;
+os outros seis diffs foram preservados. Os âmbitos anteriores não ampliam
+a escrita final de sete caminhos.
 
 Fontes: mesmos [spec](../specs/002-estado-em-revisao/spec.md),
 [plan](../specs/002-estado-em-revisao/plan.md),
@@ -61,7 +86,9 @@ Toda a cronologia de aplicação abaixo é **evidência recebida do utilizador,
 dos relatos dos engenheiros e das revisões identificadas**, não execuções
 de Maven/npm/Playwright/Docker/SQL/rede nesta tarefa documental. A observação
 própria limita-se à leitura estática das fontes e às conferências
-[T040](#feature-002-doc-checks). Não foram copiados relatórios privados,
+[T040](#feature-002-doc-checks), do [registo G4](#feature-002-g4-final)
+e da [serialização final](#feature-002-fecho-final).
+Não foram copiados relatórios privados,
 temporários ou artefactos ignorados como prova permanente.
 
 | Etapa / IDs | Implementação e evidência recebida | Estado / limite |
@@ -72,10 +99,12 @@ temporários ou artefactos ignorados como prova permanente.
 | Frontend / T017–T025 | Dez caminhos ER-04: enum/labels/inReview, editor com snapshot persistido seguro, quatro barras/cartões e história só status. | Lote inicial 167/167/build relatados; final posterior 174/174/build tem proveniência separada abaixo. |
 | G2 / T026 | `review-002-g2-frontend` aprovado, revisão estática/diff/índice vazio; cache Vitest dez ficheiros failed=false, mtime 00:10:10. | Cache sustenta ficheiros, **não** total 167, horários ou execução de build. G2 não é prova browser/visual nem revisão automática das correções posteriores. |
 | Ambiente / T027 | `preparar-002-e2e-compose` e `review-002-t027-ambiente` aprovado; novo alvo isolado autorizado às 00:21:59. | Prontidão, não E2E funcional; imagem local antiga, não GHCR. |
-| E2E / T028–T030 | T028/T029 implementadas/revistas: preservados 11 percursos e acrescentados 2, total 13 na preparação. R1 de `review-002-e2e-scenarios` corrigido e `review-002-e2e-r1` aprovado. T030 PASS via job E2E do CI #22 no SHA HEAD, corroborado por `verificar-002-ci-44436970582`. | Metadados públicos confirmam execução/sucesso, não totais nem detalhe por cenário. Falhas locais antigas preservadas. Marcadores permanecem T001–T027 [x], T028–T043 abertos (27/43); evidência/progresso não atualiza tasks.md nesta atribuição. |
-| T031–T034/G3 | Autor confirmou aprovação total visual desktop/390/320/teclado às 01:49:42 UTC. Autorização específica de reinício T032/execução T033 pendentes. | T031 decidida; G3 **não fechado**, não aprovado pela antecipação documental, pelo CI ou pela decisão visual. |
-| T035–T040 | Alinhamento antecipado dos nove canónicos e revisão independente limitada `review-002-documentacao-antecipada` aprovados sem achados; este pós-update altera só três caminhos. | Revisão limitada a T035–T040, não gate formal G4/G5 ou fecho; delta final pronto para revisão estreita própria. Sem atualização de tasks.md. |
-| T041/G4, T042/G5, T043 | Gates formais/progresso futuro não realizados nesta atribuição; exigem autorização própria. | Pendentes; a revisão documental limitada recebida não fecha T041/G4. Sem encadeamento automático. |
+| E2E / T028–T030 | T028/T029 implementadas/revistas: 11 percursos preservados + 2 novos, 13 preparados. R1 corrigido, `review-002-e2e-r1`, `review-002-two-e2e-fixes` e `review-002-save-focus` aprovados. T030 PASS via CI #22 no SHA 7c182ed, corroborado por `verificar-002-ci-44436970582`. | Concluídas; metadados confirmam sucesso, não totais/detalhe remoto por cenário. Falhas locais antigas preservadas. |
+| T031–T034/G3 | Aprovação humana total desktop/390/320/teclado às 01:49:42; nova autorização T032 às 10:19:48; T033 PASS por `concluir-002-persistencia-compose`; G3 aprovado sem achados por `review-002-g3-persistencia`. | Concluídas, evidência operacional recebida e revisão estática distinta de rerun; snapshots completos e DB/volume preservados. |
+| T035–T040 | Nove canónicos alinhados; `review-002-documentacao-antecipada` e `review-002-ci-visual-final` PASS recebidos; consolidação anterior nos cinco caminhos aprovados. | Concluídas no âmbito documental, sem validador integral OpenAPI; G4 formal posterior abaixo. |
+| T041/G4 | Revisão integral `review-002-g4-final`: único G4-01 LOW; correção em architecture/database e revisão formal `review-002-g4-01-fecho` recebida. | APROVADO, G4-01 resolvido; não é nova execução de testes ou operações. |
+| T042/G5 | `review-002-g5-final` APROVADO, evidência formal recebida: cobertura FR-001–010/SC-001–006 e dez campos restringidos, preservações e G0–G4 revistos. | Sem achados confirmados ou teste/revisão/reinício obrigatório pendente; não rerun de suites. [Limites](#feature-002-fecho-final). |
+| T043 | Serialização expressamente aprovada nos sete caminhos; DocConfig escritor único, sem alterar dependências. | Concluída após conferências locais PASS; 43/43, zero abertos. Não release/publicação/produção. |
 
 ### Backend — cronologia recebida de 18-11-2026 UTC
 
@@ -215,7 +244,7 @@ run, jobs e lista de runs responderam **HTTP 200**. Confirmou o repositório
 canónico público `Fibigor/matriz`, **CI #22**, run **44436970582**,
 **attempt 1**, evento **push**, workflow **`.github/workflows/ci.yml`**,
 branch **main**, SHA **`7c182edf7fe1c2cd1009743b029e3cd9d5759c12`** igual
-ao HEAD observado. Run **completed/success**.
+ao HEAD então observado, não ao atual 3360662. Run **completed/success**.
 [Run](https://github.com/Fibigor/matriz/actions/runs/44436970582);
 [URL fornecido pelo autor](https://github.com/Fibigor/matriz/actions/runs/44436970582/job/135268652860).
 
@@ -253,7 +282,7 @@ nesse âmbito, não inspeção visual realizada pelo agente, teste automatizado
 ou aceitação do cliente. Nem CI nem aprovação humana certificam todos os
 FR/SC ou ausência geral de problemas.
 
-### Bloqueios e critérios ainda não comprovados integralmente
+### Histórico do bloqueio local anterior — ultrapassado para T033
 
 No preflight anterior, app-only build/recreate foi aprovado separadamente,
 mas **não executado naquela sessão**.
@@ -271,22 +300,100 @@ Nenhuma operação de serviço é autorizada por esta escrita; volume/contas ret
 - **T031:** **aprovação total visual do autor recebida às 01:49:42 UTC**,
   explicitamente no âmbito desktop/390/320/teclado. Decisão nova e separada
   da automação, não reutilização da aprovação de 001.
-- **T032/T033:** aprovação específica da operação exata de reinício e
-  execução/prova antes/depois pendentes; app-only recreate não executado
-  não satisfaz estes gates nem demonstra sobrevivência de IN_REVIEW.
-- **T034/G3 bloqueado**; T041/G4 formal e T042/G5 não realizados.
-  `review-002-documentacao-antecipada` já aprovou o alinhamento limitado
-  T035–T040; o novo delta de três ficheiros aguarda revisão estreita,
-  sem fecho da feature.
+- **T032/T033:** nova autorização específica e execução PASS recebidas,
+  com reinício apenas da aplicação e snapshots integrais iguais, abaixo.
+- **T034/G3 APROVADO**, sem achados; **T041/G4 entretanto APROVADO**
+  pelo [fecho formal posterior](#feature-002-g4-final).
+  **T042/G5 entretanto APROVADO** no [registo final](#feature-002-fecho-final);
+  revisões limitadas anteriores não substituem esse gate formal.
+
+<a id="feature-002-persistencia-final"></a>
+
+### T032–T034 — nova prova de persistência e G3, 19-11-2026 UTC
+
+Fonte: relato de **`concluir-002-persistencia-compose`** recebido do utilizador,
+não execução Docker/HTTP/SQL deste autor documental nem artefacto persistente
+inspecionado. Aprovação específica do autor às **10:19:48 UTC**: novo projeto
+`matriz-review-002-final`, app loopback **18082**, PostgreSQL loopback **15433**,
+volume/credencial runtime novos e seed fictício; só a app pode reiniciar,
+sem reiniciar DB nem alterar dados/recursos antigos.
+
+Arranques da stack original às 09:56/10:02 falharam por bind Windows:
+55433 pertence à exclusão 55341–55440, sem alterações no host; configuração
+runtime original perdida, não recuperada. Primeira tentativa nova às 10:22
+terminou exit 1 antes da configuração por resolução frágil de `docker compose ls -a`
+no harness, corrigida herdando DOCKER_CONFIG original e evitando essa consulta.
+O único temporário, comentário sem segredo,
+`C:\Users\CTW03863\AppData\Local\Temp\matriz-review-002-final.compose.vars`,
+criado às 10:22 e confirmado às 10:23, foi preservado/reutilizado, não reescrito.
+Preflight relatado: recursos novos ausentes e portas livres fora das exclusões.
+
+Compose **5.7**, Engine **29.9.3**; operações relatadas (sem reconstruir
+argumentos de configuração não fornecidos):
+
+| UTC | Operação | Resultado recebido |
+|---|---|---|
+| 10:26:14.818–10:26:15.396 | `config --quiet` | exit 0 |
+| 10:26:15.396–10:26:27.855 | `pull db` | exit 0 |
+| 10:26:27.855–10:26:50.183 | `build --pull app` | exit 0, build limpo do HEAD 3360662 |
+| 10:26:50.509–10:26:55.391 | `up -d --no-build --pull never db app` | exit 0 |
+| 10:32:40.042–10:32:40.950 | `docker restart` apenas da app identificada abaixo | exit 0 |
+
+Imagem **local**, tag `matriz-review-002-final-app:latest`:
+`sha256:66d36eb12f6e3b68642159cb1b21816914cbcd49c81b072d2eb576588137e4b3`.
+App `068d00d938491a4100475f32c54224945f50c208ff8129a8d773ff67e34a1643`;
+DB `e13606da7bdb4fb8a7a63bf3af626d1cf72a10ce3ebe6ef36e356d9af76e0e4d`.
+Volume `matriz-review-002-final_matriz_data`, rede
+`matriz-review-002-final_default`. Dois erros do harness em memória após o
+build, **antes do PUT/restart**: colisão Python `http.cookiejar` e Accept
+application/json na raiz HTML (406, corrigido para text/html, 200).
+Harness final exit 0; não são defeitos da aplicação nem testes RED adicionais.
+Não houve repetição de escrita incerta.
+
+Um único PUT autorizado no seed **novo** `proj-alfa/task-04` (`MAT-4`):
+**TODO v1 → IN_REVIEW v2, HTTP 200**. Snapshots completos antes/depois do
+restart: tarefa com **14 propriedades**, projeto e **todo** o histórico,
+**1 evento/1 página**, incluindo ordenação/paginação e valores tipados.
+Evento TASK_UPDATED `6166339b-e12c-4944-b705-8215df4e9e1d`,
+status text TODO→IN_REVIEW. SHA-256 iguais antes/depois:
+
+| Snapshot | SHA-256 recebido |
+|---|---|
+| Tarefa | `7814603fdcfb29f90cf3ee50953946d379361f382307d2440c390938fdde4d2b` |
+| Projeto | `036e87745f67c7390bfa87e61f23c308c86b32a5175b5a86ff84116d8cf5f035` |
+| Histórico completo | `e8dccc977619bc19e4307609ede43077061815601c7abd43678bdd4a7616a1b3` |
+| Combinado | `36cbefc0dd9c914a10fa740c3e9932ed45aefca6409232d8acb9ae339fba837b` |
+
+createdAt **2026-11-19T10:27:01.599747Z**, updatedAt
+**2026-11-19T10:32:39.435050Z**, ambos inalterados. App conserva ID/imagem/
+portas; StartedAt muda de **10:26:55.082656792Z** para
+**10:32:40.782917188Z**. DB conserva ID/imagem/mount/volume e StartedAt
+**10:26:51.576647961Z**, sem restart/recriação.
+Após restart: cookie jar/CSRF/login novos, `/me` 200 e GET tarefa/projeto/
+histórico completo 200, confirmados até **10:32:53.353**; raiz 200 às
+**10:32:52.464**, ambos healthy. DemoSeedRunner normal no startup com
+DEMO ativo, sem seed explícito: identidade/v2/datas/evento completos iguais
+afastam mascaramento por reposição do seed. Sem SQL, DELETE, restart DB,
+recriação ou limpeza; os dois contentores antigos continuam parados com
+identidades/datas inalteradas segundo conferência do executor.
+
+**T034/G3: `review-002-g3-persistencia` APROVADO, sem achados.**
+Revisor confirmou por leitura própria código idêntico 7c182ed→3360662
+(nove documentos apenas) e reviu evidência recebida T030/T031/T033.
+Negativas API/draft/versão/origem imediatamente persistida, membro não
+atribuído e BLOCKS desde revisão continuam não mascarados; quatro estados,
+25% global independente de filtros/paginação e geometria desktop/390/320
+contemplados. Revisão estática + evidência recebida, **não rerun** E2E ou
+persistência pelo revisor. Esta prova de snapshots não é nova suite E2E.
 
 | FR da feature 002 / SC | Prova disponível | Limite de conclusão |
 |---|---|---|
-| FR-001 / SC-004/005 | Domínio/default/upgrade no backend relatado; labels/componentes e alinhamento canónico; CI final E2E PASS identificado e T031 total aprovada. | Metadados confirmam execução integrada, não contagens/cenários remotos; SC-004 ainda depende da prova de reinício. |
-| FR-002/003/004/010 / SC-001/002 | API/atomicidade/participante/abandono e base suja/componentes relatados PASS, G1/G2 e correções estáticas revistas; CI final E2E PASS e aprovação humana incluindo teclado. | Evidência disponível, sem logs/detalhe remoto por cenário nem fecho formal G3–G5. |
-| FR-005/006 / SC-003/004 | Quatro contagens globais/25% na API/componentes; história/status reconhecidos; CI final E2E PASS e aprovação humana desktop/390/320/teclado. | Não é nova medição geométrica/inspeção do agente nem certificação integral de SC; reinício e gates mantêm prova própria. |
+| FR-001 / SC-004/005 | Domínio/default/upgrade relatados; labels/componentes/canónicos; CI E2E PASS, T031 aprovada e T033 snapshots pós-reinício PASS. | G3–G5 aprovados; cobertura encerrada no âmbito académico, contagens/cenários remotos indisponíveis. |
+| FR-002/003/004/010 / SC-001/002 | API/atomicidade/participante/abandono e base suja/componentes relatados PASS, G1/G2 e correções estáticas revistas; CI final E2E PASS e aprovação humana incluindo teclado. | G3–G5 aprovados; cobertura encerrada nesse âmbito, sem logs/detalhe remoto por cenário. |
+| FR-005/006 / SC-003/004 | Quatro contagens globais/25% na API/componentes; história/status reconhecidos; CI E2E PASS, aprovação humana desktop/390/320/teclado e T033 PASS separado. | G3–G5 aprovados; cobertura encerrada nesse âmbito, sem nova medição/inspeção visual do agente. |
 | FR-007 / SC-005 | Preservação V4→V5 e DONE antigas coberta nos testes backend relatados/revisão G1. | Comprovado nesse âmbito automatizado relatado, não nova certificação documental ou da feature inteira. |
-| FR-008 / SC-006 | BLOCKS/motivos/reabertura/races com proteção original alcançável relatados PASS; CI final E2E PASS identificado. | Sem detalhe remoto por cenário ou fecho automático dos gates. |
-| FR-009 / SC-004/005 | Persistência API/história/upgrade relatados e CI final E2E PASS confirmado. | Parcial; sem detalhe remoto por cenário de reload, reinício T033 permanece pendente. |
+| FR-008 / SC-006 | BLOCKS/motivos/reabertura/races com proteção original alcançável relatados PASS; CI final E2E PASS identificado. | G5 aprovado, cobertura encerrada nesse âmbito; sem detalhe remoto por cenário nem certificação geral de segurança. |
+| FR-009 / SC-004/005 | API/história/upgrade relatados; T033 PASS com tarefa/projeto/histórico completos e hashes iguais após restart só da app, sem DB/volume alterados. | Prova efetiva recebida de persistência, G3–G5 aprovados; não rerun documental. T043 registada separadamente abaixo. |
 
 Cobertura planeada FR/SC 100% na análise não é 100% de critérios executados/
 validados. [Matriz de testes](test-plan.md#feature-002-test-plan) e
@@ -295,7 +402,11 @@ distinguem implementado/testado/revisto/pendente, sem duplicar spec.
 
 <a id="feature-002-doc-checks"></a>
 
-### T035–T040 — alterações e conferências documentais próprias
+### Histórico T035–T040 — alterações e conferências documentais próprias
+
+Registo das conferências anteriores, com as respetivas bases e limites;
+não confundir o pós-update antigo de três caminhos com a consolidação atual
+de cinco. A conferência própria atual está no final desta secção.
 
 - **T035:** enum/filtro/Task/TaskReference, PUT/422 status com mensagem
   «Coloque a tarefa em revisão antes de a concluir.», Progress.required/
@@ -337,7 +448,7 @@ execução própria deste delta, nem aprovação formal T041/G4 ou T042/G5.
 As contagens da tabela anterior pertencem à conferência anterior, não a
 uma nova verificação YAML nesta atualização de três Markdown.
 
-**Delta final autorizado:** reconcilia CI/T030 e aprovação total T031 nos
+**Histórico — delta final anterior autorizado:** reconciliou CI/T030 e aprovação total T031 nos
 três caminhos verification/test-plan/implementation-plan, sem alterar os
 outros seis, tasks.md ou marcadores. Apenas verificações documentais mínimas
 locais próprias; resultados abaixo. Pronto para **revisão estreita do novo
@@ -352,13 +463,202 @@ delta de três ficheiros**, não G5 ou fecho.
 | `git rev-parse HEAD`; `git diff --cached --name-only`; `git --no-pager status --short` | HEAD **7c182edf7fe1c2cd1009743b029e3cd9d5759c12** mantido, índice sem entradas staged, mesmos nove caminhos modificados; nesta atualização só três editados. |
 | Pesquisa textual dirigida (`rg`/`Select-String`) dos resumos/matrizes/planos | Pendências obsoletas de identidade CI/URL/SHA e âmbito visual reconciliadas; limites remotos de contagens/logs e T032/T033/gates formais conservados. Secções históricas mantêm o estado à data. |
 
-Skills seguidas por leitura dos `SKILL.md`: **contexto-matriz,
+**Registo da sessão documental anterior:** skills seguidas por leitura dos
+`SKILL.md`: **contexto-matriz,
 validacao-matriz, speckit-implement**, sem mecanismo de invocação nativa;
 não se simula invocação. `.specify/feature.json` lido: seleciona 002;
 nenhum helper/resolvedor/hook executado, nenhuma persistência de estado.
 `.specify/extensions.yml` ausente na leitura. Nenhum ignore/config/CI/
 lock/AGENTS/skill/artefacto da feature alterado; sem novos ficheiros,
 Maven/npm/build/browser/rede/serviços/instalações ou operações Git de escrita.
+
+### Histórico — consolidação autorizada de cinco caminhos, T028–T040
+
+Evidência adicional recebida: `review-002-ci-visual-final` PASS na revisão
+limitada do pós-update CI/visual; não G4/G5 formal. Nova prova operacional
+e G3 acima não são execuções próprias desta sessão. Apenas cinco ficheiros
+existentes alterados: README, verification, test-plan, implementation-plan e
+tasks 002, sem outros reports. Resumos/matrizes reconciliados com T033/G3,
+mantendo históricos e fontes canónicas; tasks com escritor único,
+T028–T040 marcadas conforme evidência, T001–T027 preservadas e T041–T043 abertas.
+
+Verificações **realmente executadas nesta consolidação**, na raiz Windows;
+Python em memória por here-string para `python -B -`, sem script/relatório
+gravado, rede, instalação ou suites da aplicação:
+
+| Comando / conferência própria | Resultado observado |
+|---|---|
+| `git --no-pager status --short`; `git rev-parse HEAD`; `git diff --cached --name-only` | Entrada limpa; HEAD `336066253151dd8e3e6229a55827e047c7ac4779`; índice sem staged. |
+| `git --no-pager diff --name-only 7c182edf7fe1c2cd1009743b029e3cd9d5759c12 HEAD`; `git --no-pager diff --stat` com a mesma base/HEAD | Nove canónicos documentais apenas; código/workflow não alterados desde o SHA CI, não novo CI do HEAD. |
+| `python -B -`, UTF-8/links/âncoras dos cinco caminhos | PASS 5/5, **188 referências locais, 93 fragmentos Markdown, zero erros**; sem NUL/U+FFFD e newline final. Resolução local, não browser. |
+| `python -B -`, parse YAML sem chaves duplicadas e resolução de `$ref` | PyYAML 6.0.3 preexistente; PASS **229 referências internas/30 operações**, Status com quatro valores e inReview obrigatório/mínimo zero. UTF-8 dos nove canónicos PASS 9/9. Não é validador integral OpenAPI/JSON Schema; nenhum instalado. |
+| `python -B -`, contagem/comparação de tasks com `git show HEAD:` | PASS **43 IDs únicos/sequenciais, 40 marcados/3 abertos** (T041/T042/T043). T001–T027/T041–T043 e todas as descrições/dependências inalteradas; apenas marcadores T028–T040 e nota de progresso. |
+| `python -B -`, comparação normalizada com `git show HEAD:` | PASS: verification desde `current-publication`, test-plan/implementation-plan desde suplemento de 18-11 preservados; âmbito exato dos cinco existentes, sem caminho adicional. |
+| `git diff --check` | PASS, exit 0. |
+| `Get-FileHash -LiteralPath .git/index -Algorithm SHA256`, antes/depois; `git diff --cached --name-only` | SHA-256 do índice inalterado: `37FE30489FF93D59914F34B62442AAE0AA85C3548E8B374A835B856AB11C6553`; staged vazio, HEAD mantido. |
+| Pesquisa dirigida `rg` dos resumos/matrizes/planos | Pendências atuais T033/G3 reconciliadas; bloqueios anteriores identificados como históricos; apenas G4/G5/T043 continuam por concluir. |
+
+Skills **contexto-matriz, validacao-matriz e speckit-implement** seguidas por
+leitura dos SKILL.md, sem mecanismo de invocação nativa disponível.
+AGENTS/constituição e mesmos artefactos 002 consumidos, sem regenerar plano.
+Checklist requirements lido: 16/16, zero abertos, não prova funcional.
+extensions.yml ausente; sem hooks/helpers/resolvedores, variáveis de
+ambiente alteradas ou estado persistido. Sem novos ficheiros, agentes,
+testes/build/serviços/rede, credenciais, alterações CI/config ou escritas Git.
+**Paragem pronta para revisão formal T041/G4 e depois T042/G5**;
+nenhum fecho T043, validação cliente, produção ou nova publicação.
+
+<a id="feature-002-g4-final"></a>
+
+### Histórico T041/G4 — APROVADO após resolução de G4-01, 19-11-2026 UTC
+
+**Evidência formal recebida do utilizador: `review-002-g4-01-fecho`.**
+A revisão integral original **`review-002-g4-final`** cobriu os nove
+canónicos de T040 contra os artefactos/critério T041; único achado
+**G4-01 LOW**, sem outros achados: referências obsoletas de
+G3/browser/visual/persistência ainda pendentes em architecture/database.
+Correção dos dois ficheiros aprovada pelo autor às **10:41:59 UTC**,
+já presente antes deste registo, **G4-01 resolvido**.
+
+O novo revisor formal leu os dois diffs, referências de verification,
+regras e critério T041. Confirmou T030 PASS via CI no SHA 7c182ed
+(run 44436970582, quatro jobs success), T031 aprovação humana total e
+T033 persistência/G3 com proveniências distintas. Relatou âncoras e
+diffcheck **PASS**, índice vazio e sete caminhos modificados.
+A decisão formal fecha **T041/G4**, não G5 nem a feature.
+São observações/evidência recebidas do revisor, não testes ou operações
+reexecutados por DocConfig; nenhum CI, HTTP, teste ou reinício novo.
+
+Esta escrita serializada foi autorizada **somente em tasks 002 e neste
+verification**: apenas T041 passa a [x], **43 IDs únicos, 41 marcados,
+T042/G5 e T043 PENDENTES**. As notas anteriores de G4 pendente conservam
+o estado da respetiva fase. Resumos anteriores nos outros cinco caminhos
+modificados ficam intocados por estarem fora deste âmbito de escrita;
+para o estado atual prevalece este registo.
+Skills contexto-matriz, validacao-matriz e speckit-implement seguidas por
+leitura dos SKILL.md, sem mecanismo de invocação nativa disponível.
+Somente verificações documentais locais, sem novos ficheiros/relatórios,
+agentes, hooks/helpers, testes/build, rede/serviços ou escritas Git.
+
+Conferências próprias deste registo, na raiz Windows, com
+`python -B -` em memória e Git apenas de leitura:
+**PASS** 43 IDs únicos/sequenciais, 41 marcados e 2 abertos (T042/T043);
+apenas T041 mudou de checkbox, descrições/dependências inalteradas por
+fingerprint anterior/posterior. **UTF-8 estrito 2/2 PASS**, sem NUL/U+FFFD,
+newline final; nova âncora única e quatro referências locais resolvidas.
+`git diff --check` **PASS**, exit 0. Fingerprint dos restantes tracked
+inalterado byte a byte; mesmos sete caminhos modificados, HEAD mantido,
+hash do índice inalterado e staged vazio.
+A primeira asserção de conteúdo falhou por comparar CRLF bruto com
+fingerprint textual normalizado; diagnóstico e revalidação com
+normalização apenas em memória passaram, sem corrigir os documentos
+para satisfazer o verificador. Não é teste funcional ou revisão G5.
+
+**Paragem pronta para revisão final independente T042/G5**;
+sem aprovação G5, fecho T043, validação cliente ou nova publicação.
+
+<a id="feature-002-fecho-final"></a>
+
+### Registo final — T042/G5 aprovado e serialização T043, 19-11-2026 UTC
+
+**G5 formal: `review-002-g5-final` APROVADO**, segundo relato do revisor
+transmitido pelo utilizador: **«sem achados confirmados, sem teste/review/
+restart obrigatório pendente»**. Não foi fornecido horário de execução
+do agente; não se atribui um. G4 já estava registado por `registar-002-g4`,
+com decisão de `review-002-g4-01-fecho` sobre o único G4-01 LOW da revisão
+integral `review-002-g4-final`; G3 por `review-002-g3-persistencia`.
+
+O G5 reviu FR-001–010/SC-001–006, G0–G4 e os dez campos restringidos:
+`task.status`, `task.close_reason`, `TaskReference.status`,
+`task_activity.payload` e os seis campos de `ApiModels.Progress`
+(`todo`, `inProgress`, `inReview`, `done`, `total`, `completedPercent`).
+Confirmou preservação de BLOCKS original, segurança/sessão/CSRF,
+origem imediatamente persistida, base suja, quatro contagens globais e
+migrations sem backfill, incluindo prova V3→V4 independente da V4→V5.
+Cobertura encerrada no âmbito académico aprovado, com os limites da
+matriz acima; não garantia de ausência geral de problemas de segurança.
+
+**Conferências próprias do G5, recebidas, não executadas por DocConfig:**
+HEAD/status/diff/log readonly; Python em memória confirmou 43 IDs
+sequenciais, 41 marcados/2 abertos à data, YAML sem chaves duplicadas,
+229 referências/30 operações, enum/inReview, UTF-8 28/28, diffcheck PASS,
+índice vazio e hash inalterado
+`37FE30489FF93D59914F34B62442AAE0AA85C3548E8B374A835B856AB11C6553`.
+Delta 7c182ed→3360662: nove documentos apenas; os sete deltas unstaged
+mantiveram-se durante a revisão. Usou contexto/validação/análise manual,
+não invocação nativa, helper ou hook. Consultou a evidência anterior
+backend 68/XML, frontend 174/build, CI/T031/T033/G3/G4; **não executou
+testes backend/frontend/E2E, build, rede, serviços ou inspeção visual**.
+Referências de estado obsoletas em README, architecture/database e planos
+foram remetidas para atualização finita em T043, não bloqueios de produto.
+
+**T043 — âmbito aprovado:** serialização final reconfirmada pelo utilizador,
+com aprovação de 19-11 **10:19:48 UTC** e complemento de **10:41:59 UTC**.
+Apenas README, architecture, database, implementation-plan, test-plan,
+verification e tasks 002 existentes; nos dois primeiros canónicos técnicos,
+somente as mesmas referências de estado G4/G5/T043. DocConfig escritor único:
+T001–T041 preservadas, T042 marcada pela revisão recebida; T043 marcada
+somente após as conferências locais finais PASS. Sem reescrever spec/plan/DAG.
+
+**Observação própria desta sessão documental:** baseline observada às
+**10:49:53.4697218 UTC**: HEAD
+`336066253151dd8e3e6229a55827e047c7ac4779`, sete caminhos já modificados,
+staged vazio, hash do índice acima. `git diff --name-only` entre base CI
+e HEAD confirmou nove documentos apenas, não CI do HEAD 3360662.
+Checklist requirements: 16/16, zero abertos; extensions.yml ausente.
+Skills contexto-matriz, validacao-matriz e speckit-implement seguidas por
+leitura dos SKILL.md, sem mecanismo de invocação nativa disponível.
+Nenhum helper, hook, resolução/persistência de estado, delegação ou ficheiro novo.
+
+**Conferências pré-fecho próprias efetivamente executadas**, na raiz Windows,
+em memória via here-string para `python -B -`, **10:52:21.179938–
+10:52:21.729035 UTC**, exit 0, antes de marcar T043:
+
+| Comando / conferência | Resultado observado |
+|---|---|
+| Python, leitura UTF-8 estrita dos sete caminhos | PASS 7/7, sem NUL/U+FFFD e newline final. |
+| Python, resolução local de links/IDs/headings | PASS 265 referências locais/126 fragmentos Markdown, zero erros; sem rede/renderização/browser. |
+| Python, contagem e comparação com `git show HEAD:specs/002-estado-em-revisao/tasks.md` | PASS 43 IDs únicos/sequenciais, então 42 marcados e somente T043 aberta; descrições/dependências idênticas, predecessoras concluídas. |
+| Python/PyYAML preexistente, YAML somente de leitura | PASS sem chaves duplicadas, 229 referências internas resolvidas/30 operações, enum de quatro estados e inReview obrigatório/mínimo zero. Não é validador integral OpenAPI/JSON Schema. |
+| Python/hashlib, comparação com fingerprints anteriores | PASS 166 tracked fora dos sete caminhos byte a byte; ficheiros de ambiente excluídos e não lidos. Históricos verification desde current-publication e planos desde suplemento de 18-11 preservados. |
+| `git rev-parse HEAD`; `git diff --cached --name-only`; Python/hashlib do índice | HEAD mantido; staged vazio; hash do índice igual à baseline acima. |
+| `git diff --name-only`; `git ls-files --others --exclude-standard`; `git diff --name-only 7c182edf7fe1c2cd1009743b029e3cd9d5759c12 HEAD` | Exatamente sete documentos modificados, nenhum untracked; nove documentos entre CI e HEAD, sem código/config alterados. |
+| `git diff --check` | PASS, exit 0. |
+
+A primeira tentativa **10:51:55.501515 UTC** passou UTF-8 e links mas parou
+na comparação de descrições: CRLF do checkout versus LF de `git show`.
+Diagnóstico confirmou 43 IDs/42 marcados/T043 aberta; normalização
+**somente em memória no verificador** permitiu a repetição completa PASS
+acima. Nenhum conteúdo histórico foi alterado para satisfazer a asserção.
+
+**T043 concluída após esse PASS:** 43/43 IDs marcados, zero abertos,
+G0–G5 aprovados. Fecho de implementação e validações/revisões obrigatórias
+da feature 002, estritamente no âmbito académico aprovado.
+
+**Repetição própria após marcar T043 — 10:53:15.691365–
+10:53:16.361047 UTC**, `python -B -` em memória, exit 0:
+UTF-8 **7/7**, **265 referências locais/126 fragmentos**, **43 IDs únicos/
+sequenciais, 43/43 [x], zero abertos**, descrições/dependências/predecessoras
+preservadas e resumos vigentes dos sete caminhos coerentes com o fecho.
+Os mesmos **166 tracked fora do âmbito** e três históricos mantêm os
+fingerprints; HEAD e hash do índice iguais à entrada, staged vazio.
+`git diff --check` PASS/exit 0; `git diff --stat` e `git status --short`
+confirmaram somente os sete documentos modificados, nenhum untracked.
+Sem suites, build, rede, serviços, instalações, Git writes/commit/push
+ou ficheiro adicional. A aprovação G5 é recebida; estas conferências
+documentais próprias não são uma nova revisão independente do produto.
+
+Limites preservados: CI #22/run 44436970582/attempt 1 cobre 7c182ed,
+quatro jobs success; logs 403 e totais remotos desconhecidos, não 13/13.
+Visual T031 é aprovação humana do autor às 01:49:42, não inspeção do agente.
+T033 tem imagem local do HEAD 3360662 e um PUT/restart apenas da app;
+snapshots tarefa/projeto/histórico completos iguais, DB/volume preservados.
+Os dois contentores novos ficaram running na última observação do executor;
+não foram consultados/limpos nesta sessão. Stack antiga parada e temporário
+aprovado retidos segundo relato, sem nova operação ou leitura de `.env`.
+Os sete deltas documentais deste fecho não integram HEAD/CI/imagem construída.
+Fechar 002 não publica imagem/versão nem implica commit, push, merge,
+release, aceitação do cliente ou prontidão de produção.
 
 **Segurança/publicação preservadas:** exceção temporária exata
 `picomatch@4.0.7` / `CVE-2026-112366` / HIGH / frontend npm, dev-only,

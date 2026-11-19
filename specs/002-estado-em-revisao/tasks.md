@@ -2,9 +2,18 @@
 
 **Input**: [spec.md](spec.md), [checklist](checklists/requirements.md), [plan.md](plan.md), [research.md](research.md), [data-model.md](data-model.md), [contrato delta](contracts/status-delta.md) e [quickstart.md](quickstart.md), feature 002.
 
+**Estado vigente — serialização final autorizada de 19-11-2026:** T001–T043
+concluídas (**43/43**); **G0–G5 aprovados, T043 fechada após conferências PASS**.
+T041/G4 aprovado por `review-002-g4-01-fecho`, após resolução de G4-01.
+T034/G3 aprovado sem achados por `review-002-g3-persistencia`.
+Âmbitos restritos de preflight/geração e notas de progresso anteriores
+abaixo conservam a fase de origem; a consolidação T028–T040 e o registo
+G4 limitado a tasks/verification constam nas secções finais como histórico.
+G5 aprovado por `review-002-g5-final`; [registo final e limites](../../docs/verification.md#feature-002-fecho-final).
+
 **Prerequisites — proveniência da geração**: desenho aprovado segundo handover `review-plan-002-em-revisao`, então sem implementação. Aprovação de geração recebida em 18-11-2026, referindo 23:21:18 UTC. Essa fase criou apenas este ficheiro; análise readonly e aprovação de implementação eram futuras. Os limites de fases anteriores nos documentos de entrada são proveniência histórica, não foram reescritos.
 
-**Autorização atual — preflight 002**: segundo o handover recebido, `analyze-002-em-revisao` foi realizado e aprovado: zero findings, cobertura FR/SC 100%, dez campos e 43 tarefas/DAG conferidos. É evidência recebida, não nova análise desta sessão. O utilizador aprovou em **2026-11-18T23:33:19Z**, com «sim», implementar T001–T043 nos caminhos definidos, incluindo V5/testes/documentação, mantendo gates próprios E2E/reinício/visual e sem commit/push/publicação. A atribuição presente é exclusivamente T001/T002 e registo de progresso por DocConfig, escritor único: única escrita em `specs/002-estado-em-revisao/tasks.md`, sem código, testes executados ou alterações de outros IDs/checklists. T003/G0 pelo Revisor continua obrigatório antes do backend.
+**Histórico — autorização de preflight 002**: segundo o handover recebido, `analyze-002-em-revisao` foi realizado e aprovado: zero findings, cobertura FR/SC 100%, dez campos e 43 tarefas/DAG conferidos. É evidência recebida, não nova análise desta sessão. O utilizador aprovou em **2026-11-18T23:33:19Z**, com «sim», implementar T001–T043 nos caminhos definidos, incluindo V5/testes/documentação, mantendo gates próprios E2E/reinício/visual e sem commit/push/publicação. A atribuição presente é exclusivamente T001/T002 e registo de progresso por DocConfig, escritor único: única escrita em `specs/002-estado-em-revisao/tasks.md`, sem código, testes executados ou alterações de outros IDs/checklists. T003/G0 pelo Revisor continua obrigatório antes do backend.
 
 **Tests**: explicitamente pedidos em spec/plano; tarefas incluem preparação RED, implementação e confirmação GREEN futura. Nenhum teste, SC, revisão de aplicação ou gate operacional passou por gerar esta lista.
 
@@ -158,28 +167,28 @@ Fontes canónicas continuam [requisitos](../../docs/requirements.md), [restriç�
 ### Ambiente e jornada integrada — ER-05/07
 
 - [x] T027 Obter autorização explícita para ambiente E2E/serviços/seed fictício já disponíveis e exclusivos; ler `frontend/playwright.config.ts`, `frontend/package.json`, `README.md` e `specs/002-estado-em-revisao/quickstart.md`, confirmar alvo API/Vite ou Compose autorizado e worker único. Executor: Orquestrador, só leitura. Deps: T026. Sem iniciar/parar/reutilizar serviços por inferência, instalar browser ou escrever configuração; falta de ambiente bloqueia T030, não se confunde com T002/Testcontainers.
-- [ ] T028 Atualizar percursos/fixtures existentes de `frontend/e2e/matriz.spec.ts` para guardar IN_REVIEW e aguardar confirmação/versão antes de concluir legitimamente; manter negativas diretas e assertions de bloqueios originais alcançáveis desde revisão. Ler `frontend/playwright.config.ts`; não editar configuração, relaxar asserts/timeouts ou usar revisão automática universal. Executor: Frontend. Deps: T027. FR-002/008/010, SC-001/006.
-- [ ] T029 Ampliar no mesmo `frontend/e2e/matriz.spec.ts` jornada das três histórias: ambas as entradas em revisão e devoluções/abandono, impedimento UI e chamadas API diretas não contornáveis por draft, membro ativo sem atribuição, save/GET/reload e história; lista, detalhe painel/página, relação/filtro e quatro estados globais=4/1 revisão/25%, sem perder globais por página/filtro. Incluir asserts desktop/390/320 px para quatro barras/cartões sem corte/sobreposição, labels/valores legíveis e teclado/foco/guards, sem depender só de cor. Executor: Frontend. Deps: T028. FR-001–010, SC-001–006 nos aspetos observáveis; upgrade e reinício conservam provas próprias, não são inferidos desta jornada.
-- [ ] T030 Executar em `frontend` `npm run test:e2e` para `frontend/e2e/matriz.spec.ts` somente no alvo de T027; se Compose já autorizado, usar a alternativa documentada PLAYWRIGHT_BASE_URL=http://localhost:8080, não ambas as variantes por formalidade. Executor: Frontend. Deps: T029, T027. Registar ambiente/seed/horários/exits/totais e evidência real na resposta, arquivo futuro `docs/verification.md` por T039; sem alterar config, novos destinos ou limpar dados/volumes preexistentes.
-- [ ] T031 Submeter apresentação desktop/390/320 px e navegação por teclado à apreciação visual humana, com referência a `frontend/src/Projects.tsx`, `frontend/src/styles.css`, `frontend/src/TaskDetail.tsx`, `frontend/src/TaskActivity.tsx` e resultados de `frontend/e2e/matriz.spec.ts`. Executor: Orquestrador recolhe decisão do autor, sem escrita. Deps: T030. Decisão/evidência visual separada da automação, futura localização `docs/verification.md` T039; não reaproveitar aprovação visual de 001 nem marcar concluída se apreciação pendente.
-- [ ] T032 Obter autorização operacional específica para reinício exato do ambiente isolado, exclusividade e preservação de dados/volume, lendo `README.md` e `specs/002-estado-em-revisao/quickstart.md` §4; identificar operação/recursos sem revelar configuração. Executor: Orquestrador, só leitura. Deps: T030. Não executar reinício nem criar serviços neste gate; sem aprovação T033 fica bloqueada, ainda que E2E tenha passado.
-- [ ] T033 Verificar estado após o reinício expressamente autorizado em T032, seguindo apenas a operação aprovada e `specs/002-estado-em-revisao/quickstart.md` §4/`README.md`: capturar identidade/estado/versão/história antes/depois, autenticar novamente se necessário e confirmar IN_REVIEW persistido sem seed mascarar perda. Executor: Backend no ambiente exclusivo autorizado, sem edição de ficheiros. Deps: T032. Resposta com evidência para `docs/verification.md` T039; sem down -v, apagar/recriar DB ou pressupor sobrevivência de sessão. FR-009, SC-004; bloqueio não equivale a PASS.
-- [ ] T034 Rever readonly jornada/evidência integrada contra `frontend/e2e/matriz.spec.ts`, `frontend/playwright.config.ts`, `specs/002-estado-em-revisao/spec.md` e `specs/002-estado-em-revisao/quickstart.md`; distinguir T030, visual T031 e reinício T032–T033, recusas diretas e bloqueios originais. Executor: Revisor Matriz. Deps: T031, T033. Gate G3 em resposta, futuro arquivo `docs/verification.md` T039; nenhuma nova execução, escrita ou aprovação operacional pelo Revisor.
+- [x] T028 Atualizar percursos/fixtures existentes de `frontend/e2e/matriz.spec.ts` para guardar IN_REVIEW e aguardar confirmação/versão antes de concluir legitimamente; manter negativas diretas e assertions de bloqueios originais alcançáveis desde revisão. Ler `frontend/playwright.config.ts`; não editar configuração, relaxar asserts/timeouts ou usar revisão automática universal. Executor: Frontend. Deps: T027. FR-002/008/010, SC-001/006.
+- [x] T029 Ampliar no mesmo `frontend/e2e/matriz.spec.ts` jornada das três histórias: ambas as entradas em revisão e devoluções/abandono, impedimento UI e chamadas API diretas não contornáveis por draft, membro ativo sem atribuição, save/GET/reload e história; lista, detalhe painel/página, relação/filtro e quatro estados globais=4/1 revisão/25%, sem perder globais por página/filtro. Incluir asserts desktop/390/320 px para quatro barras/cartões sem corte/sobreposição, labels/valores legíveis e teclado/foco/guards, sem depender só de cor. Executor: Frontend. Deps: T028. FR-001–010, SC-001–006 nos aspetos observáveis; upgrade e reinício conservam provas próprias, não são inferidos desta jornada.
+- [x] T030 Executar em `frontend` `npm run test:e2e` para `frontend/e2e/matriz.spec.ts` somente no alvo de T027; se Compose já autorizado, usar a alternativa documentada PLAYWRIGHT_BASE_URL=http://localhost:8080, não ambas as variantes por formalidade. Executor: Frontend. Deps: T029, T027. Registar ambiente/seed/horários/exits/totais e evidência real na resposta, arquivo futuro `docs/verification.md` por T039; sem alterar config, novos destinos ou limpar dados/volumes preexistentes.
+- [x] T031 Submeter apresentação desktop/390/320 px e navegação por teclado à apreciação visual humana, com referência a `frontend/src/Projects.tsx`, `frontend/src/styles.css`, `frontend/src/TaskDetail.tsx`, `frontend/src/TaskActivity.tsx` e resultados de `frontend/e2e/matriz.spec.ts`. Executor: Orquestrador recolhe decisão do autor, sem escrita. Deps: T030. Decisão/evidência visual separada da automação, futura localização `docs/verification.md` T039; não reaproveitar aprovação visual de 001 nem marcar concluída se apreciação pendente.
+- [x] T032 Obter autorização operacional específica para reinício exato do ambiente isolado, exclusividade e preservação de dados/volume, lendo `README.md` e `specs/002-estado-em-revisao/quickstart.md` §4; identificar operação/recursos sem revelar configuração. Executor: Orquestrador, só leitura. Deps: T030. Não executar reinício nem criar serviços neste gate; sem aprovação T033 fica bloqueada, ainda que E2E tenha passado.
+- [x] T033 Verificar estado após o reinício expressamente autorizado em T032, seguindo apenas a operação aprovada e `specs/002-estado-em-revisao/quickstart.md` §4/`README.md`: capturar identidade/estado/versão/história antes/depois, autenticar novamente se necessário e confirmar IN_REVIEW persistido sem seed mascarar perda. Executor: Backend no ambiente exclusivo autorizado, sem edição de ficheiros. Deps: T032. Resposta com evidência para `docs/verification.md` T039; sem down -v, apagar/recriar DB ou pressupor sobrevivência de sessão. FR-009, SC-004; bloqueio não equivale a PASS.
+- [x] T034 Rever readonly jornada/evidência integrada contra `frontend/e2e/matriz.spec.ts`, `frontend/playwright.config.ts`, `specs/002-estado-em-revisao/spec.md` e `specs/002-estado-em-revisao/quickstart.md`; distinguir T030, visual T031 e reinício T032–T033, recusas diretas e bloqueios originais. Executor: Revisor Matriz. Deps: T031, T033. Gate G3 em resposta, futuro arquivo `docs/verification.md` T039; nenhuma nova execução, escrita ou aprovação operacional pelo Revisor.
 
 ### Alinhamento canónico — ER-06, escrita futura apenas DocConfig
 
-- [ ] T035 Atualizar `openapi.yaml` conforme [contrato delta](contracts/status-delta.md), sem o copiar integralmente para a feature: Status enum, filtro/Task/TaskReference, PUT/422 status e mensagem, Progress.required/exemplos. Citar `task.status` [modelo §1–2](data-model.md#2-matriz-de-transições), `task.close_reason` [§1](data-model.md#1-tarefa-domínio-de-estado), `TaskReference.status` [§5](data-model.md#5-histórico-e-relações) e `ApiModels.Progress.inReview`, `ApiModels.Progress.total`, `ApiModels.Progress.completedPercent`, `ApiModels.Progress.todo`, `ApiModels.Progress.inProgress`, `ApiModels.Progress.done` [§4](data-model.md#4-progresso-do-projeto-apenas-derivado). Preservar endpoints, formatos, autenticação e permissões, declarar necessidade de coordenação cliente/servidor, sem prometer compatibilidade transparente do DONE direto. Executor: DocConfig. Deps: T034. Exige aprovação futura exata deste caminho.
-- [ ] T036 Alinhar `docs/requirements.md` e `docs/user-stories.md`: substituir permissão de DONE direto em RF-08/RN-07/US-08 pelo pré-requisito persistido de revisão, quatro estados/contagens e critérios afetados RF-05/06/09/15; preservar RN-08/09/13–16/19 e restantes regras, sem duplicar verbatim limites base. Referenciar [modelo §1–5](data-model.md#1-tarefa-domínio-de-estado) e `openapi.yaml`, sem confundir US1/US3/US2 com IDs canónicos nem reescrever arquivos históricos. Executor: DocConfig. Deps: T035.
-- [ ] T037 Atualizar `docs/database.md`, `docs/architecture.md` e `README.md` quanto a V5/CHECK, domínio, nova origem persistida, quatro contagens e fluxos; remover anúncio vigente apenas V1–V4 na versão alterada, mantendo proveniência histórica. `task.status`/`task.close_reason` seguem [modelo §1–3](data-model.md#1-tarefa-domínio-de-estado), `ApiModels.Progress.inReview`/`ApiModels.Progress.total`/`ApiModels.Progress.completedPercent` [§4](data-model.md#4-progresso-do-projeto-apenas-derivado), `task_activity.payload` [§5](data-model.md#5-histórico-e-relações); canónicos não se transferem para specs. Executor: DocConfig. Deps: T036. Sem anunciar release, imagem, produção ou novo arranque executado.
-- [ ] T038 Alinhar `docs/implementation-plan.md` e `docs/test-plan.md` com implementação e cobertura reais de ER-01–ER-07, matriz FR/SC, upgrade V4→V5, preservação V3→V4, base suja, globais, BLOCKS e gates operacionais distintos; referenciar fontes canónicas/artefactos 002 sem gerar novo plano ou report. Executor: DocConfig. Deps: T037. Preservar histórico de 001 e distinguir implementado, testado, revisto e pendente.
-- [ ] T039 Consolidar em `docs/verification.md` relatos identificados T004–T034/G0–G3 e evidência documental T035–T038: comandos, ambiente, horário, exits, totais/falhas, RED/GREEN e proveniência; separar backend Testcontainers, componentes/build, E2E, visual humano e reinício. Mapear FR-001–010/SC-001–006 sem anunciar SC plenamente comprovado perante bloqueio/inconclusivo. Executor: DocConfig. Deps: T038. Único destino documental de evidência proposto; sem novo relatório, sem promover resultados históricos/relatos não conferidos a execução própria.
-- [ ] T040 Conferir formatos/links/âncoras e referências OpenAPI existentes em `openapi.yaml`, `README.md`, `docs/requirements.md`, `docs/user-stories.md`, `docs/database.md`, `docs/architecture.md`, `docs/implementation-plan.md`, `docs/test-plan.md` e `docs/verification.md`; verificar que RF-08/RN-07/US-08 vigentes já não contradizem o incremento e arquivos mantêm proveniência. Executor: DocConfig, verificações locais sem rede/instalação. Deps: T039. Relatar ferramentas/comandos realmente disponíveis, não alegar validador integral inexistente nem executar suites de aplicação por formalidade.
-- [ ] T041 Rever readonly os nove caminhos de T040 e evidência documental contra `specs/002-estado-em-revisao/spec.md`, `specs/002-estado-em-revisao/plan.md`, `specs/002-estado-em-revisao/data-model.md` e `specs/002-estado-em-revisao/contracts/status-delta.md`. Executor: Revisor Matriz. Deps: T040. Gate G4: canónicos continuam fonte, conflito resolvido só no âmbito aprovado, nenhum PASS inventado; resposta sem ficheiro novo, futura incorporação em `docs/verification.md` apenas por DocConfig aprovado.
+- [x] T035 Atualizar `openapi.yaml` conforme [contrato delta](contracts/status-delta.md), sem o copiar integralmente para a feature: Status enum, filtro/Task/TaskReference, PUT/422 status e mensagem, Progress.required/exemplos. Citar `task.status` [modelo §1–2](data-model.md#2-matriz-de-transições), `task.close_reason` [§1](data-model.md#1-tarefa-domínio-de-estado), `TaskReference.status` [§5](data-model.md#5-histórico-e-relações) e `ApiModels.Progress.inReview`, `ApiModels.Progress.total`, `ApiModels.Progress.completedPercent`, `ApiModels.Progress.todo`, `ApiModels.Progress.inProgress`, `ApiModels.Progress.done` [§4](data-model.md#4-progresso-do-projeto-apenas-derivado). Preservar endpoints, formatos, autenticação e permissões, declarar necessidade de coordenação cliente/servidor, sem prometer compatibilidade transparente do DONE direto. Executor: DocConfig. Deps: T034. Exige aprovação futura exata deste caminho.
+- [x] T036 Alinhar `docs/requirements.md` e `docs/user-stories.md`: substituir permissão de DONE direto em RF-08/RN-07/US-08 pelo pré-requisito persistido de revisão, quatro estados/contagens e critérios afetados RF-05/06/09/15; preservar RN-08/09/13–16/19 e restantes regras, sem duplicar verbatim limites base. Referenciar [modelo §1–5](data-model.md#1-tarefa-domínio-de-estado) e `openapi.yaml`, sem confundir US1/US3/US2 com IDs canónicos nem reescrever arquivos históricos. Executor: DocConfig. Deps: T035.
+- [x] T037 Atualizar `docs/database.md`, `docs/architecture.md` e `README.md` quanto a V5/CHECK, domínio, nova origem persistida, quatro contagens e fluxos; remover anúncio vigente apenas V1–V4 na versão alterada, mantendo proveniência histórica. `task.status`/`task.close_reason` seguem [modelo §1–3](data-model.md#1-tarefa-domínio-de-estado), `ApiModels.Progress.inReview`/`ApiModels.Progress.total`/`ApiModels.Progress.completedPercent` [§4](data-model.md#4-progresso-do-projeto-apenas-derivado), `task_activity.payload` [§5](data-model.md#5-histórico-e-relações); canónicos não se transferem para specs. Executor: DocConfig. Deps: T036. Sem anunciar release, imagem, produção ou novo arranque executado.
+- [x] T038 Alinhar `docs/implementation-plan.md` e `docs/test-plan.md` com implementação e cobertura reais de ER-01–ER-07, matriz FR/SC, upgrade V4→V5, preservação V3→V4, base suja, globais, BLOCKS e gates operacionais distintos; referenciar fontes canónicas/artefactos 002 sem gerar novo plano ou report. Executor: DocConfig. Deps: T037. Preservar histórico de 001 e distinguir implementado, testado, revisto e pendente.
+- [x] T039 Consolidar em `docs/verification.md` relatos identificados T004–T034/G0–G3 e evidência documental T035–T038: comandos, ambiente, horário, exits, totais/falhas, RED/GREEN e proveniência; separar backend Testcontainers, componentes/build, E2E, visual humano e reinício. Mapear FR-001–010/SC-001–006 sem anunciar SC plenamente comprovado perante bloqueio/inconclusivo. Executor: DocConfig. Deps: T038. Único destino documental de evidência proposto; sem novo relatório, sem promover resultados históricos/relatos não conferidos a execução própria.
+- [x] T040 Conferir formatos/links/âncoras e referências OpenAPI existentes em `openapi.yaml`, `README.md`, `docs/requirements.md`, `docs/user-stories.md`, `docs/database.md`, `docs/architecture.md`, `docs/implementation-plan.md`, `docs/test-plan.md` e `docs/verification.md`; verificar que RF-08/RN-07/US-08 vigentes já não contradizem o incremento e arquivos mantêm proveniência. Executor: DocConfig, verificações locais sem rede/instalação. Deps: T039. Relatar ferramentas/comandos realmente disponíveis, não alegar validador integral inexistente nem executar suites de aplicação por formalidade.
+- [x] T041 Rever readonly os nove caminhos de T040 e evidência documental contra `specs/002-estado-em-revisao/spec.md`, `specs/002-estado-em-revisao/plan.md`, `specs/002-estado-em-revisao/data-model.md` e `specs/002-estado-em-revisao/contracts/status-delta.md`. Executor: Revisor Matriz. Deps: T040. Gate G4: canónicos continuam fonte, conflito resolvido só no âmbito aprovado, nenhum PASS inventado; resposta sem ficheiro novo, futura incorporação em `docs/verification.md` apenas por DocConfig aprovado.
 
 ### Fecho — ER-07
 
-- [ ] T042 Fazer revisão final independente readonly da cobertura FR-001–010/SC-001–006, preservações e evidência G0–G4 em `specs/002-estado-em-revisao/tasks.md`, `docs/verification.md`, `openapi.yaml` e nos caminhos de implementação/teste explicitamente enumerados em T005/T007/T014/T017/T019/T023/T024/T028–T029. Executor: Revisor Matriz. Deps: T041. Gate G5: bloquear fecho perante teste/revisão/reinício pendente, proteção mascarada ou escrita fora de âmbito; sem iniciar testes, corrigir código, convergir ou publicar.
-- [ ] T043 Com aprovação futura expressa de progresso/IDs, serializar em `specs/002-estado-em-revisao/tasks.md` apenas conclusões sustentadas por relatos/evidência identificados, incorporando G4/G5 em `docs/verification.md` somente se esse caminho continuar aprovado. Executor: DocConfig, escritor único. Deps: T042. Distinguir implementação de validação/revisão; não marcar bloqueios completos. Conferir limites finais sem branch/índice/commit/push/merge/refs/release/network/deploy, sem tocar `.env`, feature state, skills, CI/configuração ou dados/volumes; não certificar índice/hash sem comparação empírica autorizada.
+- [x] T042 Fazer revisão final independente readonly da cobertura FR-001–010/SC-001–006, preservações e evidência G0–G4 em `specs/002-estado-em-revisao/tasks.md`, `docs/verification.md`, `openapi.yaml` e nos caminhos de implementação/teste explicitamente enumerados em T005/T007/T014/T017/T019/T023/T024/T028–T029. Executor: Revisor Matriz. Deps: T041. Gate G5: bloquear fecho perante teste/revisão/reinício pendente, proteção mascarada ou escrita fora de âmbito; sem iniciar testes, corrigir código, convergir ou publicar.
+- [x] T043 Com aprovação futura expressa de progresso/IDs, serializar em `specs/002-estado-em-revisao/tasks.md` apenas conclusões sustentadas por relatos/evidência identificados, incorporando G4/G5 em `docs/verification.md` somente se esse caminho continuar aprovado. Executor: DocConfig, escritor único. Deps: T042. Distinguir implementação de validação/revisão; não marcar bloqueios completos. Conferir limites finais sem branch/índice/commit/push/merge/refs/release/network/deploy, sem tocar `.env`, feature state, skills, CI/configuração ou dados/volumes; não certificar índice/hash sem comparação empírica autorizada.
 
 ## Dependencies & Execution Order
 
@@ -368,3 +377,126 @@ Preflight próprio **01:19:19.775–01:19:20.234Z**, consultas Docker estritamen
 **Bloqueio antes do build/recreate**: `compose.yaml` exige `POSTGRES_PASSWORD` para interpolar também `app.environment.DATABASE_PASSWORD`; a credencial original não está disponível nesta sessão pelo método autorizado. Inventário de scripts do repositório não encontrou procedimento operacional alternativo. Não ler/procurar credenciais, `.env`, Env de inspect ou configuração expandida; não inventar password nem alterar DB. Build/recriação e ambas as execuções E2E **não executados**, sem resultado PASS/FAIL browser novo ou artefactos novos. Proposta pendente: responsável disponibilizar um mecanismo de recriação que preserve a configuração sem expor/recolher segredos, sujeito a confirmação do método.
 
 Marcadores preservados: **27/43 concluídas, 16 abertas**; T028/T029 implementadas/revistas segundo handover, sem promoção dos marcadores nesta sessão bloqueada; T030 não validada. Esta autorização não conclui T031–T034/G3, T035–T040 ou fecho, nem constitui prova de persistência após reinício. Única escrita: esta nota; evidência canónica continua reservada a T039.
+
+## Progresso autorizado — consolidação T028–T040, 19-11-2026 UTC
+
+**Estado à data desta consolidação: 40/43 concluídas, 3 abertas; T001–T040 [x],
+T041/G4, T042/G5 e T043 [ ]**. As notas anteriores são histórico datado,
+incluindo o bloqueio local antigo; não exprimem as pendências atuais.
+Autorização expressa recebida de **10:19:48 UTC**, reconfirmada no pedido
+de consolidação: apenas README, verification, test-plan, implementation-plan
+e este tasks existentes, sem novos relatórios. DocConfig é escritor único,
+com atualização serializada apenas dos marcadores T028–T040; T001–T027,
+descrições, dependências e T041–T043 preservadas. Não é execução de T043.
+
+- **T028/T029 concluídas:** 11 cenários preservados + 2 novos (13 preparados).
+  `review-002-e2e-r1` aprovado após correção de teclado; revisões estáticas
+  posteriores `review-002-two-e2e-fixes` e `review-002-save-focus` aprovadas.
+  Negativas API/draft/origem persistida e BLOCKS desde revisão não mascaradas.
+- **T030 PASS via CI recebido:** `verificar-002-ci-44436970582` confirmou
+  às 01:51:27–28 UTC CI #22/run 44436970582/attempt 1, push/main,
+  `.github/workflows/ci.yml`, SHA `7c182edf7fe1c2cd1009743b029e3cd9d5759c12`,
+  quatro jobs success; início 01:26:55, último fim 01:37:23, atualização
+  01:37:24. Logs anónimos 403: totais remotos desconhecidos, não 13/13.
+  HEAD atual `336066253151dd8e3e6229a55827e047c7ac4779` difere apenas
+  em nove canónicos documentais, código/CI inalterados; não é CI de 3360662.
+- **T031 concluída:** aprovação **humana do autor**, «confirmo aprovação
+  total visual», às 01:49:42 UTC, desktop/390/320/teclado; não aprovação
+  visual do agente nem inferência de build/automação.
+- **T032 concluída:** nova autorização específica às 10:19:48 para stack
+  `matriz-review-002-final`, loopback app 18082/DB 15433, volume novo e
+  credencial só runtime; restart apenas app, DB/stack antiga preservadas.
+- **T033 PASS recebido de `concluir-002-persistencia-compose`:** config,
+  pull, build do HEAD 3360662 e up exit 0. Um PUT no seed novo
+  `proj-alfa/task-04`/MAT-4 TODO v1→IN_REVIEW v2, 200; restart só app às
+  10:32:40.042–40.950 exit 0. Snapshots completos tarefa (14 propriedades),
+  projeto e todo o histórico (1 evento/1 página), ordenação/paginação/tipos
+  e hashes antes/depois iguais; identidade/v2/datas/evento preservados,
+  nova autenticação/GETs 200. Mesma DB/imagem/volume/StartedAt, sem restart
+  DB/SQL/DELETE/recriação/limpeza. Seed normal não mascara esses snapshots.
+  Harness final exit 0; falhas prévias do harness e bind Windows antigos
+  não são defeitos de aplicação nem novo resultado E2E.
+- **T034/G3 APROVADO, sem achados:** `review-002-g3-persistencia`,
+  leitura própria do código idêntico 7c182ed→3360662 e evidência recebida
+  T030/T031/T033; quatro estados/25% globais/filtros/paginação e geometria
+  desktop/390/320 contemplados. Sem rerun pelo revisor.
+- **T035–T040 concluídas:** antecipação documental aprovada às 01:31:49,
+  nove canónicos alinhados e revisões limitadas
+  `review-002-documentacao-antecipada`/`review-002-ci-visual-final` PASS.
+  Conferências anteriores recebidas: YAML, 229 referências/30 operações,
+  UTF-8 9/9 e 63 fragmentos locais; sem validador integral OpenAPI disponível.
+  Consolidação atual e verificações locais próprias em
+  [verification — T040](../../docs/verification.md#feature-002-doc-checks).
+
+Evidência operacional é recebida, não execução de DocConfig; prova completa,
+hashes/identidades/cronologia/limites e rastreio FR-009/SC-004 em
+[verification](../../docs/verification.md#feature-002-persistencia-final).
+174 testes frontend/build locais de 01:16 e backend 68 de 18-11 mantêm
+proveniência distinta de totais CI desconhecidos. RED históricos da imagem
+antiga não são bloqueios atuais. Imagem nova apenas local, sem release,
+cliente/produção ou publicação do novo SHA; candidato `0.4.0-rc.1` mantido.
+
+Skills seguidas por leitura: contexto-matriz, validacao-matriz e
+speckit-implement, sem invocação nativa disponível; sem hooks/helpers,
+persistência de estado, agentes, rede, testes/build/serviços/instalações ou
+escritas Git. **Paragem para revisão formal T041/G4, depois T042/G5**;
+nenhuma aprovação desses gates ou fecho T043 presumida.
+
+## Progresso autorizado — T041/G4, 19-11-2026 UTC
+
+Escrita serializada por DocConfig apenas neste tasks e em
+`docs/verification.md`, conforme autorização atual do utilizador.
+Única alteração de checkbox: **T041 [x]**; restantes IDs, descrições e
+dependências preservados. Não é execução nem fecho de T043.
+
+**T041/G4 APROVADO — `review-002-g4-01-fecho`**, segundo relato formal
+recebido do utilizador. A revisão original `review-002-g4-final` leu os
+nove canónicos e identificou apenas **G4-01 LOW**: referências obsoletas
+a G3/browser/visual/persistência pendentes em architecture/database.
+Correção dos dois ficheiros aprovada pelo autor às **10:41:59 UTC** e já
+presente; nenhum deles foi alterado por este registo.
+O novo revisor formal leu os dois diffs, referências de verification,
+regras e critério T041; confirmou a distinção T030 CI no SHA 7c182ed,
+T031 humana e T033 persistência/G3. Relatou âncoras e diffcheck PASS,
+índice vazio e sete caminhos modificados. **G4-01 resolvido**, sem outros
+achados na revisão integral original; estas observações são do revisor,
+não nova execução operacional de DocConfig.
+
+Proveniência e limites em
+[verification — T041/G4](../../docs/verification.md#feature-002-g4-final).
+Skills contexto-matriz, validacao-matriz e speckit-implement seguidas por
+leitura dos SKILL.md, sem mecanismo de invocação nativa disponível.
+Somente conferências documentais locais; sem testes, CI, HTTP, reinício,
+serviços, rede, hooks, agentes, novos relatórios ou escritas Git.
+
+**Estado de saída: 43 IDs únicos, 41 marcados, 2 abertos: T042/G5 e T043.**
+Pronto para **revisão final independente T042/G5**, sem a executar ou
+aprovar neste registo; nenhum fecho da feature presumido.
+
+## Serialização final autorizada — T042/G5 e T043, 19-11-2026 UTC
+
+As notas de geração/preflight/progresso acima preservam os seus estados
+à data; apenas o resumo de abertura e este registo exprimem o estado final.
+Autorização de 10:19:48 UTC e complemento de 10:41:59 UTC reconfirmados
+pelo utilizador: apenas os sete caminhos existentes README, architecture,
+database, implementation-plan, test-plan, verification e este tasks;
+architecture/database somente referências de estado G4/G5/T043.
+DocConfig continua escritor único; descrições, dependências e T001–T041
+preservadas, sem regenerar spec/plan ou criar relatórios.
+
+**T042/G5 [x] — `review-002-g5-final` APROVADO**, evidência recebida:
+sem achados confirmados ou teste/revisão/reinício obrigatório pendente.
+Cobertura FR-001–010/SC-001–006, dez campos restringidos, preservações e
+G0–G4 conferidos; sem novas suites/build/rede/serviços/visual pelo revisor.
+**T043 [x]** após conferências locais PASS observadas em
+**10:52:21.179938–10:52:21.729035 UTC**, antes de marcar este ID:
+UTF-8 7/7, links/âncoras, 43 IDs sequenciais (então 42 marcados/1 aberto),
+descrições/dependências e predecessoras preservadas, YAML existente,
+históricos, âmbito, HEAD/índice/staged e diffcheck. Primeira asserção
+CRLF/LF corrigida só no verificador em memória, sem reescrever conteúdo.
+**Estado final: 43 IDs únicos/sequenciais, 43/43 [x], zero abertos;
+G0–G5 APROVADOS.** Implementação e validações/revisões obrigatórias
+encerradas no âmbito académico aprovado, não release/publicação/produção,
+aceitação do cliente ou garantia integral de segurança.
+Proveniência, verificações próprias e limites exclusivamente em
+[verification — registo final](../../docs/verification.md#feature-002-fecho-final).

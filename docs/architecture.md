@@ -7,8 +7,9 @@
 **Estado atual — feature 002, 19-11-2026:** leitura estática sobre HEAD
 `7c182edf7fe1c2cd1009743b029e3cd9d5759c12`. IN_REVIEW persistido e
 Progress.inReview implementados; alinhamento canónico antecipado por
-aprovação excecional, **sem aprovação G3/G4/G5 ou fecho**.
-[Evidência e pendências](verification.md#feature-002).
+aprovação excecional. **G0–G5 aprovados; T043 concluída, 43/43 tarefas**,
+segundo a evidência recebida.
+[Evidência e limites do fecho](verification.md#feature-002-fecho-final).
 A publicação GHCR e o fecho de 001 abaixo são anteriores, não incluem 002
 nem provam a geometria/teclado ou persistência após reinício do novo estado.
 Sem versão/tag nova ou alteração de stack, segurança, endpoints e permissões.
@@ -77,7 +78,7 @@ O Blueprint Render existente tem `checksPass`; uma ação remota pode provocar d
 4. **Concorrência:** projeto/tarefa exigem versão nas edições/eliminações; atribuições exigem versão da tarefa. Relação explícita exige versões atuais dos dois extremos. Conflito 409 não sobrepõe dados. Lock serializa grafo/contagem/revogação no projeto, sem distribuí-los por serviços.
 5. **UI:** guarda síncrona e estado ocupado evitam submissões repetidas. Erro conserva texto; falha de transporte deixa resultado incerto, sem retry automático de escrita. Snapshot de estado persistido acompanha a versão de base, separado de `values.status`; só base IN_REVIEW/DONE habilita DONE. Inicialização/save confirmado/refetch limpo/recuperação explicitamente confirmada atualizam-no; resposta local de atribuição/relação só avança com identidade e previousVersion correspondentes. GET externo com rascunho sujo não promove base/estado/versão. Escolher revisão no draft não equivale a guardá-la; não há auto-save/dupla escrita. Preservam-se templates por ciclo, guards, foco/Escape/inert; recuperar versão atual ou sair com rascunho exige confirmação.
 6. **Revisão e conclusão:** TODO/IN_PROGRESS → IN_REVIEW guardado → DONE em segunda ação confirmada; TODO pode saltar IN_PROGRESS, revisão pode regressar a ambos. Servidor lê origem sob lock/revalidação e versão, recusa entrada direta com 422 status «Coloque a tarefa em revisão antes de a concluir.» antes de UPDATE/evento e da consulta de bloqueadores dessa entrada direta válida. Revisão histórica abandonada não basta. IN_REVIEW→DONE ainda exige todos os bloqueadores diretos DONE. DONE→DONE antiga mantém-se editável; reabertura para qualquer não-DONE conserva BLOCKS e limpa motivo. Sem revisor/pessoa distinta/atribuição obrigatória.
-7. **Agregados e apresentação:** Progress global contém todo/inProgress/inReview/done; total soma quatro, só done no numerador, HALF_UP inteiro e vazio 0%. Uma tarefa por estado dá 25%. Lista/detalhe de projeto e ambos TaskPage mantêm globais sob filtros/páginas. Labels partilhadas propagam revisão a lista/detalhe/relações; história traduz apenas old/new reconhecidos de status, com fallback e priority/type intactos. Quatro barras/cartões implementados; apreciação visual humana e browser final continuam pendentes.
+7. **Agregados e apresentação:** Progress global contém todo/inProgress/inReview/done; total soma quatro, só done no numerador, HALF_UP inteiro e vazio 0%. Uma tarefa por estado dá 25%. Lista/detalhe de projeto e ambos TaskPage mantêm globais sob filtros/páginas. Labels partilhadas propagam revisão a lista/detalhe/relações; história traduz apenas old/new reconhecidos de status, com fallback e priority/type intactos. Quatro barras/cartões implementados; T030 E2E PASS via CI no SHA 7c182ed e T031 com aprovação humana total desktop/390/320 px e teclado, segundo a [evidência recebida](verification.md#feature-002-ci-final), sem totais remotos de testes disponíveis nem nova execução nesta revisão documental.
 
 ```mermaid
 sequenceDiagram
